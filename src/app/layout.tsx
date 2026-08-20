@@ -1,6 +1,15 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, IBM_Plex_Sans_Arabic } from "next/font/google";
 import { Toaster } from "@/components/Toaster";
+import {
+  SITE_NAME,
+  SEO_DESCRIPTION_EN,
+  SEO_KEYWORDS_EN,
+  OG_SHARE_TAGLINE,
+  ogImages,
+  ogShareAbsoluteUrl,
+  geoMetaTags,
+} from "@/lib/seo";
 import { publicSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 
@@ -26,20 +35,16 @@ const siteUrl = publicSiteUrl();
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Briefly NewsStream",
-    template: "%s · Briefly NewsStream",
+    default: `${SITE_NAME} | Market news API for Kuwait & Middle East`,
+    template: `%s | ${SITE_NAME}`,
   },
-  description:
-    "Arabic-first market news API: bilingual AR/EN coverage across ~70 countries, market-impact scoring, community briefings, and a developer console.",
-  applicationName: "Briefly NewsStream",
-  keywords: [
-    "market news API",
-    "Arabic news API",
-    "bilingual news",
-    "Briefly NewsStream",
-    "impact scoring",
-    "developer console",
-  ],
+  description: SEO_DESCRIPTION_EN,
+  applicationName: SITE_NAME,
+  keywords: [...SEO_KEYWORDS_EN],
+  authors: [{ name: SITE_NAME, url: siteUrl }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+  category: "Technology",
   robots: {
     index: true,
     follow: true,
@@ -48,6 +53,7 @@ export const metadata: Metadata = {
       follow: true,
       "max-image-preview": "large",
       "max-snippet": -1,
+      "max-video-preview": -1,
     },
   },
   alternates: {
@@ -60,20 +66,21 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    locale: "ar",
-    alternateLocale: ["en_US"],
+    locale: "ar_KW",
+    alternateLocale: ["en_US", "ar_SA", "ar_AE", "ar_EG"],
     url: "/",
-    siteName: "Briefly NewsStream",
-    title: "Briefly NewsStream — Market news API, Arabic-first",
-    description:
-      "Bilingual AR+EN market news with impact scoring, community briefings, and a permanent archive.",
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} | Market news API for Kuwait & Middle East`,
+    description: OG_SHARE_TAGLINE,
+    images: ogImages(),
   },
   twitter: {
     card: "summary_large_image",
-    title: "Briefly NewsStream — Market news API, Arabic-first",
-    description:
-      "Bilingual AR+EN market news with impact scoring, community briefings, and a permanent archive.",
+    title: `${SITE_NAME} | Market news API for Kuwait & Middle East`,
+    description: OG_SHARE_TAGLINE,
+    images: [ogShareAbsoluteUrl()],
   },
+  other: geoMetaTags(),
 };
 
 export const viewport: Viewport = {
@@ -82,7 +89,11 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html
       lang="ar"

@@ -1,5 +1,4 @@
-import Image from "next/image";
-import heroMarkets from "../../public/hero-markets.png";
+import { CloudinaryImage } from "@/components/media/CloudinaryImage";
 import { landingCopy } from "@/lib/landing-translation";
 
 export function HomepageHero({ lang }: { lang: string }) {
@@ -11,12 +10,12 @@ export function HomepageHero({ lang }: { lang: string }) {
   return (
     <section className="homepage-hero" aria-labelledby="homepage-hero-title">
       <div className="homepage-hero-media">
-        <Image
-          src={heroMarkets}
+        <CloudinaryImage
+          media="heroMarkets"
           alt={alt}
           fill
-          preload
-          fetchPriority="high"
+          priority
+          deliveryWidth={1920}
           sizes="100vw"
           className="homepage-hero-image"
         />

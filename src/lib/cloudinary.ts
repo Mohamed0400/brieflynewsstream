@@ -86,17 +86,20 @@ export async function uploadImageBuffer(
     folder?: string;
     publicId?: string;
     filename?: string;
+    overwrite?: boolean;
   } = {},
 ): Promise<CloudinaryUploadResult> {
   ensureCloudinary();
   const folder = options.folder || "briefly-newsstream";
+  const overwrite = options.overwrite ?? Boolean(options.publicId);
   const result = await new Promise<CloudinaryUploadResult>((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       {
         folder,
         public_id: options.publicId,
         resource_type: "image",
-        overwrite: false,
+        overwrite,
+        invalidate: overwrite,
         unique_filename: !options.publicId,
         use_filename: Boolean(options.filename),
         filename_override: options.filename,
@@ -112,6 +115,35 @@ export async function uploadImageBuffer(
     stream.end(buffer);
   });
   return result;
+}
+
+/** Upload a local filesystem path with a stable public_id. */
+export async function uploadImageFile(
+  filePath: string,
+  options: {
+    folder?: string;
+    publicId?: string;
+    overwrite?: boolean;
+  } = {},
+): Promise<CloudinaryUploadResult> {
+  ensureCloudinary();
+  const overwrite = options.overwrite ?? Boolean(options.publicId);
+  // When publicId already includes folders, do not also set `folder` (avoids nesting).
+  const folder =
+    options.folder !== undefined
+      ? options.folder
+      : options.publicId?.includes("/")
+        ? undefined
+        : "briefly-newsstream";
+  const uploaded = await cloudinary.uploader.upload(filePath, {
+    ...(folder ? { folder } : {}),
+    public_id: options.publicId,
+    resource_type: "image",
+    overwrite,
+    invalidate: overwrite,
+    unique_filename: !options.publicId,
+  });
+  return toResult(uploaded);
 }
 
 /** Fetch a remote image and store it on Cloudinary (article mirroring). */

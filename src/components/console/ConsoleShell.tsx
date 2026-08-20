@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { ConsoleDocumentLang, ConsoleLangSwitcher, useConsoleCopy } from "@/components/console/ConsoleLang";
+import { CloudinaryImage } from "@/components/media/CloudinaryImage";
 import type { ConsoleLang } from "@/lib/console-translation";
 
 const customerNav = [
@@ -54,12 +55,20 @@ export function ConsoleShell({
     : copy.workspacePlan;
 
   return (
-    <div className="console-shell" lang={copy.lang} dir={copy.dir}>
+    <div className="console-shell console-shell-branded" lang={copy.lang} dir={copy.dir}>
       <ConsoleDocumentLang lang={copy.lang} dir={copy.dir} />
       <header className="console-header">
         <div className="console-header-inner">
           <Link href="/console/overview" className="console-brand" aria-label={copy.brandAria}>
-            <span className="console-brand-mark" aria-hidden="true">{copy.lang === "ar" ? "م" : "MN"}</span>
+            <CloudinaryImage
+              media="logoMark"
+              alt=""
+              width={40}
+              height={40}
+              deliveryWidth={80}
+              className="console-brand-logo"
+              priority
+            />
             <span>
               <strong>{copy.brandName}</strong>
               <small>{copy.brandMark}</small>
@@ -83,7 +92,7 @@ export function ConsoleShell({
           <div className="console-account-block">
             <p>{copy.workspace}</p>
             <strong title={accountEmail}>{accountEmail}</strong>
-            <span>{planLabel}{isAdmin ? " · Admin" : ""}</span>
+            <span>{planLabel}{isAdmin ? (lang === "ar" ? " · مسؤول" : " · Admin") : ""}</span>
           </div>
           <nav className="console-navigation" aria-label={copy.navAria}>
             {navigation.map((item) => {
@@ -101,6 +110,16 @@ export function ConsoleShell({
               );
             })}
           </nav>
+          <div className="console-sidebar-art" aria-hidden="true">
+            <CloudinaryImage
+              media="conceptStreamIcons"
+              alt=""
+              width={320}
+              height={180}
+              deliveryWidth={640}
+              className="console-sidebar-art-image"
+            />
+          </div>
         </aside>
         <main id="console-main" className="console-main">
           {children}

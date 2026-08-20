@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { ConsoleWelcomeBanner } from "@/components/console/ConsoleWelcomeBanner";
 import { getOrCreateAccount, getSessionUser } from "@/lib/account";
 import { getConsoleLang } from "@/lib/console-lang";
 import { consoleDashboardCopy } from "@/lib/console-translation";
@@ -81,16 +82,14 @@ export default async function ConsoleOverviewPage() {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 6);
   const numberLocale = copy.locale;
+  const planLabel =
+    account.plan === "PRO" ? "Pro"
+    : account.plan === "ENTERPRISE" ? "Enterprise"
+    : copy.workspacePlan;
 
   return (
     <div className="console-page">
-      <header className="console-page-header">
-        <p className="console-kicker">{copy.overview.kicker}</p>
-        <h1>{copy.overview.heading}</h1>
-        <p className="console-page-description">
-          {copy.overview.description}
-        </p>
-      </header>
+      <ConsoleWelcomeBanner email={account.email} planLabel={planLabel} />
 
       <section className="console-metric-grid" aria-label={copy.overview.metricsAria}>
         <article className="console-metric console-metric-primary">

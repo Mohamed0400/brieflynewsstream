@@ -1,0 +1,301 @@
+import cron from "node-cron";
+import { prisma } from "./prisma";
+import { describeQueryFailure } from "./api";
+import { kuwaitDate } from "./market";
+import { buildDailyEdition, runPipeline } from "./pipeline";
+
+export const JOB_COLLECT = "collect";
+export const JOB_PUBLISH = "publish-daily";
+export const JOB_TRANSLATE = "translate";
+
+const HEARTBEAT_ID = "default";
+const HEARTBEAT_MS = 30_000;
+const LOCK_MS = 15 * 60 * 1000;
+const ONLINE_MS = 90_000;
+
+export const COLLECT_PRESETS = [
+  { value: "*/15 * * * *", label: "Every 15 minutes" },
+  { value: "*/30 * * * *", label: "Every 30 minutes" },
+  { value: "0 * * * *", label: "Every hour" },
+  { value: "0 */2 * * *", label: "Every 2 hours" },
+] as const;
+
+export const PUBLISH_PRESETS = [
+  { value: "0 6 * * *", label: "06:00 daily" },
+  { value: "0 7 * * *", label: "07:00 daily" },
+  { value: "0 8 * * *", label: "08:00 daily" },
+  { value: "0 */6 * * *", label: "Every 6 hours" },
+] as const;
+
+export const TRANSLATE_PRESETS = [
+  { value: "*/15 * * * *", label: "Every 15 minutes" },
+  { value: "*/30 * * * *", label: "Every 30 minutes" },
+  { value: "0 * * * *", label: "Every hour" },
+] as const;
+
+export const DEFAULT_SCHEDULED_JOBS = [
+  {
+    key: JOB_COLLECT,
+    name: "Collect news",
+    description: "Fetch sources, store new articles, translate bilingual fields, and refresh today's edition.",
+    cron: "*/30 * * * *",
+  },
+  {
+    key: JOB_TRANSLATE,
+    name: "Translate articles",
+    description: "Store Arabic and English title and summary pairs for every fresh article.",
+    cron: "*/15 * * * *",
+  },
+  {
+    key: JOB_PUBLISH,
+    name: "Publish today's edition",
+    description: "Rebuild the stored /today edition from scored articles, then fill any missing ar/en pairs.",
+    cron: "0 6 * * *",
+  },
+] as const;
+
+type ScheduledTask = ReturnType<typeof cron.schedule>;
+
+type SchedulerGlobal = typeof globalThis & {
+  marketNewsScheduler?: {
+    started: boolean;
+    snapshot: string;
+    tasks: ScheduledTask[];
+    timer?: ReturnType<typeof setInterval>;
+  };
+};
+
+function schedulerState() {
+  const globalState = globalThis as SchedulerGlobal;
+  if (!globalState.marketNewsScheduler) {
+    globalState.marketNewsScheduler = { started: false, snapshot: "", tasks: [] };
+  }
+  return globalState.marketNewsScheduler;
+}
+
+function appTimezone() {
+  return process.env.APP_TIMEZONE || "Asia/Kuwait";
+}
+
+export function isValidCron(expression: string) {
+  return cron.validate(expression.trim());
+}
+
+function summarizePipeline(result: {
+  rawCollected: number;
+  articlesCreated: number;
+  translated: number;
+  editionItems: number;
+  sourcesFailed: number;
+}) {
+  return [
+    `${result.rawCollected} collected`,
+    `${result.articlesCreated} created`,
+    `${result.translated} translated`,
+    `${result.editionItems} in today's edition`,
+    result.sourcesFailed ? `${result.sourcesFailed} source errors` : null,
+  ].filter(Boolean).join(", ");
+}
+
+export async function ensureDefaultJobs() {
+  const timezone = appTimezone();
+  await Promise.all(DEFAULT_SCHEDULED_JOBS.map((job) => (
+    prisma.scheduledJob.upsert({
+      where: { key: job.key },
+      create: { ...job, timezone },
+      update: job.key === JOB_TRANSLATE ? { description: job.description } : {},
+    })
+  )));
+}
+
+async function writeHeartbeat(processName: string) {
+  await prisma.schedulerHeartbeat.upsert({
+    where: { id: HEARTBEAT_ID },
+    create: { id: HEARTBEAT_ID, processName, lastTickAt: new Date() },
+    update: { processName, lastTickAt: new Date() },
+  });
+}
+
+async function executeJob(key: string) {
+  if (key === JOB_PUBLISH) {
+    const date = kuwaitDate();
+    const itemCount = await buildDailyEdition(date, { force: true });
+    return `Published ${itemCount} stories for ${date}`;
+  }
+  if (key === JOB_TRANSLATE) {
+    const { translatePendingArticles } = await import("./article-translation");
+    const result = await translatePendingArticles();
+    return `${result.translated} articles translated`;
+  }
+  return summarizePipeline(await runPipeline({ forceEdition: true }));
+}
+
+export async function runScheduledJob(key: string) {
+  const now = new Date();
+  const claimed = await prisma.scheduledJob.updateMany({
+    where: {
+      key,
+      OR: [{ lockedUntil: null }, { lockedUntil: { lt: now } }],
+    },
+    data: {
+      lockedUntil: new Date(now.getTime() + LOCK_MS),
+      lastStatus: "running",
+      lastError: null,
+    },
+  });
+  if (claimed.count === 0) {
+    return { ok: false, skipped: true, message: "A collect or publish job is already running." };
+  }
+
+  try {
+    const lastSummary = await executeJob(key);
+    await prisma.scheduledJob.update({
+      where: { key },
+      data: {
+        lastRunAt: new Date(),
+        lastStatus: "ok",
+        lastError: null,
+        lastSummary,
+        lockedUntil: null,
+      },
+    });
+    return { ok: true, skipped: false, message: lastSummary };
+  } catch (error) {
+    const failure = describeQueryFailure(error);
+    const lastError = failure.message;
+    await prisma.scheduledJob.update({
+      where: { key },
+      data: {
+        lastRunAt: new Date(),
+        lastStatus: "error",
+        lastError,
+        lastSummary: null,
+        lockedUntil: null,
+      },
+    });
+    return { ok: false, skipped: false, message: lastError };
+  }
+}
+
+export async function updateScheduledJob(input: {
+  key: string;
+  cron?: string;
+  enabled?: boolean;
+}) {
+  const job = await prisma.scheduledJob.findUnique({ where: { key: input.key } });
+  if (!job) throw new Error("Unknown scheduled job.");
+  const cronExpression = input.cron?.trim();
+  if (cronExpression && !isValidCron(cronExpression)) {
+    throw new Error("Cron expression is invalid. Use five fields, for example */30 * * * *.");
+  }
+  return prisma.scheduledJob.update({
+    where: { key: input.key },
+    data: {
+      ...(cronExpression ? { cron: cronExpression, timezone: appTimezone() } : {}),
+      ...(input.enabled === undefined ? {} : { enabled: input.enabled }),
+    },
+  });
+}
+
+function serializeJob(job: {
+  key: string;
+  name: string;
+  description: string;
+  cron: string;
+  timezone: string;
+  enabled: boolean;
+  lastRunAt: Date | null;
+  lastStatus: string | null;
+  lastError: string | null;
+  lastSummary: string | null;
+  lockedUntil: Date | null;
+}) {
+  const running = Boolean(job.lockedUntil && job.lockedUntil > new Date());
+  return {
+    key: job.key,
+    name: job.name,
+    description: job.description,
+    cron: job.cron,
+    timezone: job.timezone,
+    enabled: job.enabled,
+    running,
+    lastRunAt: job.lastRunAt?.toISOString() ?? null,
+    lastStatus: running ? "running" : job.lastStatus,
+    lastError: job.lastError,
+    lastSummary: job.lastSummary,
+    presets: job.key === JOB_PUBLISH
+      ? PUBLISH_PRESETS
+      : job.key === JOB_TRANSLATE
+        ? TRANSLATE_PRESETS
+        : COLLECT_PRESETS,
+  };
+}
+
+export async function getScheduleSnapshot() {
+  await ensureDefaultJobs();
+  const [jobs, heartbeat, edition] = await Promise.all([
+    prisma.scheduledJob.findMany({ orderBy: { name: "asc" } }),
+    prisma.schedulerHeartbeat.findUnique({ where: { id: HEARTBEAT_ID } }),
+    prisma.dailyEdition.findUnique({
+      where: { date: kuwaitDate() },
+      select: { date: true, status: true, itemCount: true, updatedAt: true },
+    }),
+  ]);
+  const lastTickAt = heartbeat?.lastTickAt ?? null;
+  const online = Boolean(lastTickAt && Date.now() - lastTickAt.getTime() < ONLINE_MS);
+  return {
+    timezone: appTimezone(),
+    scheduler: {
+      online,
+      processName: heartbeat?.processName ?? null,
+      lastTickAt: lastTickAt?.toISOString() ?? null,
+    },
+    today: {
+      date: kuwaitDate(),
+      exists: Boolean(edition),
+      status: edition?.status.toLowerCase() ?? "missing",
+      itemCount: edition?.itemCount ?? 0,
+      updatedAt: edition?.updatedAt.toISOString() ?? null,
+    },
+    jobs: jobs.map(serializeJob),
+  };
+}
+
+async function syncScheduledTasks(processName: string) {
+  await ensureDefaultJobs();
+  await writeHeartbeat(processName);
+  const jobs = await prisma.scheduledJob.findMany();
+  const snapshot = JSON.stringify(jobs.map((job) => ({
+    key: job.key,
+    cron: job.cron,
+    enabled: job.enabled,
+    timezone: job.timezone,
+  })));
+  const state = schedulerState();
+  if (snapshot === state.snapshot) return;
+  for (const task of state.tasks) task.stop();
+  state.tasks = [];
+  state.snapshot = snapshot;
+  for (const job of jobs) {
+    if (!job.enabled || !isValidCron(job.cron)) continue;
+    state.tasks.push(cron.schedule(
+      job.cron,
+      () => { void runScheduledJob(job.key); },
+      { timezone: job.timezone },
+    ));
+  }
+}
+
+export function startEmbeddedScheduler(processName: string) {
+  const state = schedulerState();
+  if (state.started) return;
+  state.started = true;
+  const tick = () => {
+    void syncScheduledTasks(processName).catch((error) => {
+      console.error("Scheduler tick failed", error);
+    });
+  };
+  tick();
+  state.timer = setInterval(tick, HEARTBEAT_MS);
+  if (typeof state.timer.unref === "function") state.timer.unref();
+}

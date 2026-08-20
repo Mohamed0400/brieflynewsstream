@@ -1,0 +1,337 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Category {
+  GOLD
+  FINANCE
+  ECONOMICS
+  OIL
+  ME_ECONOMY
+  COMMODITIES
+  MARKETS
+}
+
+enum Region {
+  MIDDLE_EAST
+  AMERICA
+  GLOBAL
+}
+
+enum EditionStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum PlanTier {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum AccountRole {
+  MEMBER
+  SUPER_ADMIN
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+  CLOSED
+}
+
+enum SupportTicketStatus {
+  OPEN
+  PENDING
+  RESOLVED
+}
+
+model Source {
+  id              String        @id @default(cuid())
+  code            String        @unique
+  name            String
+  url             String        @unique
+  homepageUrl     String?
+  adapter         String        @default("rss")
+  country         String
+  region          Region
+  defaultCategory Category?
+  qualityWeight   Int           @default(70)
+  enabled         Boolean       @default(true)
+  lastFetchedAt   DateTime?
+  lastError       String?
+  articles        RawArticle[]
+  normalized      Article[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model RawArticle {
+  id            String    @id @default(cuid())
+  sourceId      String
+  source        Source    @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  externalId    String
+  title         String
+  url           String
+  summary       String?
+  publisher     String?
+  audienceCodes String    @default("")
+  imageUrl      String?
+  publishedAt   DateTime
+  rawJson       String
+  processedAt   DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@unique([sourceId, externalId])
+  @@index([processedAt])
+}
+
+model Article {
+  id              String             @id @default(cuid())
+  sourceId        String
+  source          Source             @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  title           String
+  summary         String
+  displayTitle    String?
+  displaySummary  String?
+  titleEn         String?
+  summaryEn       String?
+  titleAr         String?
+  summaryAr       String?
+  translatedAt    DateTime?
+  editorializedAt DateTime?
+  publisher       String?
+  audienceCodes   String             @default("")
+  url             String             @unique
+  imageUrl        String?
+  category        Category
+  secondaryTags   String             @default("")
+  country         String
+  region          Region
+  language        String             @default("en")
+  publishedAt     DateTime
+  contentHash     String             @unique
+  storyKey        String             @default("")
+  score           ArticleScore?
+  editionItems    DailyEditionItem[]
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([category, publishedAt])
+  @@index([country, publishedAt])
+  @@index([region, category])
+  @@index([audienceCodes])
+  @@index([publishedAt])
+  @@index([storyKey, sourceId, publishedAt])
+}
+
+model ArticleScore {
+  id               String   @id @default(cuid())
+  articleId        String   @unique
+  article          Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  relevance        Int
+  freshness        Int
+  sourceQuality    Int
+  goldImpact       Int
+  usdImpact        Int
+  ratesImpact      Int
+  oilImpact        Int
+  middleEastImpact Int
+  marketImpact     Int
+  finalScore       Float
+  explanation      String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([finalScore])
+}
+
+model DailyEdition {
+  id        String             @id @default(cuid())
+  date      String             @unique
+  status    EditionStatus      @default(DRAFT)
+  locked    Boolean            @default(false)
+  itemCount Int                @default(0)
+  summary   String?
+  items     DailyEditionItem[]
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+}
+
+model DailyEditionItem {
+  id        String       @id @default(cuid())
+  editionId String
+  edition   DailyEdition @relation(fields: [editionId], references: [id], onDelete: Cascade)
+  articleId String
+  article   Article      @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  rank      Int
+  section   String
+
+  @@unique([editionId, articleId])
+  @@unique([editionId, rank])
+}
+
+model Account {
+  id                  String              @id @default(cuid())
+  authUserId          String              @unique
+  email               String
+  role                AccountRole         @default(MEMBER)
+  status              AccountStatus       @default(ACTIVE)
+  plan                PlanTier            @default(FREE)
+  dailyPointsOverride Int?
+  maxKeysOverride     Int?
+  stripeCustomerId    String?             @unique
+  keys                ApiKey[]
+  subscription        Subscription?
+  invoices            InvoiceSnapshot[]
+  notes               AccountNote[]
+  tickets             SupportTicket[]
+  enterpriseReqs      EnterpriseRequest[]
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@index([email])
+  @@index([plan, status])
+}
+
+model ApiKey {
+  id         String       @id @default(cuid())
+  accountId  String
+  account    Account      @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  name       String
+  prefix     String
+  keyHash    String       @unique
+  lastFour   String
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  requests   ApiRequest[]
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@index([accountId])
+  @@index([revokedAt])
+}
+
+model ApiRequest {
+  id          String   @id @default(cuid())
+  apiKeyId    String?
+  apiKey      ApiKey?  @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+  endpoint    String
+  method      String
+  pointsUsed  Int      @default(1)
+  requestedAt DateTime @default(now())
+
+  @@index([requestedAt])
+  @@index([endpoint, requestedAt])
+  @@index([apiKeyId, requestedAt])
+}
+
+model Subscription {
+  id                   String    @id @default(cuid())
+  accountId            String    @unique
+  account              Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  stripeSubscriptionId String?   @unique
+  status               String    @default("inactive")
+  unitAmountCents      Int       @default(0)
+  currency             String    @default("usd")
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+}
+
+model InvoiceSnapshot {
+  id              String    @id @default(cuid())
+  accountId       String
+  account         Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  stripeInvoiceId String    @unique
+  amountPaidCents Int
+  currency        String    @default("usd")
+  status          String
+  paidAt          DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([accountId, paidAt])
+}
+
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  actorId    String
+  action     String
+  targetType String
+  targetId   String
+  metadata   Json     @default("{}")
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([targetType, targetId])
+  @@index([actorId, createdAt])
+}
+
+model AccountNote {
+  id        String   @id @default(cuid())
+  accountId String
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([accountId, createdAt])
+}
+
+model SupportTicket {
+  id        String              @id @default(cuid())
+  accountId String
+  account   Account             @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  subject   String
+  body      String
+  status    SupportTicketStatus @default(OPEN)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@index([status, createdAt])
+  @@index([accountId])
+}
+
+model EnterpriseRequest {
+  id         String    @id @default(cuid())
+  accountId  String
+  account    Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  company    String
+  message    String
+  status     String    @default("pending")
+  reviewedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([status, createdAt])
+  @@index([accountId])
+}
+
+model ScheduledJob {
+  id          String    @id @default(cuid())
+  key         String    @unique
+  name        String
+  description String
+  cron        String
+  timezone    String
+  enabled     Boolean   @default(true)
+  lastRunAt   DateTime?
+  lastStatus  String?
+  lastError   String?
+  lastSummary String?
+  lockedUntil DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model SchedulerHeartbeat {
+  id          String   @id
+  processName String
+  lastTickAt  DateTime
+}

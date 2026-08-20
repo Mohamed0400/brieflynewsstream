@@ -1,7 +1,7 @@
 # SEO + AEO strategy — Briefly NewsStream
 
 Last updated: 2026-08-20  
-Primary domain: `https://brieflynewsstream.com`  
+Primary domain: `https://www.brieflynewsstream.com` (apex redirects to www)  
 Primary geo: **Kuwait** + **Middle East / MENA / GCC** + **Arabic-speaking countries**, with global (~70 country) coverage.
 
 This doc covers classic SEO **and** Answer Engine Optimization (AEO) so the product can appear in Google Search, Bing, and AI Overviews / answer engines—not SEO alone.
@@ -117,7 +117,7 @@ Validate: [Google Rich Results Test](https://search.google.com/test/rich-results
 
 ## Post-launch (required for search appearance)
 
-1. **Google Search Console** → property `brieflynewsstream.com` → submit `sitemap.xml`
+1. **Google Search Console** → property `https://www.brieflynewsstream.com` → submit `https://www.brieflynewsstream.com/sitemap.xml`
 2. Request indexing: `/`, `/news`, `/pricing`, `/developers`, `/coverage`
 3. **Bing Webmaster Tools** (strong for MENA + Copilot)
 4. Confirm Search Console “International targeting” / language settings for AR+EN (optional; hreflang is primary)

@@ -26,7 +26,7 @@ Required groups:
 | --- | --- |
 | Database | `DATABASE_URL`, `DIRECT_URL` |
 | Supabase Auth | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` |
-| Site | `NEXT_PUBLIC_SITE_URL=https://brieflynewsstream.com`, `NEXT_PUBLIC_APP_ENV=live` |
+| Site | `NEXT_PUBLIC_SITE_URL=https://www.brieflynewsstream.com`, `NEXT_PUBLIC_APP_ENV=live` |
 | API / console | `API_KEY`, `ADMIN_API_KEY`, `CONSOLE_SESSION_SECRET`, `SUPER_ADMIN_EMAILS` |
 | Cloudinary | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `CLOUDINARY_URL`, optional `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` (static CDN; also in `src/lib/media-cloud.json`) |
 | Optional AI | `GOOGLE_API_KEY`, `GOOGLE_GROUNDED_SEARCH_ENABLED`, `GOOGLE_EDITORIAL_ENABLED`, `GEMINI_MODEL` |
@@ -117,7 +117,7 @@ Contact CTAs use `hello@brieflynewsstream.com`. Mailbox / DNS for that address m
 ## Vercel import quick start
 
 1. Open local file: `.env` (same contents as `.env.vercel`)  
-2. Confirm `NEXT_PUBLIC_SITE_URL="https://brieflynewsstream.com"` and `NEXT_PUBLIC_APP_ENV="live"`  
+2. Confirm `NEXT_PUBLIC_SITE_URL="https://www.brieflynewsstream.com"` and `NEXT_PUBLIC_APP_ENV="live"`  
 3. Vercel → Environment Variables → Import  
 4. Redeploy Production  
 5. Test: `/`, `/news`, `/console/login`, one authenticated API call with an account key  

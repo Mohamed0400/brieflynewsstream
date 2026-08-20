@@ -7,6 +7,7 @@
  */
 
 import mediaCloud from "./media-cloud.json";
+import { publicSiteUrl } from "./site-url";
 
 export const MEDIA_FOLDER = "briefly-newsstream/static";
 
@@ -79,7 +80,7 @@ export function mediaUrl(
 export function mediaAbsoluteUrl(key: MediaKey, options: MediaUrlOptions = {}): string {
   const url = mediaUrl(key, options);
   if (url.startsWith("http")) return url;
-  const origin = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const origin = publicSiteUrl();
   return `${origin.replace(/\/$/, "")}${url.startsWith("/") ? url : `/${url}`}`;
 }
 

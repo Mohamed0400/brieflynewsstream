@@ -143,27 +143,82 @@ export function MarketingLanding({
       </header>
 
       <main id="mkt-main">
-        <section className="mkt-hero" aria-labelledby="mkt-hero-title">
-          <div className="mkt-hero-media" aria-hidden="true">
-            <CloudinaryImage
-              media="heroNewsstream"
-              alt=""
-              fill
-              priority
-              deliveryWidth={1920}
-              className="mkt-hero-image"
-              sizes="100vw"
-            />
-            <div className="mkt-hero-scrim" />
+        <section className="mkt-hero mkt-hero-void" aria-labelledby="mkt-hero-title">
+          <div className="mkt-hero-void-bg" aria-hidden="true">
+            <div className="mkt-hero-grid" />
+            <div className="mkt-hero-glow" />
+            <div className="mkt-hero-stream">
+              <div className="mkt-hero-stream-rail mkt-hero-stream-rail-a">
+                <span>impactScore:86</span>
+                <span lang="ar">أسعار الذهب</span>
+                <span>GOLD · GLOBAL</span>
+                <span lang="ar">قرارات الفائدة</span>
+                <span>titleEn · titleAr</span>
+                <span>AR + EN</span>
+                <span>stream · live</span>
+                <span lang="ar">أثر السوق</span>
+                <span>impactScore:86</span>
+                <span lang="ar">أسعار الذهب</span>
+                <span>GOLD · GLOBAL</span>
+                <span lang="ar">قرارات الفائدة</span>
+                <span>titleEn · titleAr</span>
+                <span>AR + EN</span>
+              </div>
+              <div className="mkt-hero-stream-rail mkt-hero-stream-rail-b">
+                <span lang="ar">نفط · طاقة</span>
+                <span>JSON / v1</span>
+                <span>bilingual</span>
+                <span lang="ar">ثنائي اللغة</span>
+                <span>markets</span>
+                <span lang="ar">أسواق</span>
+                <span>permanent archive</span>
+                <span lang="ar">أرشيف دائم</span>
+                <span lang="ar">نفط · طاقة</span>
+                <span>JSON / v1</span>
+                <span>bilingual</span>
+                <span lang="ar">ثنائي اللغة</span>
+                <span>markets</span>
+                <span lang="ar">أسواق</span>
+              </div>
+            </div>
           </div>
+
           <div className="mkt-hero-content">
             <p className="mkt-hero-brand">{copy.brand}</p>
+            <p className="mkt-hero-langs">
+              <span lang="ar">العربية</span>
+              <span aria-hidden="true">·</span>
+              <span lang="en">English</span>
+              <span className="mkt-hero-langs-note">{copy.heroLangSupport}</span>
+            </p>
             <h1 id="mkt-hero-title">
               <span className="mkt-hero-line">{copy.heroHeadline}</span>
             </h1>
             <p className="mkt-hero-lede" data-aeo-answer>
               {copy.heroLede}
             </p>
+
+            <form className="mkt-hero-search" action="/news" method="get" role="search">
+              <label className="mkt-hero-search-label" htmlFor="mkt-hero-q">
+                {copy.heroSearchLabel}
+              </label>
+              <div className="mkt-hero-search-row">
+                <input
+                  id="mkt-hero-q"
+                  name="q"
+                  type="search"
+                  enterKeyHint="search"
+                  autoComplete="off"
+                  placeholder={copy.heroSearchPlaceholder}
+                  className="mkt-hero-search-input"
+                />
+                {lang === "en" ? <input type="hidden" name="lang" value="en" /> : null}
+                <button type="submit" className="mkt-btn mkt-btn-primary mkt-hero-search-btn">
+                  {copy.heroSearchSubmit}
+                </button>
+              </div>
+            </form>
+
             <div className="mkt-cta-row">
               <Link href={signupHref} className="mkt-btn mkt-btn-primary">
                 {copy.ctaKey}

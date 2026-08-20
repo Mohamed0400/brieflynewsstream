@@ -35,7 +35,7 @@ const siteUrl = publicSiteUrl();
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: `${SITE_NAME} | Market news API for Kuwait & Middle East`,
+    default: `${SITE_NAME} | Bilingual market news API`,
     template: `%s | ${SITE_NAME}`,
   },
   description: SEO_DESCRIPTION_EN,
@@ -70,13 +70,13 @@ export const metadata: Metadata = {
     alternateLocale: ["en_US", "ar_SA", "ar_AE", "ar_EG"],
     url: "/",
     siteName: SITE_NAME,
-    title: `${SITE_NAME} | Market news API for Kuwait & Middle East`,
+    title: `${SITE_NAME} | Bilingual market news API`,
     description: OG_SHARE_TAGLINE,
     images: ogImages(),
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE_NAME} | Market news API for Kuwait & Middle East`,
+    title: `${SITE_NAME} | Bilingual market news API`,
     description: OG_SHARE_TAGLINE,
     images: [ogShareAbsoluteUrl()],
   },

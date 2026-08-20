@@ -15,7 +15,7 @@ export const OG_IMAGE_PATH = mediaUrl("ogShare", {
 export const OG_IMAGE_WIDTH = 1200;
 export const OG_IMAGE_HEIGHT = 630;
 export const OG_SHARE_TAGLINE =
-  "Market news as a stream - scored, bilingual, and built for Kuwait, the Middle East, and global markets.";
+  "Market news as a stream - scored, bilingual, and built for global and regional markets.";
 
 export function brandLogoUrl() {
   return mediaAbsoluteUrl("logoMark", { width: 512, quality: "auto" });
@@ -159,17 +159,17 @@ export const SEO_KEYWORDS_AR = [
 
 /** Answer-first descriptions for SEO + AI Overviews / AEO. */
 export const SEO_DESCRIPTION_EN =
-  "Briefly NewsStream is an Arabic-first market news API for Kuwait, the Middle East, and Arabic-speaking countries—bilingual AR/EN articles, impact scoring, and ~70-country coverage for developers.";
+  "Briefly NewsStream is an Arabic-first bilingual market news API for global and regional markets: AR/EN articles, impact scoring, and ~70-country coverage for developers.";
 
 export const SEO_DESCRIPTION_AR =
-  "Briefly NewsStream واجهة أخبار أسواق عربية أولاً للكويت والشرق الأوسط والدول الناطقة بالعربية: مقالات عربية وإنجليزية، تقييم أثر السوق، وتغطية نحو ٧٠ دولة للمطوّرين.";
+  "Briefly NewsStream واجهة أخبار أسواق عربية أولاً للأسواق العالمية والإقليمية: مقالات عربية وإنجليزية، تقييم أثر السوق، وتغطية نحو ٧٠ دولة للمطوّرين.";
 
 /** Short direct answers AI systems can cite (also used in FAQ / speakable). */
 export const AEO_ENTITY_ANSWER_EN =
-  "Briefly NewsStream is a bilingual Arabic-English market news API with impact scoring, built for Kuwait, Gulf, Middle East, MENA, and Arabic-speaking markets, plus global coverage.";
+  "Briefly NewsStream is a bilingual Arabic-English market news API with impact scoring, built for global and regional markets.";
 
 export const AEO_ENTITY_ANSWER_AR =
-  "Briefly NewsStream واجهة برمجة لأخبار الأسواق بالعربية والإنجليزية مع تقييم أثر السوق، مبنية للكويت والخليج والشرق الأوسط والدول الناطقة بالعربية مع تغطية عالمية.";
+  "Briefly NewsStream واجهة برمجة لأخبار الأسواق بالعربية والإنجليزية مع تقييم أثر السوق، مبنية للأسواق العالمية والإقليمية.";
 
 export type SeoLang = "ar" | "en";
 

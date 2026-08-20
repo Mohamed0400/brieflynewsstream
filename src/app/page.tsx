@@ -31,20 +31,20 @@ export async function generateMetadata({
   return pageMetadata({
     lang,
     title: isEn
-      ? `${SITE_NAME} | Market news API for Kuwait & Middle East`
-      : `${SITE_NAME} | واجهة أخبار أسواق الكويت والشرق الأوسط`,
+      ? `${SITE_NAME} | Bilingual market news API`
+      : `${SITE_NAME} | واجهة أخبار أسواق ثنائية اللغة`,
     description: isEn ? SEO_DESCRIPTION_EN : SEO_DESCRIPTION_AR,
     path: "/",
     pathEn: "/?lang=en",
     keywords: [
       "Briefly NewsStream",
-      "Kuwait news API",
-      "Middle East news API",
-      "Arabic news API",
-      "MENA news API",
-      "Gulf news API",
       "market news API",
+      "Arabic news API",
       "bilingual news API",
+      "Arabic English news API",
+      "global market news API",
+      "regional market news API",
+      "impact scoring news",
     ],
   });
 }
@@ -80,8 +80,8 @@ export default async function Home({
             lang,
             name:
               lang === "en"
-                ? `${SITE_NAME} | Market news API for Kuwait & Middle East`
-                : `${SITE_NAME} | واجهة أخبار أسواق الكويت والشرق الأوسط`,
+                ? `${SITE_NAME} | Bilingual market news API`
+                : `${SITE_NAME} | واجهة أخبار أسواق ثنائية اللغة`,
             description: lang === "en" ? SEO_DESCRIPTION_EN : SEO_DESCRIPTION_AR,
             path: "/",
             speakableCssSelectors: [

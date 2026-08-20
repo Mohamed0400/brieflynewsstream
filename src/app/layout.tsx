@@ -80,6 +80,9 @@ export const metadata: Metadata = {
     description: OG_SHARE_TAGLINE,
     images: [ogShareAbsoluteUrl()],
   },
+  verification: {
+    google: "90qpdjOnSY4h4VFDK775mlmTycXHPMnM2AO0JVV40K4",
+  },
   other: geoMetaTags(),
 };
 

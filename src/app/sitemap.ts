@@ -13,37 +13,68 @@ function languageAlternates(origin: string, arabicPath: string, englishPath: str
   };
 }
 
+function entry(
+  origin: string,
+  arabicPath: string,
+  englishPath: string,
+  options: {
+    lastModified: Date;
+    changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"];
+    priority: number;
+  },
+): MetadataRoute.Sitemap[number] {
+  return {
+    url: `${origin}${arabicPath === "/" ? "" : arabicPath}` || origin,
+    lastModified: options.lastModified,
+    changeFrequency: options.changeFrequency,
+    priority: options.priority,
+    alternates: languageAlternates(origin, arabicPath, englishPath),
+  };
+}
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const origin = publicSiteUrl();
   const now = new Date();
   const entries: MetadataRoute.Sitemap = [
-    {
-      url: origin,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 1,
-      alternates: languageAlternates(origin, "/", "/?lang=en"),
-    },
+    entry(origin, "/", "/?lang=en", { lastModified: now, changeFrequency: "weekly", priority: 1 }),
     {
       url: `${origin}/?lang=en`,
       lastModified: now,
       changeFrequency: "weekly",
-      priority: 0.95,
+      priority: 0.98,
       alternates: languageAlternates(origin, "/", "/?lang=en"),
     },
-    {
-      url: `${origin}/news`,
-      lastModified: now,
-      changeFrequency: "hourly",
-      priority: 0.9,
-      alternates: languageAlternates(origin, "/news", "/news?lang=en"),
-    },
+    entry(origin, "/news", "/news?lang=en", { lastModified: now, changeFrequency: "hourly", priority: 0.95 }),
     {
       url: `${origin}/news?lang=en`,
       lastModified: now,
       changeFrequency: "hourly",
-      priority: 0.85,
+      priority: 0.92,
       alternates: languageAlternates(origin, "/news", "/news?lang=en"),
+    },
+    entry(origin, "/pricing", "/pricing?lang=en", { lastModified: now, changeFrequency: "weekly", priority: 0.9 }),
+    {
+      url: `${origin}/pricing?lang=en`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.88,
+      alternates: languageAlternates(origin, "/pricing", "/pricing?lang=en"),
+    },
+    entry(origin, "/developers", "/developers?lang=en", { lastModified: now, changeFrequency: "weekly", priority: 0.9 }),
+    {
+      url: `${origin}/developers?lang=en`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.88,
+      alternates: languageAlternates(origin, "/developers", "/developers?lang=en"),
+    },
+    entry(origin, "/coverage", "/coverage?lang=en", { lastModified: now, changeFrequency: "weekly", priority: 0.85 }),
+    {
+      url: `${origin}/coverage?lang=en`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.83,
+      alternates: languageAlternates(origin, "/coverage", "/coverage?lang=en"),
     },
   ];
 
@@ -67,7 +98,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: `${origin}${arabicPath}`,
       lastModified: now,
       changeFrequency: "daily",
-      priority: 0.6,
+      priority: 0.65,
       alternates: languageAlternates(origin, arabicPath, englishPath),
     });
   }

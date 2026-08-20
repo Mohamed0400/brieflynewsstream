@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { apiCorsHeaders, preflightApi } from "@/lib/api-response";
+import { apiCorsHeaders, preflightApi } from "@/lib/api-cors";
 import { updateSession } from "@/lib/supabase/middleware";
 
 const PUBLIC_CONSOLE_PATHS = new Set([

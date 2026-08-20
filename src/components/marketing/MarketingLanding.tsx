@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import { marketingCopy, type MarketingLang } from "@/lib/marketing-copy";
+import { CloudinaryImage } from "@/components/media/CloudinaryImage";
 
 const sampleJson = `{
   "articles": [{
@@ -30,8 +30,11 @@ export function MarketingLanding({
   const homeHref = lang === "en" ? "/?lang=en" : "/";
   const newsHref = withLang("/news");
   const consoleHref = withLang("/console");
-  const docsHref = withLang("/console/docs/api");
+  const docsHref = withLang("/developers");
   const signupHref = withLang("/console/login");
+  const pricingHref = withLang("/pricing");
+  const developersHref = withLang("/developers");
+  const coverageHref = withLang("/coverage");
 
   const pillars = [
     { title: copy.pillarBilingualTitle, body: copy.pillarBilingualBody },
@@ -50,42 +53,68 @@ export function MarketingLanding({
   ];
 
   const faqs = [
+    { q: copy.faqWhatQ, a: copy.faqWhatA },
+    { q: copy.faqWhereQ, a: copy.faqWhereA },
     { q: copy.faqLangQ, a: copy.faqLangA },
     { q: copy.faqImpactQ, a: copy.faqImpactA },
     { q: copy.faqArchiveQ, a: copy.faqArchiveA },
+    { q: copy.faqKeyQ, a: copy.faqKeyA },
     { q: copy.faqPayQ, a: copy.faqPayA },
+  ];
+
+  const navItems: {
+    href: string;
+    label: string;
+    console?: boolean;
+  }[] = [
+    { href: "#product", label: copy.navProduct },
+    { href: coverageHref, label: copy.navCoverage },
+    { href: developersHref, label: copy.navDevelopers },
+    { href: pricingHref, label: copy.navPricing },
+    { href: newsHref, label: copy.navLive },
+    { href: consoleHref, label: copy.navConsole, console: true },
   ];
 
   return (
     <div className="mkt" lang={copy.lang} dir={copy.dir}>
       <a className="mkt-skip" href="#mkt-main">
-        Skip to content
+        {copy.skipToContent}
       </a>
 
       <header className="mkt-nav">
         <div className="mkt-nav-inner">
           <Link href={homeHref} className="mkt-brand" aria-label={copy.brand}>
-            <Image
-              src="/brand/logo-mark.png"
+            <CloudinaryImage
+              media="logoMark"
               alt=""
               width={40}
               height={40}
+              deliveryWidth={80}
               className="mkt-brand-mark"
               priority
             />
             <span className="mkt-brand-name">{copy.brand}</span>
           </Link>
-          <nav className="mkt-nav-links" aria-label="Primary">
-            <a href="#product">{copy.navProduct}</a>
-            <a href="#coverage">{copy.navCoverage}</a>
-            <a href="#developers">{copy.navDevelopers}</a>
-            <a href="#pricing">{copy.navPricing}</a>
-            <Link href={newsHref}>{copy.navLive}</Link>
-            <Link href={consoleHref} className="mkt-nav-console">
-              {copy.navConsole}
-            </Link>
+
+          <nav className="mkt-nav-links" aria-label={copy.navAria}>
+            {navItems.map((item) =>
+              item.href.startsWith("#") ? (
+                <a key={item.label} href={item.href} className={item.console ? "mkt-nav-console" : undefined}>
+                  {item.label}
+                </a>
+              ) : (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className={item.console ? "mkt-nav-console" : undefined}
+                >
+                  {item.label}
+                </Link>
+              ),
+            )}
           </nav>
-          <div className="mkt-lang" role="group" aria-label="Language">
+
+          <div className="mkt-lang" role="group" aria-label={copy.langAria}>
             <Link href="/" hrefLang="ar" lang="ar" className={lang === "ar" ? "is-active" : ""}>
               العربية
             </Link>
@@ -93,17 +122,35 @@ export function MarketingLanding({
               English
             </Link>
           </div>
+
+          <details className="mkt-nav-drawer">
+            <summary className="mkt-nav-drawer-btn">{copy.menuOpen}</summary>
+            <nav className="mkt-nav-drawer-panel" aria-label={copy.navAria}>
+              {navItems.map((item) =>
+                item.href.startsWith("#") ? (
+                  <a key={`m-${item.label}`} href={item.href}>
+                    {item.label}
+                  </a>
+                ) : (
+                  <Link key={`m-${item.label}`} href={item.href}>
+                    {item.label}
+                  </Link>
+                ),
+              )}
+            </nav>
+          </details>
         </div>
       </header>
 
       <main id="mkt-main">
         <section className="mkt-hero" aria-labelledby="mkt-hero-title">
           <div className="mkt-hero-media" aria-hidden="true">
-            <Image
-              src="/hero-markets.png"
+            <CloudinaryImage
+              media="heroNewsstream"
               alt=""
               fill
               priority
+              deliveryWidth={1920}
               className="mkt-hero-image"
               sizes="100vw"
             />
@@ -111,8 +158,12 @@ export function MarketingLanding({
           </div>
           <div className="mkt-hero-content">
             <p className="mkt-hero-brand">{copy.brand}</p>
-            <h1 id="mkt-hero-title">{copy.heroHeadline}</h1>
-            <p className="mkt-hero-lede">{copy.heroLede}</p>
+            <h1 id="mkt-hero-title">
+              <span className="mkt-hero-line">{copy.heroHeadline}</span>
+            </h1>
+            <p className="mkt-hero-lede" data-aeo-answer>
+              {copy.heroLede}
+            </p>
             <div className="mkt-cta-row">
               <Link href={signupHref} className="mkt-btn mkt-btn-primary">
                 {copy.ctaKey}
@@ -134,12 +185,66 @@ export function MarketingLanding({
           </ul>
         </section>
 
+        <section className="mkt-section mkt-concepts" aria-labelledby="mkt-concepts-title">
+          <div className="mkt-section-head">
+            <h2 id="mkt-concepts-title">{copy.conceptsTitle}</h2>
+            <p>{copy.conceptsLede}</p>
+          </div>
+          <div className="mkt-concept-grid">
+            <figure className="mkt-concept mkt-concept-wide">
+              <CloudinaryImage
+                media="conceptArFirstDesk"
+                alt={copy.conceptDeskTitle}
+                width={1248}
+                height={832}
+                deliveryWidth={1248}
+                className="mkt-concept-img"
+                sizes="(max-width: 900px) 100vw, 70vw"
+              />
+              <figcaption>
+                <strong>{copy.conceptDeskTitle}</strong>
+                <span>{copy.conceptDeskBody}</span>
+              </figcaption>
+            </figure>
+            <figure className="mkt-concept">
+              <CloudinaryImage
+                media="conceptFloatingStream"
+                alt={copy.conceptStreamTitle}
+                width={1248}
+                height={832}
+                deliveryWidth={900}
+                className="mkt-concept-img"
+                sizes="(max-width: 900px) 100vw, 40vw"
+              />
+              <figcaption>
+                <strong>{copy.conceptStreamTitle}</strong>
+                <span>{copy.conceptStreamBody}</span>
+              </figcaption>
+            </figure>
+            <figure className="mkt-concept">
+              <CloudinaryImage
+                media="conceptBentoCoverage"
+                alt={copy.conceptBentoTitle}
+                width={1536}
+                height={1024}
+                deliveryWidth={900}
+                className="mkt-concept-img"
+                sizes="(max-width: 900px) 100vw, 40vw"
+              />
+              <figcaption>
+                <strong>{copy.conceptBentoTitle}</strong>
+                <span>{copy.conceptBentoBody}</span>
+              </figcaption>
+            </figure>
+          </div>
+        </section>
+
         <section id="developers" className="mkt-section mkt-sample">
           <div className="mkt-section-head">
             <h2>{copy.sampleTitle}</h2>
             <p>{copy.sampleLede}</p>
           </div>
-          <pre className="mkt-code" tabIndex={0}>
+          <pre className="mkt-code" tabIndex={0} dir="ltr" lang="en">
             <code>{sampleJson}</code>
           </pre>
         </section>
@@ -150,8 +255,11 @@ export function MarketingLanding({
             <p>{copy.pillarsLede}</p>
           </div>
           <div className="mkt-pillar-grid">
-            {pillars.map((pillar) => (
-              <article key={pillar.title} className="mkt-pillar">
+            {pillars.map((pillar, index) => (
+              <article
+                key={pillar.title}
+                className={index === 0 ? "mkt-pillar mkt-pillar-featured" : "mkt-pillar"}
+              >
                 <h3>{pillar.title}</h3>
                 <p>{pillar.body}</p>
               </article>
@@ -164,9 +272,14 @@ export function MarketingLanding({
             <h2>{copy.coverageTitle}</h2>
             <p>{copy.coverageLede}</p>
           </div>
-          <Link href={newsHref} className="mkt-btn mkt-btn-primary">
-            {copy.navLive}
-          </Link>
+          <div className="mkt-cta-row">
+            <Link href={coverageHref} className="mkt-btn mkt-btn-primary">
+              {copy.navCoverage}
+            </Link>
+            <Link href={newsHref} className="mkt-btn mkt-btn-ghost">
+              {copy.navLive}
+            </Link>
+          </div>
         </section>
 
         <section className="mkt-section mkt-usecases">
@@ -226,7 +339,7 @@ export function MarketingLanding({
               </p>
               <p>{copy.planProBody}</p>
               <Link href={signupHref} className="mkt-btn mkt-btn-primary">
-                {copy.planCtaContact}
+                {copy.planCtaStart}
               </Link>
             </article>
             <article className="mkt-price">
@@ -276,14 +389,13 @@ export function MarketingLanding({
           </div>
           <div>
             <p>{copy.footerProduct}</p>
+            <Link href={homeHref}>{lang === "en" ? "Home" : "الرئيسية"}</Link>
+            <Link href={coverageHref}>{copy.navCoverage}</Link>
+            <Link href={developersHref}>{copy.navDevelopers}</Link>
+            <Link href={pricingHref}>{copy.navPricing}</Link>
             <Link href={docsHref}>{copy.footerDocs}</Link>
             <Link href={consoleHref}>{copy.footerConsole}</Link>
             <Link href={newsHref}>{copy.footerNews}</Link>
-          </div>
-          <div>
-            <p>{copy.footerLegal}</p>
-            <span>{copy.footerPrivacy}</span>
-            <span>{copy.footerTerms}</span>
           </div>
         </div>
       </footer>

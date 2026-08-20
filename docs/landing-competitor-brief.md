@@ -3,7 +3,7 @@
 **Document purpose:** Marketing and design brief for a million-dollar B2B SaaS landing page for Briefly NewsStream (Arabic-first bilingual market news API).  
 **Research date:** 2026-08-20  
 **Method:** Direct fetch of competitor marketing homepages and pricing pages; synthesis against NewsStream product pillars.  
-**Hard rule (non-negotiable):** Marketing copy must contain **zero mentions of Kuwait or any city-specific locale**. Speak in country coverage, language pairs, markets, and regions — never pin the brand to a single city.
+**Geo focus:** Marketing may name **Kuwait**, **Middle East / MENA / GCC**, and **Arabic-speaking countries** (plus national markets). Avoid stuffing every UI line with city names; prefer country and region clarity for SEO/AEO.
 
 ---
 

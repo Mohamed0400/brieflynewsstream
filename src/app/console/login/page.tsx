@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ConsoleDocumentLang, ConsoleLangSwitcher } from "@/components/console/ConsoleLang";
 import { ConsoleLoginForm } from "@/components/console/ConsoleLoginForm";
+import { CloudinaryImage } from "@/components/media/CloudinaryImage";
 import { isConsoleAuthenticated } from "@/lib/console-auth";
 import { getConsoleLoginLang } from "@/lib/console-lang";
 import { consoleLoginCopy } from "@/lib/console-translation";
-import gateImage from "../../../../public/console-gate.png";
 
 export async function generateMetadata({
   searchParams,
@@ -37,7 +36,7 @@ export default async function ConsoleLoginPage({
   const copy = consoleLoginCopy(lang);
 
   return (
-    <main className="console-gate" lang={copy.lang} dir={copy.dir}>
+    <main className="console-gate console-gate-branded" lang={copy.lang} dir={copy.dir}>
       <ConsoleDocumentLang lang={copy.lang} dir={copy.dir} />
       <a className="console-gate-skip" href="#console-login-form">
         {copy.skipToForm}
@@ -46,7 +45,15 @@ export default async function ConsoleLoginPage({
       <section className="console-gate-panel" aria-labelledby="console-login-title">
         <header className="console-gate-top">
           <Link href="/" className="console-gate-brand">
-            <span className="console-gate-mark" aria-hidden="true">{copy.mark}</span>
+            <CloudinaryImage
+              media="logoMark"
+              alt=""
+              width={40}
+              height={40}
+              deliveryWidth={80}
+              className="console-gate-logo"
+              priority
+            />
             <span>
               <strong>{copy.brandName}</strong>
               <small>{copy.brandMark}</small>
@@ -66,12 +73,12 @@ export default async function ConsoleLoginPage({
       </section>
 
       <aside className="console-gate-visual" aria-hidden="true">
-        <Image
-          src={gateImage}
+        <CloudinaryImage
+          media="conceptArFirstDesk"
           alt=""
           fill
-          preload
-          fetchPriority="high"
+          priority
+          deliveryWidth={1600}
           sizes="100vw"
           className="console-gate-image"
         />

@@ -19,9 +19,10 @@ Sign in to the console with your **email and password** (Supabase Auth). New acc
 
 Set `CLOUDINARY_URL` (or `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET`).
 
+- **Static brand/marketing assets**: `npm run media:upload` uploads logos, heroes, concepts, and OG card to `briefly-newsstream/static/*` with stable public IDs. UI uses `CloudinaryImage` + `src/lib/media.ts` (`f_auto`, `q_auto`, `dpr_auto`, width limits). Cloud name is committed in `src/lib/media-cloud.json` (override with `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`).
 - Console upload: `POST /api/console/uploads` (multipart `file`, console session required) → stores under `briefly-newsstream/uploads` and returns `url` + `optimizedUrl`.
 - API article payloads rewrite `imageUrl` through Cloudinary fetch (`f_auto`, `q_auto`, width limit) when configured.
-- Smoke: `npm run smoke:cloudinary`
+- Smoke: `npm run smoke:cloudinary` · re-upload static: `npm run media:upload`
 
 ## Database
 

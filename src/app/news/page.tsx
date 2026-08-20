@@ -10,6 +10,7 @@ import { expandNationalityInputs } from "@/lib/nationalities";
 import { HomepageHero } from "@/components/HomepageHero";
 import { HomepageDataOverview } from "@/components/HomepageDataOverview";
 import { SupportedCountriesScreen } from "@/components/SupportedCountriesScreen";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { landingCopy } from "@/lib/landing-translation";
 import { expandSearchQuery, searchWords } from "@/lib/search";
 import { startEmbeddedScheduler } from "@/lib/scheduler";
@@ -19,11 +20,17 @@ import {
   supportedCountryCodes,
 } from "@/lib/supported-countries";
 import { COUNTRY_CATALOG } from "@/lib/countries";
-import type { Prisma } from "@prisma/client";
+import {
+  SITE_NAME,
+  breadcrumbJsonLd,
+  collectionPageJsonLd,
+  pageMetadata,
+  websiteJsonLd,
+} from "@/lib/seo";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { after } from "next/server";
-import { publicSiteUrl } from "@/lib/site-url";
+import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -33,29 +40,27 @@ export async function generateMetadata({
   searchParams: Promise<{ lang?: string }>;
 }): Promise<Metadata> {
   const lang = (await searchParams).lang === "en" ? "en" : "ar";
-  const copy = landingCopy(lang);
-  const path = lang === "en" ? "/news?lang=en" : "/news";
-  const description = `${copy.heroLede} ${copy.heroBody}`;
-  return {
-    title: {
-      absolute: `${copy.heroTitle} | Briefly NewsStream`,
-    },
-    description,
-    alternates: {
-      canonical: path,
-      languages: {
-        ar: "/news",
-        en: "/news?lang=en",
-        "x-default": "/news",
-      },
-    },
-    openGraph: {
-      locale: lang === "ar" ? "ar" : "en_US",
-      url: path,
-      title: copy.heroTitle,
-      description: copy.heroLede,
-    },
-  };
+  const isEn = lang === "en";
+  return pageMetadata({
+    lang,
+    title: isEn
+      ? `Live Market News Feed | Kuwait, Middle East & Global | ${SITE_NAME}`
+      : `بث أخبار الأسواق المباشر | الكويت والشرق الأوسط والعالم | ${SITE_NAME}`,
+    description: isEn
+      ? "Live bilingual market news feed from Briefly NewsStream. Filter by country, category, and impact—Kuwait, Middle East, Arabic-speaking markets, and global coverage."
+      : "بث أخبار الأسواق ثنائي اللغة من Briefly NewsStream. صفِّ حسب الدولة والفئة والأثر—للكويت والشرق الأوسط والدول الناطقة بالعربية والعالم.",
+    path: "/news",
+    pathEn: "/news?lang=en",
+    keywords: [
+      "live news feed",
+      "Kuwait market news",
+      "Middle East market news",
+      "Gulf market news",
+      "Arabic market news",
+      "gold news",
+      "financial news",
+    ],
+  });
 }
 
 const arabicCategoryLabels: Record<string, string> = {
@@ -268,21 +273,23 @@ export default async function Home({
       hint: copy.countriesCoveredHint,
     },
   ];
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    name: copy.heroTitle,
-    url: publicSiteUrl(),
-    inLanguage: [copy.lang, copy.lang === "ar" ? "en" : "ar"],
-    description: `${copy.heroLede} ${copy.heroBody}`,
-  };
+  const structuredData = [
+    websiteJsonLd(),
+    collectionPageJsonLd({
+      name: lang === "en" ? "Live market news feed" : "بث أخبار الأسواق المباشر",
+      description: `${copy.heroLede} ${copy.heroBody}`,
+      path: "/news",
+      lang,
+    }),
+    breadcrumbJsonLd([
+      { name: lang === "en" ? "Home" : "الرئيسية", path: "/" },
+      { name: lang === "en" ? "Live feed" : "البث المباشر", path: "/news" },
+    ]),
+  ];
 
   return (
     <div className="homepage-shell min-h-[100dvh] bg-[#f3eee6] text-slate-950" lang={copy.lang}>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
+      <JsonLd data={structuredData} />
       <header className="border-b border-slate-900/15 bg-[#0d1b17] text-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
           <div className="flex items-center gap-3">

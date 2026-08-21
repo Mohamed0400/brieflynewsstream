@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "./prisma";
 import { createServerSupabaseClient } from "./supabase/server";
 import { superAdminEmails } from "./supabase/env";
+import { profileFromAuthMetadata, type SignupProfile } from "./signup-profile";
 
 export type AccountWithMeta = Account;
 
@@ -12,38 +13,57 @@ function desiredRole(email: string): AccountRole {
     : "MEMBER";
 }
 
+function profileFields(profile?: Partial<SignupProfile>) {
+  return {
+    ...(profile?.country ? { country: profile.country } : {}),
+    ...(profile?.address ? { address: profile.address } : {}),
+    ...(profile?.mobilePhone ? { mobilePhone: profile.mobilePhone } : {}),
+  };
+}
+
 export async function getOrCreateAccount(input: {
   authUserId: string;
   email: string;
+  profile?: Partial<SignupProfile>;
 }): Promise<Account> {
   const email = input.email.trim().toLowerCase();
   const role = desiredRole(email);
+  const profile = profileFields(input.profile);
 
   const existing = await prisma.account.findUnique({
     where: { authUserId: input.authUserId },
   });
   if (existing) {
-    if (existing.email !== email || (role === "SUPER_ADMIN" && existing.role !== "SUPER_ADMIN")) {
+    const nextProfile = {
+      ...(!existing.country ? profile.country ? { country: profile.country } : {} : {}),
+      ...(!existing.address ? profile.address ? { address: profile.address } : {} : {}),
+      ...(!existing.mobilePhone ? profile.mobilePhone ? { mobilePhone: profile.mobilePhone } : {} : {}),
+    };
+    const shouldPromote = role === "SUPER_ADMIN" && existing.role !== "SUPER_ADMIN";
+    if (existing.email !== email || shouldPromote || Object.keys(nextProfile).length > 0) {
       return prisma.account.update({
         where: { id: existing.id },
         data: {
           email,
-          ...(role === "SUPER_ADMIN" ? { role: "SUPER_ADMIN" } : {}),
+          ...(shouldPromote ? { role: "SUPER_ADMIN" as const } : {}),
+          ...nextProfile,
         },
       });
     }
     return existing;
   }
 
-  return prisma.account.create({
+  const created = await prisma.account.create({
     data: {
       authUserId: input.authUserId,
       email,
       role,
       status: "ACTIVE",
       plan: "FREE" satisfies PlanTier,
+      ...profile,
     },
   });
+  return created;
 }
 
 export async function getSessionUser() {
@@ -72,6 +92,7 @@ export async function requireAccount(): Promise<
   const account = await getOrCreateAccount({
     authUserId: user.id,
     email: user.email,
+    profile: profileFromAuthMetadata(user.user_metadata),
   });
 
   if (account.status === "CLOSED") {

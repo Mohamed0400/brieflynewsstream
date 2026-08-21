@@ -1,8 +1,8 @@
 import { Category, Prisma } from "@prisma/client";
 import { categoryFromCode, categoryToCode, regionFromCode, regionToCode } from "./market";
-import { articleLocalizedText, isArabicText, isBilingualComplete, isEnglishText, localizeFetchedArticles } from "./article-translation";
+import { articleLocalizedText, isArabicText, isBilingualComplete, isEnglishText } from "./article-translation";
 import { optimizedFetchUrl } from "./cloudinary";
-import { storyGroupKey } from "./dedupe";
+import { dedupeArticles } from "./dedupe";
 import { limits } from "./limits";
 import { prisma } from "./prisma";
 import {
@@ -11,45 +11,52 @@ import {
   optionForCode,
 } from "./nationalities";
 import { searchWords, countryCodesForSearchWord } from "./search";
+import { PUBLIC_SERVER_ERROR, isInternalError, publicErrorMessage } from "./public-error";
+import { publicSourceName } from "./public-source";
 
-const DEDUPE_SCAN_BATCH = 80;
-const DEDUPE_MAX_SCAN = 2000;
+const DEDUPE_MAX_SCAN = 400;
 
 const articleListInclude = { source: true, score: true } as const;
 type ListedArticle = Prisma.ArticleGetPayload<{ include: typeof articleListInclude }>;
 
+export function searchContains(word: string): Prisma.StringFilter {
+  return { contains: word, mode: "insensitive" };
+}
+
 export function articleListOrderBy(sort: "date" | "score") {
   return sort === "date"
     ? [{ publishedAt: "desc" as const }]
-    : [{ score: { finalScore: "desc" as const } }, { publishedAt: "desc" as const }];
+    : [{ finalScore: "desc" as const }, { publishedAt: "desc" as const }];
+}
+
+export async function listDedupedArticles(
+  where: Prisma.ArticleWhereInput,
+  orderBy: Prisma.ArticleOrderByWithRelationInput[],
+  limit: number,
+  offset: number,
+): Promise<{ count: number; items: ListedArticle[] }> {
+  const take = Math.min(
+    DEDUPE_MAX_SCAN,
+    Math.max(120, (Math.max(0, offset) + Math.max(1, limit)) * 3),
+  );
+  const rows = await prisma.article.findMany({
+    where,
+    include: articleListInclude,
+    orderBy,
+    take,
+  });
+  const unique = dedupeArticles(rows);
+  return {
+    count: unique.length,
+    items: unique.slice(offset, offset + limit),
+  };
 }
 
 export async function countDedupedArticles(
   where: Prisma.ArticleWhereInput,
   orderBy: Prisma.ArticleOrderByWithRelationInput[],
 ) {
-  const seen = new Set<string>();
-  let count = 0;
-  let dbSkip = 0;
-
-  while (dbSkip < DEDUPE_MAX_SCAN) {
-    const batch = await prisma.article.findMany({
-      where,
-      include: articleListInclude,
-      orderBy,
-      take: DEDUPE_SCAN_BATCH,
-      skip: dbSkip,
-    });
-    if (!batch.length) break;
-    dbSkip += batch.length;
-    for (const article of batch) {
-      const group = storyGroupKey(article);
-      if (seen.has(group)) continue;
-      seen.add(group);
-      count += 1;
-    }
-  }
-
+  const { count } = await listDedupedArticles(where, orderBy, 1, 0);
   return count;
 }
 
@@ -59,54 +66,26 @@ export async function fetchDedupedArticles(
   limit: number,
   offset: number,
 ): Promise<ListedArticle[]> {
-  const seen = new Set<string>();
-  const page: ListedArticle[] = [];
-  let dbSkip = 0;
-  let uniqueSkipped = 0;
-
-  while (page.length < limit && dbSkip < DEDUPE_MAX_SCAN) {
-    const batch = await prisma.article.findMany({
-      where,
-      include: articleListInclude,
-      orderBy,
-      take: DEDUPE_SCAN_BATCH,
-      skip: dbSkip,
-    });
-    if (!batch.length) break;
-    dbSkip += batch.length;
-
-    for (const article of batch) {
-      const group = storyGroupKey(article);
-      if (seen.has(group)) continue;
-      seen.add(group);
-      if (uniqueSkipped < offset) {
-        uniqueSkipped += 1;
-        continue;
-      }
-      page.push(article);
-      if (page.length >= limit) break;
-    }
-  }
-
-  return page;
+  const { items } = await listDedupedArticles(where, orderBy, limit, offset);
+  return items;
 }
 
 export function describeQueryFailure(error: unknown) {
-  const raw = error instanceof Error ? error.message : String(error);
-  const unknownField = raw.match(/Unknown argument `([^`]+)`/)?.[1];
-  if (unknownField || raw.includes("Invalid `prisma")) {
+  if (isInternalError(error)) {
+    const raw = error instanceof Error ? error.message : String(error);
+    const schemaDrift = /Unknown argument `[^`]+`/.test(raw);
     return {
-      status: 500,
+      status: schemaDrift ? 500 : 503,
       error: "server_error",
-      message: unknownField
-        ? `Database client is out of date (unknown field ${unknownField}). Restart the app server after applying schema changes.`
-        : "The database query failed. Restart the app server if you recently changed the schema.",
+      message: schemaDrift
+        ? "Database client is out of date. Restart the app server after applying schema changes."
+        : PUBLIC_SERVER_ERROR,
     };
   }
   return {
     status: 400,
     error: "invalid_query",
-    message: raw,
+    message: publicErrorMessage(error, "The request could not be processed."),
   };
 }
 
@@ -181,18 +160,18 @@ export function parseQuery(
         const fields: Prisma.ArticleWhereInput[] = [];
         if (searchIn !== "summary") {
           fields.push(
-            { title: { contains: word } },
-            { displayTitle: { contains: word } },
-            { titleEn: { contains: word } },
-            { titleAr: { contains: word } },
+            { title: searchContains(word) },
+            { displayTitle: searchContains(word) },
+            { titleEn: searchContains(word) },
+            { titleAr: searchContains(word) },
           );
         }
         if (searchIn !== "title") {
           fields.push(
-            { summary: { contains: word } },
-            { displaySummary: { contains: word } },
-            { summaryEn: { contains: word } },
-            { summaryAr: { contains: word } },
+            { summary: searchContains(word) },
+            { displaySummary: searchContains(word) },
+            { summaryEn: searchContains(word) },
+            { summaryAr: searchContains(word) },
           );
         }
         for (const code of countryCodesForSearchWord(word)) {
@@ -261,15 +240,43 @@ export async function serializeArticles(
   lang = "ar",
   options: { ranked?: boolean } = {},
 ) {
-  const localized = await localizeFetchedArticles(articles, lang);
-  return localized.map((article, index) => (
+  return articles.map((article, index) => (
     serializeArticle(article, options.ranked ? index + 1 : undefined, lang)
   ));
+}
+
+export function publicLanguageFields(article: {
+  title: string;
+  summary: string;
+  displayTitle: string | null;
+  displaySummary: string | null;
+  titleEn: string | null;
+  summaryEn: string | null;
+  titleAr: string | null;
+  summaryAr: string | null;
+}) {
+  return {
+    arabic: {
+      title: (isArabicText(article.titleAr) ? article.titleAr : null)
+        || (isArabicText(article.title) ? article.title : null),
+      summary: (isArabicText(article.summaryAr) ? article.summaryAr : null)
+        || (isArabicText(article.summary) ? article.summary : null),
+    },
+    english: {
+      title: (isEnglishText(article.titleEn) ? article.titleEn : null)
+        || (isEnglishText(article.displayTitle) ? article.displayTitle : null)
+        || (isEnglishText(article.title) ? article.title : null),
+      summary: (isEnglishText(article.summaryEn) ? article.summaryEn : null)
+        || (isEnglishText(article.displaySummary) ? article.displaySummary : null)
+        || (isEnglishText(article.summary) ? article.summary : null),
+    },
+  };
 }
 
 export function serializeArticle(article: ArticleWithRelations, rank?: number, lang = "ar") {
   const nationalityCodes = audienceCodesFromValue(article.audienceCodes);
   const localized = articleLocalizedText(article, lang);
+  const languages = publicLanguageFields(article);
   return {
     id: article.id,
     ...(rank ? { rank } : {}),
@@ -292,24 +299,15 @@ export function serializeArticle(article: ArticleWithRelations, rank?: number, l
     }),
     title: localized.title,
     summary: localized.summary,
-    titleEn: (isEnglishText(article.titleEn) ? article.titleEn : null)
-      || (isEnglishText(article.displayTitle) ? article.displayTitle : null)
-      || (isEnglishText(article.title) ? article.title : null),
-    titleAr: (isArabicText(article.titleAr) ? article.titleAr : null)
-      || (isArabicText(article.title) ? article.title : null),
-    summaryEn: (isEnglishText(article.summaryEn) ? article.summaryEn : null)
-      || (isEnglishText(article.displaySummary) ? article.displaySummary : null)
-      || (isEnglishText(article.summary) ? article.summary : null),
-    summaryAr: (isArabicText(article.summaryAr) ? article.summaryAr : null)
-      || (isArabicText(article.summary) ? article.summary : null),
+    arabic: languages.arabic,
+    english: languages.english,
     originalTitle: article.title,
     originalSummary: article.summary,
     editorialized: Boolean(article.editorializedAt),
     translated: Boolean(article.translatedAt) || isBilingualComplete(article),
     url: article.url,
     imageUrl: optimizedFetchUrl(article.imageUrl, { width: 1200 }) || article.imageUrl,
-    source: article.publisher || article.source.name,
-    discoveredBy: article.publisher ? article.source.name : null,
+    source: publicSourceName(article.publisher || article.source.name),
     publishedAt: article.publishedAt.toISOString(),
     scores: article.score ? {
       final: article.score.finalScore,

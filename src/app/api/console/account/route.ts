@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getOrCreateAccount, getSessionUser } from "@/lib/account";
 import { isTrustedConsoleOrigin } from "@/lib/console-auth";
+import { profileFromAuthMetadata } from "@/lib/signup-profile";
 
 export async function POST(request: Request) {
   if (!isTrustedConsoleOrigin(request)) {
@@ -15,6 +16,7 @@ export async function POST(request: Request) {
   const account = await getOrCreateAccount({
     authUserId: user.id,
     email: user.email,
+    profile: profileFromAuthMetadata(user.user_metadata),
   });
 
   return NextResponse.json({
@@ -41,6 +43,7 @@ export async function GET(request: Request) {
   const account = await getOrCreateAccount({
     authUserId: user.id,
     email: user.email,
+    profile: profileFromAuthMetadata(user.user_metadata),
   });
 
   return NextResponse.json({

@@ -1,0 +1,199 @@
+/* Brand loader: official mark on paper, no white plate.
+   Animate transform/opacity only. Reduced motion stays still. */
+
+.bn-loader {
+  --bn-size: 88px;
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  width: max-content;
+  max-width: 100%;
+  min-width: 0;
+  color: #0b1422;
+}
+
+.bn-loader--sm {
+  --bn-size: 28px;
+  gap: 0;
+}
+
+.bn-loader--md {
+  --bn-size: 88px;
+}
+
+.bn-loader--lg {
+  --bn-size: clamp(7.5rem, 38vw, 13.75rem);
+}
+
+.bn-loader-stage {
+  display: grid;
+  width: var(--bn-size);
+  height: var(--bn-size);
+  flex-shrink: 0;
+  place-items: center;
+  overflow: clip;
+  background: transparent;
+}
+
+.bn-loader-mark {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+  animation: bn-loader-breathe 1.6s ease-in-out infinite;
+}
+
+.bn-loader-caption {
+  margin: 0;
+  max-width: 16rem;
+  color: #4b5c6e;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 650;
+  letter-spacing: 0;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.mkt[lang="ar"] .bn-loader-caption {
+  font-family: var(--font-ibm-arabic), "Segoe UI", Tahoma, sans-serif;
+  font-weight: 600;
+  font-synthesis: none;
+  -webkit-font-smoothing: auto;
+  line-height: 1.7;
+}
+
+.bn-loader-vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.bn-loader-page {
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 100dvh;
+  padding: clamp(2rem, 6vw, 4rem) max(1.25rem, env(safe-area-inset-left), env(safe-area-inset-right));
+  background:
+    radial-gradient(ellipse 78% 70% at 50% 42%, rgb(94 200 220 / 26%), transparent 54%),
+    linear-gradient(180deg, #eaf4f7, #f7f9fc);
+  color: #0b1422;
+  cursor: wait;
+}
+
+.bn-loader-page--console {
+  background:
+    radial-gradient(ellipse 78% 70% at 50% 42%, rgb(94 200 220 / 20%), transparent 54%),
+    linear-gradient(180deg, #eef2f7, #f4f7fb);
+}
+
+html:has(.bn-loader-page),
+html:has(.bn-loader-page) *,
+.mkt:has(.bn-loader-page),
+.mkt:has(.bn-loader-page) *,
+.mkt[data-busy],
+.mkt[data-busy] *,
+.mkt[data-busy] a,
+.mkt[data-busy] button,
+.mkt[data-busy] .mkt-nav-links a,
+.mkt[data-busy] .mkt-btn,
+html[data-home-search],
+html[data-home-search] body,
+html[data-home-search] .homepage-feed,
+html[data-home-search] .homepage-search-button {
+  cursor: wait;
+}
+
+/* loading.tsx sits inside persistent layouts, so hide chrome around it. */
+.mkt:has(.bn-loader-page) :is(.mkt-skip, .mkt-nav, .mkt-footer) {
+  display: none;
+}
+
+.mkt:has(.bn-loader-page) .mkt-main {
+  min-height: 100dvh;
+}
+
+.console-shell:has(.bn-loader-page) :is(.console-header, .console-sidebar, .console-app-bar, .console-app-nav) {
+  display: none;
+}
+
+.console-shell:has(.bn-loader-page) .console-frame {
+  display: block;
+  width: 100%;
+}
+
+.console-shell:has(.bn-loader-page) :is(.console-main, .console-app-main) {
+  min-height: 100dvh;
+  padding: 0;
+}
+
+.console-gate-submit,
+.explorer-run-button,
+.homepage-search-button.is-loading,
+.explorer-loading,
+.homepage-feed-searching {
+  isolation: isolate;
+}
+
+.console-gate-submit,
+.explorer-run-button,
+.homepage-search-button.is-loading {
+  gap: 0.5rem;
+}
+
+.console-gate-submit .bn-loader,
+.explorer-run-button .bn-loader,
+.homepage-search-button .bn-loader {
+  flex-shrink: 0;
+}
+
+.explorer-run-button[aria-busy="true"]::before {
+  content: none;
+  display: none;
+}
+
+.explorer-loading {
+  justify-items: center;
+  gap: 0.75rem;
+}
+
+.explorer-loading .bn-loader-caption {
+  color: var(--console-accent-strong);
+  font-size: 0.8125rem;
+}
+
+html[data-home-search] .homepage-feed-searching .bn-loader {
+  color: #0b1422;
+}
+
+@keyframes bn-loader-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(0.97);
+    opacity: 0.88;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bn-loader-mark {
+    animation: none;
+  }
+}

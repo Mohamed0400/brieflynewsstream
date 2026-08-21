@@ -1,0 +1,125 @@
+.ops-gate {
+  --ops-ink: #f3f6fb;
+  --ops-muted: #9aadc0;
+  --ops-navy: #0b1422;
+  --ops-accent: #5ec8dc;
+  --ops-line: rgb(94 200 220 / 22%);
+  --ops-danger: #f0b4b4;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1.25rem 3rem;
+  background:
+    radial-gradient(80rem 28rem at 12% -10%, rgb(94 200 220 / 18%), transparent 55%),
+    linear-gradient(180deg, #071018 0%, var(--ops-navy) 42%, #0e1b2c 100%);
+  color: var(--ops-ink);
+}
+
+.ops-gate[lang="ar"] {
+  font-family: var(--font-ibm-arabic), "Segoe UI", Tahoma, sans-serif;
+  letter-spacing: 0;
+}
+
+.ops-gate[lang="ar"] h1 {
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.ops-gate-frame {
+  width: min(28rem, 100%);
+}
+
+.ops-gate-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.75rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.ops-gate-brand img,
+.ops-gate-brand .brand-logo {
+  height: 2rem;
+  width: auto;
+}
+
+.ops-gate-kicker {
+  margin: 0 0 0.5rem;
+  color: var(--ops-accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ops-gate h1 {
+  margin: 0 0 0.5rem;
+  font-size: clamp(1.5rem, 3vw, 1.85rem);
+}
+
+.ops-gate-lede {
+  margin: 0 0 1.5rem;
+  color: var(--ops-muted);
+  line-height: 1.7;
+}
+
+.ops-gate .console-gate-form {
+  gap: 1rem;
+}
+
+.ops-gate .console-gate-field > label,
+.ops-gate .console-gate-label-row label {
+  color: var(--ops-ink);
+}
+
+.ops-gate .console-gate-input {
+  background: rgb(255 255 255 / 6%);
+  border: 1px solid var(--ops-line);
+  color: var(--ops-ink);
+}
+
+.ops-gate .console-gate-help {
+  color: var(--ops-muted);
+}
+
+.ops-gate .console-gate-submit {
+  background: var(--ops-accent);
+  color: var(--ops-navy);
+}
+
+.ops-gate .console-gate-error {
+  color: var(--ops-danger);
+}
+
+.ops-gate-lang {
+  margin-top: 1.5rem;
+}
+
+.ops-shell {
+  min-height: 100dvh;
+  background: #071018;
+  color: #f3f6fb;
+}
+
+.ops-shell .console-header {
+  background: #0b1422;
+  border-bottom: 1px solid rgb(94 200 220 / 22%);
+}
+
+.ops-shell .console-frame {
+  background: #071018;
+}
+
+.ops-shell .console-sidebar {
+  background: #0b1422;
+  border-inline-end: 1px solid rgb(94 200 220 / 18%);
+}
+
+.ops-shell .console-main {
+  background: #0e1622;
+}
+
+.ops-shell .console-account-block span {
+  color: #5ec8dc;
+}

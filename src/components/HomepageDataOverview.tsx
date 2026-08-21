@@ -1,23 +1,19 @@
 import { landingCopy } from "@/lib/landing-translation";
 
-const numberFormat = new Intl.NumberFormat("en-US", { numberingSystem: "latn" });
-
 export function HomepageDataOverview({
   lang,
-  articlesIndexed,
   countriesCovered,
 }: {
   lang: "ar" | "en";
-  articlesIndexed: number;
   countriesCovered: number;
 }) {
   const copy = landingCopy(lang);
   const items = [
     {
-      id: "articles",
-      value: numberFormat.format(articlesIndexed),
-      title: copy.overviewArticlesTitle,
-      detail: copy.overviewArticlesDetail,
+      id: "window",
+      value: copy.overviewWindowValue,
+      title: copy.overviewWindowTitle,
+      detail: copy.overviewWindowDetail,
     },
     {
       id: "countries",
@@ -44,7 +40,7 @@ export function HomepageDataOverview({
       <ul className="homepage-overview-grid">
         {items.map((item) => (
           <li key={item.id} className="homepage-overview-card">
-            <p className="homepage-overview-value" dir="ltr" lang="en">
+            <p className="homepage-overview-value">
               {item.value}
             </p>
             <h3>{item.title}</h3>

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireSuperAdmin } from "@/lib/account";
+import { describeQueryFailure } from "@/lib/api";
 import { isTrustedConsoleOrigin } from "@/lib/console-auth";
 import { getScheduleSnapshot, updateScheduledJob } from "@/lib/scheduler";
 
@@ -36,9 +37,10 @@ export async function PATCH(request: Request) {
     });
     return NextResponse.json(await getScheduleSnapshot());
   } catch (error) {
+    const failure = describeQueryFailure(error);
     return NextResponse.json(
-      { error: "invalid_query", message: error instanceof Error ? error.message : String(error) },
-      { status: 400 },
+      { error: failure.error, message: failure.message },
+      { status: failure.status },
     );
   }
 }

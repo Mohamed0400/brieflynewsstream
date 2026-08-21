@@ -62,11 +62,9 @@ Without this, console login / signup / password reset break in production.
 
 Point `brieflynewsstream.com` (and `www` if used) at Vercel. Until DNS propagates, only the `*.vercel.app` URL works.
 
-### 5. News ingestion on serverless
+### 5. News ingestion cron
 
-The embedded scheduler (`instrumentation` / page hits) is **not reliable** on Vercel serverless for cron.
-
-Without a separate always-on worker, Vercel Cron, or external cron hitting collect/publish, the **live feed goes stale**.
+Use **GitHub Actions** (3× daily) plus **Vercel Cron** hitting `GET /api/cron/collect`. Do not rely on in-process `node-cron` on Vercel. See `docs/CRON.md`.
 
 ---
 
@@ -79,9 +77,9 @@ App can boot; product or ops still incomplete.
 GitHub Actions runs a single `verify` job: `prisma generate` → `typecheck` → `unit tests` → `next build`.  
 Playwright e2e is **not** in CI (Postgres-only schema; run locally with `npm run test:e2e` when needed).
 
-### 7. No payment checkout
+### 7. Payment provider not wired
 
-Intentional. Free / Pro ($60 list) / Enterprise stay **manual** admin upgrades until a payment provider is chosen.
+Intentional. Free / Pro ($70 list) / Enterprise invoices already live in Billing with Open / Void / Paid and PDF receipts. Checkout stays off until a provider is chosen. Set `BILLING_PROVIDER=manual` until then. Webhook slot: `POST /api/webhooks/billing/[provider]`.
 
 ### 8. Legal stubs
 
@@ -110,7 +108,7 @@ Contact CTAs use `hello@brieflynewsstream.com`. Mailbox / DNS for that address m
 2. Confirm build uses `prisma generate && next build`  
 3. Configure Supabase Auth redirect URLs  
 4. Attach domain DNS  
-5. Add worker / cron for ingestion  
+5. Set `CRON_SECRET` on Vercel and `DATABASE_URL` on GitHub Actions so collect runs 3× daily  
 
 ---
 

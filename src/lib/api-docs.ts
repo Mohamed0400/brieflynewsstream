@@ -32,7 +32,7 @@ const keyHeader = `-H "X-API-Key: mna_test_your_key_here"`;
 const origin = "http://localhost:3001";
 
 const feedQuery: ApiParam[] = [
-  { name: "q", type: "string", description: "Arabic or English search, including multi-word phrases such as ذهب الكويت." },
+  { name: "q", type: "string", description: "Arabic or English search, including multi-word phrases such as سعر الذهب or gold price." },
   { name: "searchIn", type: "title | summary | both", description: "Fields searched by q. Default both." },
   { name: "lang", type: "ar | en", description: "Response language for title and summary. Default ar. Does not filter the result set." },
   { name: "language", type: "ar | en", description: "Filter by the article's stored source language." },
@@ -40,9 +40,9 @@ const feedQuery: ApiParam[] = [
   { name: "region", type: "middle_east | america | global", description: "Market region filter." },
   { name: "category", type: "string", description: "gold, finance, economics, oil, me_economy, commodities, or markets." },
   { name: "nationality", type: "string", description: "Audience ISO code, slug, or group such as AFRICA. Repeatable." },
-  { name: "source", type: "string", description: "Discovery source code, comma-separated." },
+  { name: "source", type: "string", description: "Source identifier, comma-separated." },
   { name: "sort", type: "score | date", description: "score ranks by market impact. date is newest first. Default score." },
-  { name: "date", type: "YYYY-MM-DD", description: "Single Kuwait calendar day. Overrides the default freshness window." },
+  { name: "date", type: "YYYY-MM-DD", description: "A single date. Overrides the default freshness window." },
   { name: "from", type: "YYYY-MM-DD", description: "Inclusive published-at start date." },
   { name: "to", type: "YYYY-MM-DD", description: "Inclusive published-at end date." },
   { name: "limit", type: "integer", description: "Page size. Default 50, maximum 500." },
@@ -72,7 +72,7 @@ export const apiDocGroups: ApiDocGroup[] = [
         method: "GET",
         path: "/api/v1/*",
         title: "Authentication",
-        summary: "Send X-API-Key on every feed, edition, discovery, and source request. Create keys in this console. Health and OpenAPI stay public.",
+        summary: "Send X-API-Key on every feed, edition, discovery, and source request. Create keys in this console.",
         auth: "api-key",
         curl: `curl "${origin}/api/v1/market-news?limit=1" \\\n  ${keyHeader}`,
         fetch: fetchGet("/api/v1/market-news?limit=1"),
@@ -90,7 +90,7 @@ export const apiDocGroups: ApiDocGroup[] = [
         method: "GET",
         path: "/api/v1/market-news",
         title: "Article payload",
-        summary: "Every article includes localized title and summary plus stored Arabic and English fields. translated is true when both languages are present.",
+        summary: "Every article includes localized title and summary plus arabic and english objects. translated is true when both languages are present.",
         auth: "api-key",
         curl: curlGet("/api/v1/market-news?lang=ar&limit=1"),
         fetch: fetchGet("/api/v1/market-news?lang=ar&limit=1"),
@@ -106,8 +106,14 @@ export const apiDocGroups: ApiDocGroup[] = [
     "region": "middle_east",
     "title": "الذهب يرتفع مع ترقب بيانات التضخم",
     "summary": "ارتفعت أسعار الذهب مع ترقب المستثمرين لبيانات التضخم.",
-    "titleAr": "الذهب يرتفع مع ترقب بيانات التضخم",
-    "titleEn": "Gold rises ahead of inflation data",
+    "arabic": {
+      "title": "الذهب يرتفع مع ترقب بيانات التضخم",
+      "summary": "ارتفعت أسعار الذهب مع ترقب المستثمرين لبيانات التضخم."
+    },
+    "english": {
+      "title": "Gold rises ahead of inflation data",
+      "summary": "Gold prices rose as investors watched inflation data."
+    },
     "translated": true,
     "url": "https://example.com/gold",
     "source": "Reuters",
@@ -123,14 +129,14 @@ export const apiDocGroups: ApiDocGroup[] = [
   {
     id: "feeds",
     label: "Feeds",
-    hint: "Live articles",
+    hint: "Briefing articles",
     endpoints: [
       {
         id: "market-news",
         method: "GET",
         path: "/api/v1/market-news",
         title: "Filterable market news",
-        summary: "Deduplicated live stream. Default window is 72 hours unless date, from, or to is set. Arabic titles are the default.",
+        summary: "Deduplicated market briefing. Default window is 72 hours unless date, from, or to is set. Arabic titles are the default.",
         auth: "api-key",
         query: feedQuery,
         curl: curlGet("/api/v1/market-news?q=%D8%B0%D9%87%D8%A8&lang=ar&country=KW&limit=20"),
@@ -182,7 +188,7 @@ export const apiDocGroups: ApiDocGroup[] = [
         method: "GET",
         path: "/api/v1/market-news/today",
         title: "Today's edition",
-        summary: "Stored Top 15 for the current Kuwait calendar day. Publish from Schedule if this returns 404.",
+        summary: "Stored Top 15 for today. Publish from Schedule if this returns 404.",
         auth: "api-key",
         query: [
           { name: "lang", type: "ar | en", description: "Response language. Default ar." },
@@ -204,10 +210,10 @@ export const apiDocGroups: ApiDocGroup[] = [
         method: "GET",
         path: "/api/v1/market-news/daily",
         title: "Historical edition",
-        summary: "Stored daily edition for a Kuwait calendar date. Additional feed filters can narrow the ranked items.",
+        summary: "Stored daily edition for a date. Additional feed filters can narrow the ranked items.",
         auth: "api-key",
         query: [
-          { name: "date", type: "YYYY-MM-DD", description: "Kuwait calendar date. Defaults to today." },
+          { name: "date", type: "YYYY-MM-DD", description: "Date. Defaults to today." },
           { name: "lang", type: "ar | en", description: "Response language. Default ar." },
         ],
         curl: curlGet("/api/v1/market-news/daily?date=2026-08-17&lang=en"),
@@ -245,7 +251,7 @@ export const apiDocGroups: ApiDocGroup[] = [
   },
   {
     id: "discovery",
-    label: "Discovery",
+    label: "Catalog",
     hint: "Filters and sources",
     endpoints: [
       {
@@ -303,7 +309,7 @@ export const apiDocGroups: ApiDocGroup[] = [
         method: "GET",
         path: "/api/v1/sources",
         title: "Source health",
-        summary: "Enabled discovery sources with healthy, stale, pending, or error status.",
+        summary: "Enabled sources with healthy, stale, pending, or error status.",
         auth: "api-key",
         curl: curlGet("/api/v1/sources"),
         fetch: fetchGet("/api/v1/sources"),
@@ -317,52 +323,47 @@ export const apiDocGroups: ApiDocGroup[] = [
     ],
   },
   {
-    id: "operations",
-    label: "Operations",
-    hint: "Health and contract",
+    id: "admin",
+    label: "Admin",
+    hint: "Collect news and rebuild editions",
     endpoints: [
       {
-        id: "health",
+        id: "cron-collect",
         method: "GET",
-        path: "/api/v1/health",
-        title: "Health",
-        summary: "Public probe. ok only when collect, translate, and publish jobs exist and fresh articles have both Arabic and English fields.",
-        auth: "none",
-        curl: curlGet("/api/v1/health", false),
-        fetch: fetchGet("/api/v1/health", false),
+        path: "/api/cron/collect",
+        title: "Cron: collect news",
+        summary: "Called by Vercel Cron and GitHub Actions three times daily. Send CRON_SECRET as Bearer or ADMIN_API_KEY as X-API-Key.",
+        auth: "admin",
+        curl: `curl "${origin}/api/cron/collect" \\\n  -H "Authorization: Bearer $CRON_SECRET"`,
+        fetch: `const res = await fetch("/api/cron/collect", {\n  headers: { Authorization: \`Bearer \${process.env.CRON_SECRET}\` },\n});\nconst data = await res.json();`,
         response: `{
-  "status": "ok",
-  "ready": true,
-  "service": "market-news-api",
-  "checks": { "database": "ok", "scheduler": "online", "jobs": "ok", "bilingual": "ok" }
+  "ok": true,
+  "skipped": false,
+  "job": "collect",
+  "message": "120 collected, 80 created, 40 translated, 15 in today's edition"
 }`,
         errors: [
-          { status: "503", code: "error", meaning: "Jobs missing, database down, or fresh articles missing ar/en fields." },
+          { status: "401", code: "unauthorized", meaning: "CRON_SECRET or ADMIN_API_KEY was missing or did not match." },
         ],
       },
       {
-        id: "openapi",
-        method: "GET",
-        path: "/api/v1/openapi.json",
-        title: "OpenAPI contract",
-        summary: "Machine-readable OpenAPI 3 document for code generation and integration tests. No API key required.",
-        auth: "none",
-        curl: curlGet("/api/v1/openapi.json", false),
-        fetch: fetchGet("/api/v1/openapi.json", false),
+        id: "collect",
+        method: "POST",
+        path: "/api/v1/admin/collect",
+        title: "Run news collect",
+        summary: "Administrator-only. Fetches every country source, fills markets below 3 stories, translates, and refreshes today's edition. GitHub Actions calls this three times daily.",
+        auth: "admin",
+        curl: `curl -X POST "${origin}/api/v1/admin/collect" \\\n  -H "X-API-Key: $ADMIN_API_KEY"`,
+        fetch: `const res = await fetch("/api/v1/admin/collect", {\n  method: "POST",\n  headers: { "X-API-Key": process.env.ADMIN_API_KEY },\n});\nconst data = await res.json();`,
         response: `{
-  "openapi": "3.0.3",
-  "info": { "title": "Market News API", "version": "1.0.0" },
-  "paths": { "/health": {}, "/market-news": {} }
+  "ok": true,
+  "skipped": false,
+  "message": "120 collected, 80 created, 40 translated, 15 in today's edition"
 }`,
-        errors: [],
+        errors: [
+          { status: "401", code: "unauthorized", meaning: "ADMIN_API_KEY was missing or did not match." },
+        ],
       },
-    ],
-  },
-  {
-    id: "admin",
-    label: "Admin",
-    hint: "Rebuild editions",
-    endpoints: [
       {
         id: "rebuild-edition",
         method: "POST",
@@ -371,7 +372,7 @@ export const apiDocGroups: ApiDocGroup[] = [
         summary: "Administrator-only. Send the admin key, not a console API key. Use Schedule for routine collect and publish.",
         auth: "admin",
         body: [
-          { name: "date", type: "YYYY-MM-DD", description: "Kuwait calendar date. Defaults to today." },
+          { name: "date", type: "YYYY-MM-DD", description: "Date. Defaults to today." },
           { name: "force", type: "boolean", description: "Rebuild even if an edition already exists. Default true." },
         ],
         curl: `curl -X POST "${origin}/api/v1/admin/rebuild-edition" \\\n  -H "X-API-Key: $ADMIN_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d '{"date":"2026-08-18","force":true}'`,

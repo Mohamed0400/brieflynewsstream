@@ -16,7 +16,7 @@ export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
     tier: "FREE",
     label: "Free",
     listPriceMonthlyUsd: 0,
-    dailyRequests: 500,
+    dailyRequests: 5,
     maxKeys: 2,
     commercialUse: false,
     communityBriefings: true,
@@ -25,7 +25,7 @@ export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
   PRO: {
     tier: "PRO",
     label: "Pro",
-    listPriceMonthlyUsd: 60,
+    listPriceMonthlyUsd: 70,
     dailyRequests: 20_000,
     maxKeys: 10,
     commercialUse: true,

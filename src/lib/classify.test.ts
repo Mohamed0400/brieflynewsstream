@@ -85,9 +85,10 @@ test("country catalog covers about 70 ISO markets", () => {
   assert.ok(supported.length >= 72);
 });
 
-test("every catalog country has a scrape source", () => {
-  const { gaps } = countrySourceCoverage();
+test("every catalog country has at least two scrape sources", () => {
+  const { gaps, thin } = countrySourceCoverage();
   assert.deepEqual(gaps, []);
+  assert.deepEqual(thin, []);
 });
 
 test("stores audience codes as exact, multi-value tokens", () => {

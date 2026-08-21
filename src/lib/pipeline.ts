@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { Category, Prisma } from "@prisma/client";
+import { Category, Prisma, Region, type Source } from "@prisma/client";
 import { prisma } from "./prisma";
 import { collectSource, isTrustedGroundedUrl } from "./adapters";
 import { translatePendingArticles, seedBilingualFields, isArabicText } from "./article-translation";
@@ -11,6 +11,13 @@ import {
   detectCountry,
   regionForCountry,
 } from "./classify";
+import {
+  allLiveCountrySources,
+  countriesNeedingArticles,
+  googleNewsRssUrl,
+  RETIRED_COUNTRY_SOURCE_CODES,
+} from "./country-sources";
+import { catalogCountryCodes } from "./countries";
 import {
   dedupeArticles,
   storyDuplicateWindow,
@@ -36,61 +43,187 @@ function contentHash(title: string) {
   return createHash("sha256").update(normalized).digest("hex");
 }
 
+async function mapPool<T>(items: T[], concurrency: number, worker: (item: T) => Promise<void>) {
+  const queue = [...items];
+  const size = Math.max(1, Math.min(concurrency, Math.max(1, queue.length)));
+  await Promise.all(Array.from({ length: size }, async () => {
+    while (queue.length) {
+      const item = queue.shift();
+      if (!item) return;
+      await worker(item);
+    }
+  }));
+}
+
+export async function ensureLiveSources() {
+  const live = allLiveCountrySources();
+  for (const source of live) {
+    await prisma.source.upsert({
+      where: { code: source.code },
+      create: source,
+      update: {
+        name: source.name,
+        url: source.url,
+        homepageUrl: source.homepageUrl,
+        adapter: source.adapter,
+        country: source.country,
+        region: source.region,
+        defaultCategory: source.defaultCategory,
+        qualityWeight: source.qualityWeight,
+        enabled: true,
+      },
+    });
+  }
+  if (RETIRED_COUNTRY_SOURCE_CODES.length) {
+    await prisma.source.updateMany({
+      where: { code: { in: [...RETIRED_COUNTRY_SOURCE_CODES] } },
+      data: { enabled: false },
+    });
+  }
+}
+
+async function storeCollectedItems(source: Source, items: Awaited<ReturnType<typeof collectSource>>) {
+  for (const item of items) {
+    await prisma.rawArticle.upsert({
+      where: {
+        sourceId_externalId: {
+          sourceId: source.id,
+          externalId: item.externalId.slice(0, 500),
+        },
+      },
+      create: { sourceId: source.id, ...item, externalId: item.externalId.slice(0, 500) },
+      update: {
+        title: item.title,
+        summary: item.summary,
+        publisher: item.publisher,
+        audienceCodes: item.audienceCodes ?? "",
+        imageUrl: item.imageUrl,
+        publishedAt: item.publishedAt,
+        rawJson: item.rawJson,
+        processedAt: null,
+      },
+    });
+  }
+}
+
+async function collectOneSource(source: Source, result: PipelineResult, forceCollect = false) {
+  const searchIntervalHours = source.adapter === "gemini-nationality-search"
+    ? limits.nationalitySearchIntervalHours
+    : 6;
+  if (
+    !forceCollect &&
+    (source.adapter === "gemini-search" || source.adapter === "gemini-nationality-search") &&
+    source.lastFetchedAt &&
+    !source.lastError &&
+    Date.now() - source.lastFetchedAt.getTime() < searchIntervalHours * 60 * 60 * 1000
+  ) {
+    result.sourcesOk += 1;
+    return;
+  }
+  try {
+    const items = await collectSource(source);
+    await storeCollectedItems(source, items);
+    result.sourcesOk += 1;
+    result.rawCollected += items.length;
+    await prisma.source.update({
+      where: { id: source.id },
+      data: { lastFetchedAt: new Date(), lastError: null },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    result.sourcesFailed += 1;
+    result.errors.push({ source: source.name, error: message });
+    await prisma.source.update({
+      where: { id: source.id },
+      data: { lastFetchedAt: new Date(), lastError: message.slice(0, 1000) },
+    });
+  }
+}
+
 async function collectAll(result: PipelineResult, forceCollect = false) {
   const sources = await prisma.source.findMany({ where: { enabled: true } });
-  for (const source of sources) {
-    const searchIntervalHours = source.adapter === "gemini-nationality-search"
-      ? limits.nationalitySearchIntervalHours
-      : 6;
-    if (
-      !forceCollect &&
-      (source.adapter === "gemini-search" || source.adapter === "gemini-nationality-search") &&
-      source.lastFetchedAt &&
-      !source.lastError &&
-      Date.now() - source.lastFetchedAt.getTime() < searchIntervalHours * 60 * 60 * 1000
-    ) {
-      result.sourcesOk += 1;
-      continue;
-    }
-    try {
-      const items = await collectSource(source);
-      for (const item of items) {
-        await prisma.rawArticle.upsert({
-          where: {
-            sourceId_externalId: {
-              sourceId: source.id,
-              externalId: item.externalId.slice(0, 500),
-            },
-          },
-          create: { sourceId: source.id, ...item, externalId: item.externalId.slice(0, 500) },
-          update: {
-            title: item.title,
-            summary: item.summary,
-            publisher: item.publisher,
-            audienceCodes: item.audienceCodes ?? "",
-            imageUrl: item.imageUrl,
-            publishedAt: item.publishedAt,
-            rawJson: item.rawJson,
-            processedAt: null,
-          },
-        });
-      }
-      result.sourcesOk += 1;
-      result.rawCollected += items.length;
-      await prisma.source.update({
-        where: { id: source.id },
-        data: { lastFetchedAt: new Date(), lastError: null },
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      result.sourcesFailed += 1;
-      result.errors.push({ source: source.name, error: message });
-      await prisma.source.update({
-        where: { id: source.id },
-        data: { lastFetchedAt: new Date(), lastError: message.slice(0, 1000) },
-      });
-    }
+  const gemini = sources.filter((source) => source.adapter.startsWith("gemini"));
+  const standard = sources.filter((source) => !source.adapter.startsWith("gemini"));
+  await mapPool(standard, limits.collectConcurrency, (source) => (
+    collectOneSource(source, result, forceCollect)
+  ));
+  for (const source of gemini) {
+    await collectOneSource(source, result, forceCollect);
   }
+}
+
+async function liveCountryCounts(since: Date) {
+  const rows = await prisma.article.groupBy({
+    by: ["country"],
+    where: { publishedAt: { gte: since } },
+    _count: { id: true },
+  });
+  return new Map(rows.map((row) => [row.country, row._count.id]));
+}
+
+async function fillThinCountries(result: PipelineResult) {
+  const since = new Date(Date.now() - Math.max(1, limits.newsMaxAgeHours) * 60 * 60 * 1000);
+  const catalog = [...catalogCountryCodes(), "EU"];
+  const thin = countriesNeedingArticles(catalog, await liveCountryCounts(since), limits.minCountryArticles);
+  if (!thin.length) return;
+
+  const sources = await prisma.source.findMany({
+    where: {
+      enabled: true,
+      country: { in: thin },
+      adapter: "rss",
+    },
+  });
+  const preferred = new Map<string, Source[]>();
+  for (const source of sources) {
+    const list = preferred.get(source.country) ?? [];
+    list.push(source);
+    preferred.set(source.country, list);
+  }
+
+  await mapPool(thin, Math.min(4, limits.collectConcurrency), async (country) => {
+    const existing = preferred.get(country) ?? [];
+    const gnews = existing.filter((source) => source.code.startsWith("GNEWS_"));
+    const targets = (gnews.length ? gnews : existing).slice(0, 3);
+    if (!targets.length) {
+      const seeded = allLiveCountrySources().find((source) => source.country === country);
+      if (!seeded) return;
+      const row = await prisma.source.upsert({
+        where: { code: seeded.code },
+        create: seeded,
+        update: { url: seeded.url, enabled: true },
+      });
+      targets.push(row);
+    }
+    for (const source of targets) {
+      await collectOneSource(source, result, true);
+    }
+  });
+
+  await normalizePending(result);
+
+  const stillThin = countriesNeedingArticles(catalog, await liveCountryCounts(since), limits.minCountryArticles);
+  await mapPool(stillThin, Math.min(4, limits.collectConcurrency), async (country) => {
+    const code = `GNEWS_${country}_WIDE`;
+    const url = googleNewsRssUrl(`${country} (economy OR business OR markets OR bank OR government OR oil)`);
+    const template = allLiveCountrySources().find((source) => source.country === country);
+    const source = await prisma.source.upsert({
+      where: { code },
+      create: {
+        code,
+        name: `${country} Coverage`,
+        url,
+        homepageUrl: "https://news.google.com/",
+        adapter: "rss",
+        country,
+        region: template?.region ?? Region.GLOBAL,
+        defaultCategory: template?.defaultCategory ?? Category.MARKETS,
+        qualityWeight: 66,
+      },
+      update: { url, enabled: true, name: `${country} Coverage` },
+    });
+    await collectOneSource(source, result, true);
+  });
 }
 
 async function normalizePending(result: PipelineResult) {
@@ -100,6 +233,23 @@ async function normalizePending(result: PipelineResult) {
     orderBy: { publishedAt: "desc" },
     ...(limits.normalizeBatch > 0 ? { take: limits.normalizeBatch } : {}),
   });
+  const existingByUrl = new Map(
+    pending.length
+      ? (await prisma.article.findMany({
+          where: { url: { in: pending.map((row) => row.url) } },
+          select: {
+            id: true,
+            url: true,
+            title: true,
+            titleEn: true,
+            titleAr: true,
+            summaryEn: true,
+            summaryAr: true,
+            translatedAt: true,
+          },
+        })).map((row) => [row.url, row])
+      : [],
+  );
 
   for (const raw of pending) {
     const markProcessed = () =>
@@ -121,7 +271,8 @@ async function normalizePending(result: PipelineResult) {
 
     const hash = contentHash(title);
     const key = storyKey(title);
-    const duplicate = await prisma.article.findFirst({
+    const cachedDuplicate = existingByUrl.get(raw.url);
+    const duplicate = cachedDuplicate ?? await prisma.article.findFirst({
       where: {
         OR: [
           { url: raw.url },
@@ -137,7 +288,7 @@ async function normalizePending(result: PipelineResult) {
     });
     if (duplicate) {
       if (duplicate.url === raw.url) {
-        const existing = await prisma.article.findUnique({
+        const existing = cachedDuplicate ?? await prisma.article.findUnique({
           where: { id: duplicate.id },
           select: { title: true, titleEn: true, titleAr: true, summaryEn: true, summaryAr: true, translatedAt: true },
         });
@@ -211,6 +362,7 @@ async function normalizePending(result: PipelineResult) {
             publishedAt: raw.publishedAt,
             contentHash: hash,
             storyKey: key,
+            finalScore: scores.finalScore,
             score: { create: scores },
           },
         }),
@@ -230,6 +382,7 @@ async function fillMissingStoryKeys() {
   const articles = await prisma.article.findMany({
     where: { storyKey: "" },
     select: { id: true, title: true },
+    take: 200,
   });
   for (const article of articles) {
     await prisma.article.update({
@@ -240,7 +393,13 @@ async function fillMissingStoryKeys() {
 }
 
 async function refreshExistingScores() {
-  const articles = await prisma.article.findMany({ include: { source: true } });
+  const cutoff = new Date(Date.now() - Math.max(1, limits.newsMaxAgeHours) * 60 * 60 * 1000);
+  const articles = await prisma.article.findMany({
+    where: { publishedAt: { gte: cutoff } },
+    include: { source: true },
+    take: 400,
+    orderBy: { publishedAt: "desc" },
+  });
   for (const article of articles) {
     const nationalityNews = article.source.adapter === "gemini-nationality-search";
     if (
@@ -278,6 +437,7 @@ async function refreshExistingScores() {
         audienceCodes: article.audienceCodes || (country === "GLOBAL" ? "" : audienceValue([country])),
         country,
         region,
+        finalScore: scores.finalScore,
         score: {
           upsert: { create: scores, update: scores },
         },
@@ -336,7 +496,7 @@ export async function buildDailyEdition(
       score: { isNot: null },
     },
     include: { score: true, source: true },
-    orderBy: [{ score: { finalScore: "desc" } }, { publishedAt: "desc" }],
+    orderBy: [{ finalScore: "desc" }, { publishedAt: "desc" }],
     ...(limits.dailyCandidates > 0 ? { take: limits.dailyCandidates } : {}),
   }));
 
@@ -402,7 +562,10 @@ export async function runPipeline(options: { forceEdition?: boolean; forceCollec
     editionItems: 0,
     errors: [],
   };
+  await ensureLiveSources();
   await collectAll(result, options.forceCollect);
+  await normalizePending(result);
+  await fillThinCountries(result);
   await normalizePending(result);
   await fillMissingStoryKeys();
   await refreshExistingScores();

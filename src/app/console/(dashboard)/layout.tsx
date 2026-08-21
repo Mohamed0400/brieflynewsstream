@@ -1,9 +1,24 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { ConsoleLangProvider } from "@/components/console/ConsoleLang";
 import { ConsoleShell } from "@/components/console/ConsoleShell";
 import { getOrCreateAccount, getSessionUser } from "@/lib/account";
 import { getConsoleLang } from "@/lib/console-lang";
 import { startEmbeddedScheduler } from "@/lib/scheduler";
+import "../../console-shell.css";
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+    },
+  },
+};
 
 export default async function ConsoleDashboardLayout({
   children,
@@ -27,11 +42,9 @@ export default async function ConsoleDashboardLayout({
   return (
     <ConsoleLangProvider lang={lang}>
       <ConsoleShell
-        environment={process.env.NEXT_PUBLIC_APP_ENV || "local"}
         lang={lang}
         accountEmail={account.email}
         accountPlan={account.plan}
-        accountRole={account.role}
       >
         {children}
       </ConsoleShell>

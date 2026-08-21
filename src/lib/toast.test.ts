@@ -20,6 +20,18 @@ test("toast store records errors, alerts, and exceptions", () => {
   assert.equal(getToasts().length, 0);
 });
 
+test("toast exceptions hide Prisma and database hosts", () => {
+  clearToasts();
+  toast.exception(
+    new Error("Can't reach database server at `aws-0-ap-northeast-1.pooler.supabase.com:6543`"),
+    "This page could not be loaded.",
+  );
+  const item = getToasts()[0];
+  assert.equal(item.message, "This page could not be loaded.");
+  assert.doesNotMatch(item.message, /supabase|6543/i);
+  clearToasts();
+});
+
 test("server toast snapshot is a cached empty array", () => {
   assert.equal(getServerToasts(), getServerToasts());
   assert.deepEqual(getServerToasts(), []);

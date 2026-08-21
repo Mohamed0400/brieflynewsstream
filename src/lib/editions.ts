@@ -1,6 +1,5 @@
 import { prisma } from "./prisma";
 import { parseQuery, serializeArticle } from "./api";
-import { localizeFetchedArticles } from "./article-translation";
 import { kuwaitDate } from "./market";
 import { limits } from "./limits";
 import { ensureTodaysEdition } from "./pipeline";
@@ -26,12 +25,6 @@ export async function getDailyEditionPayload(date: string, searchParams?: URLSea
 
   if (!edition) return null;
 
-  const localizedArticles = await localizeFetchedArticles(
-    edition.items.map((item) => item.article),
-    query.filters.lang,
-  );
-  const byId = new Map(localizedArticles.map((article) => [article.id, article]));
-
   return {
     date: edition.date,
     feature: "market_news",
@@ -47,7 +40,7 @@ export async function getDailyEditionPayload(date: string, searchParams?: URLSea
       timezone: process.env.APP_TIMEZONE || "Asia/Kuwait",
     },
     items: edition.items.map((item) => ({
-      ...serializeArticle(byId.get(item.article.id) ?? item.article, item.rank, query.filters.lang),
+      ...serializeArticle(item.article, item.rank, query.filters.lang),
       section: item.section,
     })),
   };

@@ -21,6 +21,12 @@ export function applyLimit<T>(items: T[], limit: number): T[] {
 export const limits = {
   /** Max items kept from one RSS feed. 0 = all. */
   rss: intEnv("COLLECT_RSS_LIMIT", 0),
+  /** Max items kept from generated Google News RSS feeds. */
+  googleNewsRss: intEnv("COLLECT_GNEWS_LIMIT", 12),
+  /** Parallel RSS/HTML fetches per collect run. */
+  collectConcurrency: Math.max(1, intEnv("COLLECT_CONCURRENCY", 4)),
+  /** Minimum live articles each catalog country should hold in the freshness window. */
+  minCountryArticles: Math.max(1, intEnv("MIN_COUNTRY_ARTICLES", 3)),
   /** Max items kept from one HTML listing page. 0 = all. */
   html: intEnv("COLLECT_HTML_LIMIT", 0),
   /** Max items kept from one sitemap. 0 = all. */

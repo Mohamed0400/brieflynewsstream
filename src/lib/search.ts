@@ -71,7 +71,16 @@ const EXTRA_PLACE_WORDS: Array<[token: string, english: string, code: string]> =
 
 const placeTranslations = new Map<string, string>();
 const placeCountryCodes = new Map<string, string>();
+const TRANSLATION_CACHE_MAX = 400;
 const translationCache = new Map<string, string>();
+
+function rememberTranslation(query: string, translated: string) {
+  if (translationCache.size >= TRANSLATION_CACHE_MAX) {
+    const oldest = translationCache.keys().next().value;
+    if (oldest) translationCache.delete(oldest);
+  }
+  translationCache.set(query, translated);
+}
 
 function placeKey(token: string) {
   return ARABIC_TEXT.test(token) ? token : token.toLocaleLowerCase("en");
@@ -192,7 +201,7 @@ export function searchWords(query: string) {
   return words.length ? words : normalizeSearchText(query).split(" ").filter(Boolean).slice(0, 1);
 }
 
-export async function expandSearchQuery(query: string) {
+export async function expandSearchQuery(query: string, options?: { remote?: boolean }) {
   const normalized = normalizeSearchText(query);
   if (!normalized || !ARABIC_TEXT.test(normalized)) return [normalized].filter(Boolean);
 
@@ -201,7 +210,7 @@ export async function expandSearchQuery(query: string) {
 
   const glossary = glossaryTranslation(normalized);
   let translated = glossary;
-  if (!translated) {
+  if (!translated && options?.remote) {
     try {
       translated = await translateArabicWithGoogle(normalized);
     } catch {
@@ -215,6 +224,6 @@ export async function expandSearchQuery(query: string) {
   if (translationIntroducesForeignCountry(normalized, translated) || !searchWords(translated).length) {
     return [normalized];
   }
-  translationCache.set(normalized, translated);
+  rememberTranslation(normalized, translated);
   return [normalized, translated];
 }

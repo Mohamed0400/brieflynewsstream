@@ -8,11 +8,32 @@ const PUBLIC_ALLOW = [
   "/pricing",
   "/developers",
   "/coverage",
+  "/privacy",
+  "/terms",
+  "/console/login",
+  "/console/signup",
+  "/favicon.ico",
+  "/favicon-48x48.png",
+  "/favicon-96x96.png",
+  "/favicon-192x192.png",
+  "/icon.png",
+  "/apple-icon.png",
+  "/apple-touch-icon.png",
+  "/manifest.webmanifest",
+  "/brand/",
   "/llms.txt",
   "/sitemap.xml",
 ] as const;
 
-const PUBLIC_DISALLOW = ["/console", "/console/", "/api/", "/api", "/auth/"] as const;
+const PUBLIC_DISALLOW = [
+  "/console/",
+  "/console",
+  "/consoleofbrieflynewsstreamapi",
+  "/consoleofbrieflynewsstreamapi/",
+  "/api/",
+  "/api",
+  "/auth/",
+] as const;
 
 /** Search engines + answer-engine / AI Overview crawlers. */
 const AI_AND_SEARCH_AGENTS = [

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireApiKey, withQuotaHeaders } from "@/lib/auth";
+import { describeQueryFailure } from "@/lib/api";
 import { getDailyEditionPayload } from "@/lib/editions";
 import { kuwaitDate } from "@/lib/market";
 
@@ -34,9 +35,10 @@ export async function GET(request: Request) {
     }
     return withQuotaHeaders(request, NextResponse.json(payload));
   } catch (error) {
+    const failure = describeQueryFailure(error);
     return withQuotaHeaders(request, NextResponse.json(
-      { error: "invalid_query", message: error instanceof Error ? error.message : String(error) },
-      { status: 400 },
+      { error: failure.error, message: failure.message },
+      { status: failure.status },
     ));
   }
 }

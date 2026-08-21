@@ -33,7 +33,7 @@ Collection is uncapped by default. Relevance filters, API pagination, and rate l
 | `COLLECT_GEMINI_LIMIT` | `50` | Max grounded Google Search articles |
 | `COLLECT_NATIONALITY_LIMIT` | `60` | Max grounded expatriate-audience articles per search |
 | `NATIONALITY_SEARCH_INTERVAL_HOURS` | `12` | Hours between nationality searches |
-| `NEWS_MAX_AGE_HOURS` | `72` | Maximum age for live feeds and daily-edition candidates |
+| `NEWS_MAX_AGE_HOURS` | `72` | Maximum age for briefing articles and daily-edition candidates |
 | `SOURCE_HEALTH_MAX_AGE_HOURS` | `24` | Successful-fetch window used by source health metrics |
 | `NATIONALITY_NEWS_MAX_AGE_HOURS` | `48` | Hard freshness window for nationality feeds |
 | `NATIONALITY_FEED_LIMIT` | `12` | Default items in a two-minute briefing |
@@ -79,14 +79,14 @@ npm run smoke
 
 ## API console
 
-Open `http://localhost:3001/console` and sign in with `ADMIN_API_KEY`. The console provides:
+Open `http://localhost:3001/console/login` and sign in with email and password. Emails in `SUPER_ADMIN_EMAILS` get super-admin access (Schedule). The console provides:
 
 - real 7-day request activity and top endpoint reporting
 - a visual API explorer with text, source, geography, nationality, category, language, date, sort, and pagination controls
 - persistent API key creation with one-time plaintext display
 - SHA-256 key storage, last-used timestamps, and immediate revocation
 - a Schedule page to change collect/publish cron jobs and run the pipeline immediately
-- a single free access policy with unlimited requests and no billing or plan pages
+- Billing with plan limits, Open / Void / Paid invoice history, and PDF receipts
 
 Set a separate, long random `CONSOLE_SESSION_SECRET` in shared or live environments. Run `npm run test:e2e` to verify console authentication, dark mode, 44px touch targets, and responsive layouts from 320px through 1440px.
 
@@ -122,7 +122,7 @@ curl -H "X-API-Key: test-market-news-key" \
 
 Filters on the stream: `q`, `searchIn`, `category`, `country`, `region`, `nationality`, `source`, `language`, `date`, `from`, `to`, `limit`, `offset`, `sort`.
 
-Without `date`, `from`, or `to`, the stream only returns articles published within `NEWS_MAX_AGE_HOURS` (72 hours by default). Explicit date filters provide access to stored historical records without mixing them into the live feed.
+Without `date`, `from`, or `to`, the briefing only returns articles published within `NEWS_MAX_AGE_HOURS` (72 hours by default). Explicit date filters provide access to stored historical records without mixing them into the current briefing.
 
 Endpoints:
 

@@ -1,5 +1,6 @@
 import { Category, Region } from "@prisma/client";
 import { COUNTRY_CATALOG } from "./countries";
+import { regionForCountry } from "./classify";
 
 export type CountrySourceSeed = {
   code: string;
@@ -56,22 +57,19 @@ function countryRss(
   };
 }
 
-/**
- * Publisher RSS verified Aug 2026. Google News RSS is used only where local
- * publisher feeds returned HTML, 403/404, or empty XML.
- */
+/** Supplemental country coverage where a local publisher feed is unavailable. */
 const EXPANDED_COUNTRY_SOURCES: CountrySourceSeed[] = [
   countryRss("DOHA_NEWS_QA", "Doha News", "https://dohanews.co/feed/", "https://dohanews.co/", "QA", Region.MIDDLE_EAST, Category.ME_ECONOMY, 80),
-  countryRss("GNEWS_QA", "Google News Qatar Economy", "https://news.google.com/rss/search?q=Qatar+(economy+OR+markets+OR+finance)&hl=en-US&gl=US&ceid=US:en", "https://news.google.com/", "QA", Region.MIDDLE_EAST, Category.ME_ECONOMY, 70),
-  countryRss("GNEWS_BH", "Google News Bahrain Economy", "https://news.google.com/rss/search?q=Bahrain+(economy+OR+markets+OR+finance+OR+%22central+bank%22)&hl=en-US&gl=US&ceid=US:en", "https://news.google.com/", "BH", Region.MIDDLE_EAST, Category.ME_ECONOMY, 70),
+  countryRss("GNEWS_QA", "Qatar Economy", "https://news.google.com/rss/search?q=Qatar+(economy+OR+markets+OR+finance)&hl=en-US&gl=US&ceid=US:en", "https://news.google.com/", "QA", Region.MIDDLE_EAST, Category.ME_ECONOMY, 70),
+  countryRss("GNEWS_BH", "Bahrain Economy", "https://news.google.com/rss/search?q=Bahrain+(economy+OR+markets+OR+finance+OR+%22central+bank%22)&hl=en-US&gl=US&ceid=US:en", "https://news.google.com/", "BH", Region.MIDDLE_EAST, Category.ME_ECONOMY, 70),
   countryRss("TIMES_OMAN_OM", "Times of Oman", "https://timesofoman.com/feed", "https://timesofoman.com/", "OM", Region.MIDDLE_EAST, Category.ME_ECONOMY, 80),
   countryRss("LIBYA_HERALD_LY", "Libya Herald", "https://www.libyaherald.com/feed/", "https://www.libyaherald.com/", "LY", Region.MIDDLE_EAST, Category.ME_ECONOMY, 74),
-  countryRss("GNEWS_IL", "Google News Israel Economy", "https://news.google.com/rss/search?q=Israel+(economy+OR+markets+OR+finance+OR+%22Bank+of+Israel%22)&hl=en-US&gl=US&ceid=US:en", "https://news.google.com/", "IL", Region.MIDDLE_EAST, Category.FINANCE, 70),
+  countryRss("GNEWS_IL", "Israel Economy", "https://news.google.com/rss/search?q=Israel+(economy+OR+markets+OR+finance+OR+%22Bank+of+Israel%22)&hl=en-US&gl=US&ceid=US:en", "https://news.google.com/", "IL", Region.MIDDLE_EAST, Category.FINANCE, 70),
   countryRss("FINANCIAL_POST_CA", "Financial Post", "https://financialpost.com/feed", "https://financialpost.com/", "CA", Region.AMERICA, Category.FINANCE, 86),
   countryRss("JORNADA_MX", "La Jornada Economia", "https://www.jornada.com.mx/rss/economia.xml", "https://www.jornada.com.mx/", "MX", Region.AMERICA, Category.ECONOMICS, 78),
   countryRss("FOLHA_BR", "Folha Mercado", "https://feeds.folha.uol.com.br/mercado/rss091.xml", "https://www.folha.uol.com.br/mercado/", "BR", Region.AMERICA, Category.FINANCE, 84),
   countryRss("BA_TIMES_AR", "Buenos Aires Times", "https://www.batimes.com.ar/feed", "https://www.batimes.com.ar/", "AR", Region.AMERICA, Category.ECONOMICS, 80),
-  countryRss("GNEWS_CL", "Google News Chile Economy", "https://news.google.com/rss/search?q=Chile+(economy+OR+markets+OR+copper+OR+%22central+bank%22)&hl=en-US&gl=US&ceid=US:en", "https://news.google.com/", "CL", Region.AMERICA, Category.ECONOMICS, 70),
+  countryRss("GNEWS_CL", "Chile Economy", "https://news.google.com/rss/search?q=Chile+(economy+OR+markets+OR+copper+OR+%22central+bank%22)&hl=en-US&gl=US&ceid=US:en", "https://news.google.com/", "CL", Region.AMERICA, Category.ECONOMICS, 70),
   countryRss("DW_DE_BUSINESS", "Deutsche Welle Business", "https://rss.dw.com/rdf/rss-en-bus", "https://www.dw.com/en/business/s-1431", "DE", Region.GLOBAL, Category.ECONOMICS, 88),
   countryRss("SPIEGEL_DE_BUSINESS", "Spiegel International Business", "https://www.spiegel.de/international/business/index.rss", "https://www.spiegel.de/international/business/", "DE", Region.GLOBAL, Category.FINANCE, 84),
   countryRss("LEMONDE_FR", "Le Monde Economie", "https://www.lemonde.fr/economie/rss_full.xml", "https://www.lemonde.fr/economie/", "FR", Region.GLOBAL, Category.ECONOMICS, 88),
@@ -81,7 +79,7 @@ const EXPANDED_COUNTRY_SOURCES: CountrySourceSeed[] = [
   countryRss("EXPANSION_ES", "Expansion", "https://e00-expansion.uecdn.es/rss/portada.xml", "https://www.expansion.com/", "ES", Region.GLOBAL, Category.FINANCE, 82),
   countryRss("NLTIMES_NL", "NL Times", "https://nltimes.nl/rss.xml", "https://nltimes.nl/", "NL", Region.GLOBAL, Category.MARKETS, 76),
   countryRss("DUTCHNEWS_NL", "Dutch News", "https://www.dutchnews.nl/feed/", "https://www.dutchnews.nl/", "NL", Region.GLOBAL, Category.MARKETS, 76),
-  countryRss("GNEWS_CH", "Google News Switzerland Economy", "https://news.google.com/rss/search?q=Switzerland+(economy+OR+markets+OR+SNB+OR+franc)&hl=en-US&gl=US&ceid=US:en", "https://news.google.com/", "CH", Region.GLOBAL, Category.FINANCE, 70),
+  countryRss("GNEWS_CH", "Switzerland Economy", "https://news.google.com/rss/search?q=Switzerland+(economy+OR+markets+OR+SNB+OR+franc)&hl=en-US&gl=US&ceid=US:en", "https://news.google.com/", "CH", Region.GLOBAL, Category.FINANCE, 70),
   countryRss("VRT_BE", "VRT NWS English", "https://www.vrt.be/vrtnws/en.rss.articles.xml", "https://www.vrt.be/vrtnws/en/", "BE", Region.GLOBAL, Category.MARKETS, 80),
   countryRss("ORF_AT", "ORF News", "https://rss.orf.at/news.xml", "https://orf.at/", "AT", Region.GLOBAL, Category.MARKETS, 80),
   countryRss("THELOCAL_SE", "The Local Sweden", "https://feeds.thelocal.com/rss/se", "https://www.thelocal.se/", "SE", Region.GLOBAL, Category.MARKETS, 76),
@@ -101,12 +99,12 @@ const EXPANDED_COUNTRY_SOURCES: CountrySourceSeed[] = [
   countryRss("VNEXPRESS_VN", "VNExpress Business", "https://e.vnexpress.net/rss/business.rss", "https://e.vnexpress.net/business", "VN", Region.GLOBAL, Category.ECONOMICS, 80),
   countryRss("ABC_AU_BUSINESS", "ABC News Australia Business", "https://www.abc.net.au/news/feed/45910/rss.xml", "https://www.abc.net.au/news/business/", "AU", Region.GLOBAL, Category.ECONOMICS, 86),
   countryRss("RNZ_NZ", "RNZ Business", "https://www.rnz.co.nz/rss/business.xml", "https://www.rnz.co.nz/news/business", "NZ", Region.GLOBAL, Category.ECONOMICS, 84),
-  countryRss("GNEWS_ZA", "Google News South Africa Economy", "https://news.google.com/rss/search?q=South+Africa+(economy+OR+markets+OR+rand+OR+SARB)&hl=en-US&gl=US&ceid=US:en", "https://news.google.com/", "ZA", Region.GLOBAL, Category.ECONOMICS, 70),
+  countryRss("GNEWS_ZA", "South Africa Economy", "https://news.google.com/rss/search?q=South+Africa+(economy+OR+markets+OR+rand+OR+SARB)&hl=en-US&gl=US&ceid=US:en", "https://news.google.com/", "ZA", Region.GLOBAL, Category.ECONOMICS, 70),
   countryRss("JOYONLINE_GH", "Joy Online", "https://www.myjoyonline.com/feed/", "https://www.myjoyonline.com/", "GH", Region.GLOBAL, Category.MARKETS, 76),
   countryRss("PORTUGAL_RESIDENT_PT", "Portugal Resident", "https://www.portugalresident.com/feed/", "https://www.portugalresident.com/", "PT", Region.GLOBAL, Category.MARKETS, 74),
   countryRss("INDEPENDENT_IE", "Irish Independent Business", "https://www.independent.ie/business/rss", "https://www.independent.ie/business/", "IE", Region.GLOBAL, Category.FINANCE, 82),
   countryRss("ASTANA_TIMES_KZ", "The Astana Times", "https://www.astanatimes.com/feed/", "https://www.astanatimes.com/", "KZ", Region.GLOBAL, Category.ECONOMICS, 76),
-  countryRss("GNEWS_YE", "Google News Yemen Economy", "https://news.google.com/rss/search?q=Yemen+(economy+OR+markets+OR+finance+OR+aden+OR+sanaa)&hl=en-US&gl=US&ceid=US:en", "https://news.google.com/", "YE", Region.MIDDLE_EAST, Category.ME_ECONOMY, 70),
+  countryRss("GNEWS_YE", "Yemen Economy", "https://news.google.com/rss/search?q=Yemen+(economy+OR+markets+OR+finance+OR+aden+OR+sanaa)&hl=en-US&gl=US&ceid=US:en", "https://news.google.com/", "YE", Region.MIDDLE_EAST, Category.ME_ECONOMY, 70),
 ];
 
 /**
@@ -627,14 +625,127 @@ export const COUNTRY_SOURCES: CountrySourceSeed[] = [
 /** Core seed.ts countries that already have dedicated scrape adapters. */
 export const CORE_SCRAPE_COUNTRIES = ["KW", "US", "GB"] as const;
 
+const ARABIC_GOOGLE_NEWS_COUNTRIES = new Set([
+  "KW", "SA", "AE", "QA", "BH", "OM", "EG", "JO", "IQ", "YE", "PS", "LB",
+  "SY", "SD", "MA", "TN", "DZ", "LY",
+]);
+
+const MIN_SOURCES_PER_COUNTRY = 2;
+
+export function googleNewsRssUrl(query: string, locale: "en" | "ar" = "en") {
+  const hl = locale === "ar" ? "ar" : "en-US";
+  const gl = locale === "ar" ? "EG" : "US";
+  const ceid = locale === "ar" ? "EG:ar" : "US:en";
+  return `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=${hl}&gl=${gl}&ceid=${ceid}`;
+}
+
+function googleNewsSource(
+  code: string,
+  name: string,
+  query: string,
+  country: string,
+  locale: "en" | "ar" = "en",
+): CountrySourceSeed {
+  const region = regionForCountry(country, Region.GLOBAL);
+  const defaultCategory = region === Region.MIDDLE_EAST ? Category.ME_ECONOMY : Category.ECONOMICS;
+  return countryRss(
+    code,
+    name,
+    googleNewsRssUrl(query, locale),
+    "https://news.google.com/",
+    country,
+    region,
+    defaultCategory,
+    68,
+  );
+}
+
+/**
+ * Backup coverage for every catalog country so a thin market is not left empty.
+ * Existing GNEWS_* rows in COUNTRY_SOURCES are skipped.
+ */
+export function generatedCountrySources(): CountrySourceSeed[] {
+  const usedCodes = new Set(COUNTRY_SOURCES.map((source) => source.code));
+  const usedUrls = new Set(COUNTRY_SOURCES.map((source) => source.url));
+  const extra: CountrySourceSeed[] = [];
+
+  const push = (source: CountrySourceSeed) => {
+    if (usedCodes.has(source.code) || usedUrls.has(source.url)) return;
+    usedCodes.add(source.code);
+    usedUrls.add(source.url);
+    extra.push(source);
+  };
+
+  for (const item of COUNTRY_CATALOG) {
+    push(googleNewsSource(
+      `GNEWS_${item.code}_ECON`,
+      `${item.country} Economy`,
+      `${item.country} (economy OR markets OR finance OR business)`,
+      item.code,
+    ));
+    push(googleNewsSource(
+      `GNEWS_${item.code}_BANK`,
+      `${item.country} Policy`,
+      `${item.country} ("central bank" OR inflation OR GDP OR currency OR trade OR oil)`,
+      item.code,
+    ));
+    if (ARABIC_GOOGLE_NEWS_COUNTRIES.has(item.code)) {
+      push(googleNewsSource(
+        `GNEWS_${item.code}_AR`,
+        `${item.country} Arabic`,
+        `${item.country} (اقتصاد OR أسواق OR مالية OR بنك)`,
+        item.code,
+        "ar",
+      ));
+    }
+  }
+
+  push(googleNewsSource(
+    "GNEWS_EU_ECON",
+    "Eurozone Economy",
+    "Eurozone (economy OR ECB OR inflation OR markets)",
+    "EU",
+  ));
+  push(googleNewsSource(
+    "GNEWS_EU_BANK",
+    "European Central Bank",
+    "(\"European Central Bank\" OR ECB) (rates OR inflation OR euro)",
+    "EU",
+  ));
+
+  return extra;
+}
+
+export function allLiveCountrySources() {
+  const retired = new Set<string>(RETIRED_COUNTRY_SOURCE_CODES);
+  return [...COUNTRY_SOURCES, ...generatedCountrySources()].filter((source) => !retired.has(source.code));
+}
+
+export function countriesNeedingArticles(
+  catalog: string[],
+  counts: Map<string, number>,
+  minArticles: number,
+) {
+  return catalog.filter((code) => (counts.get(code) ?? 0) < minArticles);
+}
+
 export function countrySourceCoverage() {
   const retired = new Set<string>(RETIRED_COUNTRY_SOURCE_CODES);
   const covered = new Set<string>(CORE_SCRAPE_COUNTRIES);
-  for (const source of COUNTRY_SOURCES) {
-    if (!retired.has(source.code)) covered.add(source.country);
+  const counts = new Map<string, number>();
+  for (const code of CORE_SCRAPE_COUNTRIES) {
+    counts.set(code, (counts.get(code) ?? 0) + 1);
   }
+  for (const source of allLiveCountrySources()) {
+    if (retired.has(source.code)) continue;
+    covered.add(source.country);
+    counts.set(source.country, (counts.get(source.country) ?? 0) + 1);
+  }
+  const catalog = COUNTRY_CATALOG.map((item) => item.code);
   return {
     covered: [...covered].sort(),
-    gaps: COUNTRY_CATALOG.map((item) => item.code).filter((code) => !covered.has(code)),
+    gaps: catalog.filter((code) => !covered.has(code)),
+    thin: catalog.filter((code) => (counts.get(code) ?? 0) < MIN_SOURCES_PER_COUNTRY),
+    counts,
   };
 }

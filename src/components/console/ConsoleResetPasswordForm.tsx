@@ -1,9 +1,10 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
-import type { ConsoleLoginCopy } from "@/lib/console-translation";
+import { withConsoleLang, type ConsoleLoginCopy } from "@/lib/console-translation";
 
 export function ConsoleResetPasswordForm({ copy }: { copy: ConsoleLoginCopy }) {
   const router = useRouter();
@@ -49,7 +50,6 @@ export function ConsoleResetPasswordForm({ copy }: { copy: ConsoleLoginCopy }) {
 
   return (
     <form onSubmit={submit} className="console-gate-form">
-      <h2 className="console-gate-form-title">{copy.resetTitle}</h2>
       <div className="console-gate-field">
         <label htmlFor="new-password">{copy.passwordLabel}</label>
         <input
@@ -86,6 +86,11 @@ export function ConsoleResetPasswordForm({ copy }: { copy: ConsoleLoginCopy }) {
       <button type="submit" disabled={loading} className="console-gate-submit" aria-busy={loading}>
         {loading ? copy.submitting : copy.resetSubmit}
       </button>
+      <p className="console-gate-switch">
+        <Link href={withConsoleLang("/console/login", copy.lang)} className="console-gate-link">
+          {copy.backToSignIn}
+        </Link>
+      </p>
     </form>
   );
 }

@@ -4,10 +4,11 @@
  *   npm run media:upload
  *   dotenv -e .env.live -- npm run media:upload
  */
-import { existsSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { uploadImageFile, isCloudinaryConfigured, cloudinaryConfig } from "../src/lib/cloudinary";
-import { MEDIA, MEDIA_FOLDER } from "../src/lib/media";
+import { uploadImageFile, uploadRawFile, isCloudinaryConfigured, cloudinaryConfig } from "../src/lib/cloudinary";
+import { MEDIA, MEDIA_FOLDER, PLATFORM_OVERVIEW_PDF_ID } from "../src/lib/media";
+import { buildPlatformOverviewPdf } from "../src/lib/console/platform-overview-pdf";
 
 const root = path.join(process.cwd(), "public");
 
@@ -15,6 +16,7 @@ const root = path.join(process.cwd(), "public");
 const ASSETS: { file: string; publicId: string }[] = [
   { file: "brand/logo-mark.png", publicId: MEDIA.logoMark },
   { file: "brand/logo-wordmark.png", publicId: MEDIA.logoWordmark },
+  { file: "brand/logo-wordmark-on-dark.png", publicId: MEDIA.logoWordmarkOnDark },
   { file: "hero-newsstream.jpg", publicId: MEDIA.heroNewsstream },
   { file: "hero-markets.png", publicId: MEDIA.heroMarkets },
   { file: "og/og-share.jpg", publicId: MEDIA.ogShare },
@@ -52,6 +54,18 @@ async function main() {
     );
     console.log("");
   }
+
+  const pdfPath = path.join(root, "console/platform-overview.pdf");
+  mkdirSync(path.dirname(pdfPath), { recursive: true });
+  writeFileSync(pdfPath, buildPlatformOverviewPdf());
+  const pdfUpload = await uploadRawFile(pdfPath, {
+    publicId: PLATFORM_OVERVIEW_PDF_ID,
+    overwrite: true,
+  });
+  console.log("OK  console/platform-overview.pdf");
+  console.log(`    → ${pdfUpload.publicId}`);
+  console.log(`    → ${pdfUpload.secureUrl}`);
+  console.log("");
 
   const manifestPath = path.join(process.cwd(), "src/lib/media-cloud.json");
   writeFileSync(

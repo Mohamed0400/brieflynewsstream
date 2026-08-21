@@ -1,56 +1,93 @@
+import Image from "next/image";
 import Link from "next/link";
+import {
+  ChartLineUp,
+  Check,
+  Code,
+  Stack,
+  Translate,
+} from "@phosphor-icons/react/ssr";
+import { PricingPlans } from "@/components/marketing/PricingPlans";
+import { COUNTRY_CATALOG } from "@/lib/countries";
 import { marketingCopy, type MarketingLang } from "@/lib/marketing-copy";
-import { CloudinaryImage } from "@/components/media/CloudinaryImage";
+import { marketingRegionPins } from "@/lib/region-coverage";
 
-const sampleJson = `{
-  "articles": [{
-    "id": "art_01",
-    "titleAr": "أسعار الذهب ترتفع مع ترقّب قرارات الفائدة",
-    "titleEn": "Gold prices climb ahead of rate decisions",
-    "summaryAr": "المستثمرون يتابعون إشارات البنوك المركزية.",
-    "summaryEn": "Investors watch central-bank signals.",
-    "country": "GLOBAL",
-    "category": "GOLD",
-    "impactScore": 86,
-    "publishedAt": "2026-08-20T08:12:00Z"
-  }]
+const demoJson = `{
+  "category": "gold",
+  "country": "US",
+  "title": "ارتفاع أسعار الذهب مع ترقّب قرارات أسعار الفائدة",
+  "summary": "ارتفع المعدن مع ترقّب قرارات أسعار الفائدة.",
+  "arabic": {
+    "title": "ارتفاع أسعار الذهب مع ترقّب قرارات أسعار الفائدة",
+    "summary": "ارتفع المعدن مع ترقّب قرارات أسعار الفائدة."
+  },
+  "english": {
+    "title": "Gold prices climb ahead of rate decisions",
+    "summary": "Bullion gained as traders watched rate decisions."
+  },
+  "scores": {
+    "final": 86,
+    "goldImpact": 91,
+    "marketImpact": 84
+  }
 }`;
+
+const icon = { size: 28, weight: "regular" as const, "aria-hidden": true };
+
+function ScoreBars({
+  rows,
+}: {
+  rows: ReadonlyArray<{ label: string; value: string }>;
+}) {
+  return (
+    <ul className="mkt-score-bars">
+      {rows.map((row) => (
+        <li key={row.label}>
+          <span>{row.label}</span>
+          <span className="mkt-score-track" aria-hidden="true">
+            <span style={{ width: `${row.value}%` }} />
+          </span>
+          <strong>{row.value}</strong>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export function MarketingLanding({
   lang,
-  articlesIndexed,
-  countriesCovered,
 }: {
   lang: MarketingLang;
-  articlesIndexed: number;
-  countriesCovered: number;
 }) {
   const copy = marketingCopy(lang);
   const withLang = (path: string) => (lang === "en" ? `${path}${path.includes("?") ? "&" : "?"}lang=en` : path);
-  const homeHref = lang === "en" ? "/?lang=en" : "/";
-  const newsHref = withLang("/news");
-  const consoleHref = withLang("/console");
   const docsHref = withLang("/developers");
-  const signupHref = withLang("/console/login");
-  const pricingHref = withLang("/pricing");
-  const developersHref = withLang("/developers");
-  const coverageHref = withLang("/coverage");
+  const signupHref = withLang("/console/signup");
+  const briefingHref = withLang("/news");
+  const regionPins = marketingRegionPins();
+  const countryCount = COUNTRY_CATALOG.length;
 
-  const pillars = [
-    { title: copy.pillarBilingualTitle, body: copy.pillarBilingualBody },
-    { title: copy.pillarImpactTitle, body: copy.pillarImpactBody },
-    { title: copy.pillarBriefingsTitle, body: copy.pillarBriefingsBody },
-    { title: copy.pillarCoverageTitle, body: copy.pillarCoverageBody },
-    { title: copy.pillarConsoleTitle, body: copy.pillarConsoleBody },
-    { title: copy.pillarArchiveTitle, body: copy.pillarArchiveBody },
+  const signals = [
+    { icon: <Stack {...icon} />, title: copy.provideLiveTitle, body: copy.provideLiveBody },
+    { icon: <ChartLineUp {...icon} />, title: copy.provideArchiveTitle, body: copy.provideArchiveBody },
+    { icon: <Code {...icon} />, title: copy.provideScoreTitle, body: copy.provideScoreBody },
+  ];
+
+  const scores = [
+    { label: copy.scoreGold, value: copy.scoreGoldValue },
+    { label: copy.scoreRates, value: copy.scoreRatesValue },
+    { label: copy.scoreMarket, value: copy.scoreMarketValue },
+    { label: copy.scoreUsd, value: copy.scoreUsdValue },
+    { label: copy.scoreOil, value: copy.scoreOilValue },
   ];
 
   const useCases = [
-    { title: copy.useCaseFintech, body: copy.useCaseFintechBody },
-    { title: copy.useCaseMedia, body: copy.useCaseMediaBody },
-    { title: copy.useCaseAgents, body: copy.useCaseAgentsBody },
-    { title: copy.useCaseApps, body: copy.useCaseAppsBody },
+    { title: copy.useCaseFintech, body: copy.useCaseFintechBody, query: "category=markets&sort=score" },
+    { title: copy.useCaseAgents, body: copy.useCaseAgentsBody, query: "limit=20&sort=score" },
+    { title: copy.useCaseMedia, body: copy.useCaseMediaBody, query: "lang=ar&sort=score" },
+    { title: copy.useCaseApps, body: copy.useCaseAppsBody, query: "from=2026-01-01&sort=date" },
   ];
+  const [featured, ...rest] = useCases;
 
   const faqs = [
     { q: copy.faqWhatQ, a: copy.faqWhatA },
@@ -62,398 +99,338 @@ export function MarketingLanding({
     { q: copy.faqPayQ, a: copy.faqPayA },
   ];
 
-  const navItems: {
-    href: string;
-    label: string;
-    console?: boolean;
-  }[] = [
-    { href: "#product", label: copy.navProduct },
-    { href: coverageHref, label: copy.navCoverage },
-    { href: developersHref, label: copy.navDevelopers },
-    { href: pricingHref, label: copy.navPricing },
-    { href: newsHref, label: copy.navLive },
-    { href: consoleHref, label: copy.navConsole, console: true },
-  ];
-
   return (
-    <div className="mkt" lang={copy.lang} dir={copy.dir}>
-      <a className="mkt-skip" href="#mkt-main">
-        {copy.skipToContent}
-      </a>
-
-      <header className="mkt-nav">
-        <div className="mkt-nav-inner">
-          <Link href={homeHref} className="mkt-brand" aria-label={copy.brand}>
-            <CloudinaryImage
-              media="logoMark"
-              alt=""
-              width={40}
-              height={40}
-              deliveryWidth={80}
-              className="mkt-brand-mark"
-              priority
-            />
-            <span className="mkt-brand-name">{copy.brand}</span>
-          </Link>
-
-          <nav className="mkt-nav-links" aria-label={copy.navAria}>
-            {navItems.map((item) =>
-              item.href.startsWith("#") ? (
-                <a key={item.label} href={item.href} className={item.console ? "mkt-nav-console" : undefined}>
-                  {item.label}
-                </a>
-              ) : (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className={item.console ? "mkt-nav-console" : undefined}
-                >
-                  {item.label}
-                </Link>
-              ),
-            )}
-          </nav>
-
-          <div className="mkt-lang" role="group" aria-label={copy.langAria}>
-            <Link href="/" hrefLang="ar" lang="ar" className={lang === "ar" ? "is-active" : ""}>
-              العربية
-            </Link>
-            <Link href="/?lang=en" hrefLang="en" lang="en" className={lang === "en" ? "is-active" : ""}>
-              English
-            </Link>
-          </div>
-
-          <details className="mkt-nav-drawer">
-            <summary className="mkt-nav-drawer-btn">{copy.menuOpen}</summary>
-            <nav className="mkt-nav-drawer-panel" aria-label={copy.navAria}>
-              {navItems.map((item) =>
-                item.href.startsWith("#") ? (
-                  <a key={`m-${item.label}`} href={item.href}>
-                    {item.label}
-                  </a>
-                ) : (
-                  <Link key={`m-${item.label}`} href={item.href}>
-                    {item.label}
-                  </Link>
-                ),
-              )}
-            </nav>
-          </details>
-        </div>
-      </header>
-
-      <main id="mkt-main">
-        <section className="mkt-hero mkt-hero-void" aria-labelledby="mkt-hero-title">
-          <div className="mkt-hero-void-bg" aria-hidden="true">
-            <div className="mkt-hero-grid" />
-            <div className="mkt-hero-glow" />
-            <div className="mkt-hero-stream">
-              <div className="mkt-hero-stream-rail mkt-hero-stream-rail-a">
-                <span>impactScore:86</span>
-                <span lang="ar">أسعار الذهب</span>
-                <span>GOLD · GLOBAL</span>
-                <span lang="ar">قرارات الفائدة</span>
-                <span>titleEn · titleAr</span>
-                <span>AR + EN</span>
-                <span>stream · live</span>
-                <span lang="ar">أثر السوق</span>
-                <span>impactScore:86</span>
-                <span lang="ar">أسعار الذهب</span>
-                <span>GOLD · GLOBAL</span>
-                <span lang="ar">قرارات الفائدة</span>
-                <span>titleEn · titleAr</span>
-                <span>AR + EN</span>
-              </div>
-              <div className="mkt-hero-stream-rail mkt-hero-stream-rail-b">
-                <span lang="ar">نفط · طاقة</span>
-                <span>JSON / v1</span>
-                <span>bilingual</span>
-                <span lang="ar">ثنائي اللغة</span>
-                <span>markets</span>
-                <span lang="ar">أسواق</span>
-                <span>permanent archive</span>
-                <span lang="ar">أرشيف دائم</span>
-                <span lang="ar">نفط · طاقة</span>
-                <span>JSON / v1</span>
-                <span>bilingual</span>
-                <span lang="ar">ثنائي اللغة</span>
-                <span>markets</span>
-                <span lang="ar">أسواق</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="mkt-hero-content">
-            <p className="mkt-hero-brand">{copy.brand}</p>
-            <p className="mkt-hero-langs">
-              <span lang="ar">العربية</span>
-              <span aria-hidden="true">·</span>
-              <span lang="en">English</span>
-              <span className="mkt-hero-langs-note">{copy.heroLangSupport}</span>
-            </p>
-            <h1 id="mkt-hero-title">
-              <span className="mkt-hero-line">{copy.heroHeadline}</span>
-            </h1>
+    <div lang={copy.lang} dir={copy.dir}>
+      <section className="mkt-hero" aria-labelledby="mkt-hero-title">
+        <div className="mkt-hero-mesh" aria-hidden="true" />
+        <div className="mkt-hero-split">
+          <div className="mkt-hero-copy">
+            <p className="mkt-product-line">{copy.productLine}</p>
+            <h1 id="mkt-hero-title">{copy.heroHeadline}</h1>
             <p className="mkt-hero-lede" data-aeo-answer>
               {copy.heroLede}
             </p>
-
-            <form className="mkt-hero-search" action="/news" method="get" role="search">
-              <label className="mkt-hero-search-label" htmlFor="mkt-hero-q">
-                {copy.heroSearchLabel}
-              </label>
-              <div className="mkt-hero-search-row">
-                <input
-                  id="mkt-hero-q"
-                  name="q"
-                  type="search"
-                  enterKeyHint="search"
-                  autoComplete="off"
-                  placeholder={copy.heroSearchPlaceholder}
-                  className="mkt-hero-search-input"
-                />
-                {lang === "en" ? <input type="hidden" name="lang" value="en" /> : null}
-                <button type="submit" className="mkt-btn mkt-btn-primary mkt-hero-search-btn">
-                  {copy.heroSearchSubmit}
-                </button>
-              </div>
-            </form>
-
             <div className="mkt-cta-row">
               <Link href={signupHref} className="mkt-btn mkt-btn-primary">
                 {copy.ctaKey}
               </Link>
               <Link href={docsHref} className="mkt-btn mkt-btn-ghost">
+                {copy.ctaExploreApi}
+              </Link>
+            </div>
+            <p className="mkt-hero-proof">{copy.heroProof}</p>
+          </div>
+
+          <div className="mkt-hero-stage">
+            <Image
+              src="/marketing/cyan-bloom.webp"
+              alt=""
+              width={1536}
+              height={1024}
+              className="mkt-hero-bloom"
+              priority
+            />
+            <pre className="mkt-hero-json" tabIndex={0} dir="ltr" lang="en">
+              <code>
+                <span className="mkt-demo-method">{copy.demoGet}</span> /v1/market-news
+                {"\n"}
+                {demoJson}
+              </code>
+            </pre>
+            <article className="mkt-product-card" aria-label={copy.sampleVisualTitle}>
+              <div className="mkt-product-card-top">
+                <p>{copy.sampleCardKicker}</p>
+                <p className="mkt-impact-pill">
+                  {copy.sampleImpactLabel} {copy.sampleImpactValue}
+                </p>
+              </div>
+              <h2>{copy.sampleCardTitle}</h2>
+              <p className="mkt-product-meta">
+                <span>{copy.sampleCardMeta}</span>
+                <span>{copy.sampleCardSource}</span>
+                <span>{copy.sampleCardDate}</span>
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section className="mkt-section mkt-signal">
+        <div className="mkt-split-block">
+          <div className="mkt-split-copy">
+            <h2>{copy.provideTitle}</h2>
+            <p>{copy.provideLede}</p>
+            <ul className="mkt-signal-list">
+              {signals.map((item) => (
+                <li key={item.title}>
+                  <span className="mkt-icon-well">{item.icon}</span>
+                  <div>
+                    <h3>{item.title}</h3>
+                    <p>{item.body}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <figure className="mkt-split-visual">
+            <Image src="/marketing/data-network.webp" alt="" width={1536} height={1024} />
+          </figure>
+        </div>
+      </section>
+
+      <section id="coverage" className="mkt-section mkt-coverage">
+        <div className="mkt-coverage-stage">
+          <Image
+            src="/marketing/dot-earth.webp"
+            alt=""
+            width={1536}
+            height={1024}
+            className="mkt-coverage-photo"
+          />
+          <div className="mkt-coverage-copy">
+            <h2>{copy.scaleTitle}</h2>
+            <p>{copy.coverageLede}</p>
+            <ul className="mkt-coverage-stats">
+              <li>
+                <strong>{copy.scaleCountries}</strong>
+                <span>{copy.scaleCountriesHint}</span>
+              </li>
+              <li>
+                <strong>{copy.scaleCats}</strong>
+                <span>{copy.scaleCatsHint}</span>
+              </li>
+            </ul>
+            <Link href={briefingHref} className="mkt-btn mkt-btn-primary">
+              {copy.coverageCta}
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="mkt-section mkt-regions-map" aria-labelledby="mkt-regions-title">
+        <div className="mkt-regions-stage">
+          <div className="mkt-regions-copy">
+            <h2 id="mkt-regions-title">{copy.regionsMapTitle}</h2>
+            <p>{copy.regionsMapLede}</p>
+          </div>
+          <div className="mkt-regions-board">
+            <Image
+              src="/marketing/dot-world.webp"
+              alt=""
+              width={1536}
+              height={1024}
+              className="mkt-regions-bg"
+            />
+            <ul className="mkt-region-pins">
+            {regionPins.map((pin) => (
+              <li key={pin.code}>
+                <Link
+                  href={briefingHref}
+                  className={`mkt-region-card is-${pin.code}`}
+                >
+                  <h3>{lang === "en" ? pin.label : pin.labelAr}</h3>
+                  <p className="mkt-region-codes" dir="ltr" lang="en">
+                    {pin.samples.join(" · ")}
+                  </p>
+                  <p className="mkt-region-meta">
+                    <strong>{pin.count}</strong>
+                    <span>{copy.regionCountHint}</span>
+                    {pin.more > 0 ? (
+                      <span>
+                        +{pin.more} {copy.regionMore}
+                      </span>
+                    ) : null}
+                  </p>
+                </Link>
+              </li>
+            ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section className="mkt-impact-band" aria-labelledby="mkt-impact-title">
+        <Image
+          src="/marketing/earth-night.webp"
+          alt=""
+          width={1536}
+          height={1024}
+          className="mkt-impact-photo"
+        />
+        <div className="mkt-split-block mkt-split-block-flip">
+          <div className="mkt-scoreboard" aria-label={copy.impactTitle}>
+            <p className="mkt-scoreboard-kicker">{copy.sampleScoreTitle}</p>
+            <p className="mkt-scoreboard-value">{copy.sampleImpactValue}</p>
+            <p className="mkt-scoreboard-state">{copy.sampleImpactHigh}</p>
+            <ScoreBars rows={scores} />
+          </div>
+          <div className="mkt-split-copy">
+            <h2 id="mkt-impact-title">{copy.impactTitle}</h2>
+            <p>{copy.impactLede}</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="mkt-section mkt-audience" aria-labelledby="mkt-audience-title">
+        <div className="mkt-audience-head">
+          <h2 id="mkt-audience-title">{copy.useCasesTitle}</h2>
+          <p>{copy.useCasesLede}</p>
+        </div>
+        <article className="mkt-audience-lead">
+          <div>
+            <h3>{featured.title}</h3>
+            <p>{featured.body}</p>
+            <p className="mkt-audience-query">
+              <span>{copy.useCaseQuery}</span>
+              <code dir="ltr" lang="en">
+                {featured.query}
+              </code>
+            </p>
+          </div>
+          <Image
+            src="/marketing/audience-desk.jpg"
+            alt=""
+            width={1536}
+            height={1024}
+          />
+        </article>
+        <ul className="mkt-audience-list">
+          {rest.map((item) => (
+            <li key={item.title}>
+              <div>
+                <h3>{item.title}</h3>
+                <p>{item.body}</p>
+              </div>
+              <code dir="ltr" lang="en">
+                {item.query}
+              </code>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section id="developers" className="mkt-section mkt-demo">
+        <div className="mkt-split-block">
+          <div className="mkt-split-copy">
+            <h2>{copy.demoTitle}</h2>
+            <p>{copy.demoLede}</p>
+            <ul className="mkt-api-points">
+              {[copy.apiPoint1, copy.apiPoint2, copy.apiPoint3].map((item) => (
+                <li key={item}>
+                  <Check {...icon} />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="mkt-cta-row">
+              <Link href={docsHref} className="mkt-btn mkt-btn-primary">
                 {copy.ctaDocs}
               </Link>
             </div>
           </div>
-        </section>
-
-        <section className="mkt-proof" aria-label={copy.proofLine}>
-          <p>{copy.proofLine}</p>
-          <ul>
-            <li>{copy.proofCountries}</li>
-            <li>{copy.proofLangs}</li>
-            <li>{copy.proofImpact}</li>
-            <li>{copy.proofArchive}</li>
-          </ul>
-        </section>
-
-        <section className="mkt-section mkt-concepts" aria-labelledby="mkt-concepts-title">
-          <div className="mkt-section-head">
-            <h2 id="mkt-concepts-title">{copy.conceptsTitle}</h2>
-            <p>{copy.conceptsLede}</p>
-          </div>
-          <div className="mkt-concept-grid">
-            <figure className="mkt-concept mkt-concept-wide">
-              <CloudinaryImage
-                media="conceptArFirstDesk"
-                alt={copy.conceptDeskTitle}
-                width={1248}
-                height={832}
-                deliveryWidth={1248}
-                className="mkt-concept-img"
-                sizes="(max-width: 900px) 100vw, 70vw"
-              />
-              <figcaption>
-                <strong>{copy.conceptDeskTitle}</strong>
-                <span>{copy.conceptDeskBody}</span>
-              </figcaption>
-            </figure>
-            <figure className="mkt-concept">
-              <CloudinaryImage
-                media="conceptFloatingStream"
-                alt={copy.conceptStreamTitle}
-                width={1248}
-                height={832}
-                deliveryWidth={900}
-                className="mkt-concept-img"
-                sizes="(max-width: 900px) 100vw, 40vw"
-              />
-              <figcaption>
-                <strong>{copy.conceptStreamTitle}</strong>
-                <span>{copy.conceptStreamBody}</span>
-              </figcaption>
-            </figure>
-            <figure className="mkt-concept">
-              <CloudinaryImage
-                media="conceptBentoCoverage"
-                alt={copy.conceptBentoTitle}
-                width={1536}
-                height={1024}
-                deliveryWidth={900}
-                className="mkt-concept-img"
-                sizes="(max-width: 900px) 100vw, 40vw"
-              />
-              <figcaption>
-                <strong>{copy.conceptBentoTitle}</strong>
-                <span>{copy.conceptBentoBody}</span>
-              </figcaption>
-            </figure>
-          </div>
-        </section>
-
-        <section id="developers" className="mkt-section mkt-sample">
-          <div className="mkt-section-head">
-            <h2>{copy.sampleTitle}</h2>
-            <p>{copy.sampleLede}</p>
-          </div>
-          <pre className="mkt-code" tabIndex={0} dir="ltr" lang="en">
-            <code>{sampleJson}</code>
-          </pre>
-        </section>
-
-        <section id="product" className="mkt-section mkt-pillars">
-          <div className="mkt-section-head">
-            <h2>{copy.pillarsTitle}</h2>
-            <p>{copy.pillarsLede}</p>
-          </div>
-          <div className="mkt-pillar-grid">
-            {pillars.map((pillar, index) => (
-              <article
-                key={pillar.title}
-                className={index === 0 ? "mkt-pillar mkt-pillar-featured" : "mkt-pillar"}
-              >
-                <h3>{pillar.title}</h3>
-                <p>{pillar.body}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section id="coverage" className="mkt-section mkt-coverage">
-          <div className="mkt-section-head">
-            <h2>{copy.coverageTitle}</h2>
-            <p>{copy.coverageLede}</p>
-          </div>
-          <div className="mkt-cta-row">
-            <Link href={coverageHref} className="mkt-btn mkt-btn-primary">
-              {copy.navCoverage}
-            </Link>
-            <Link href={newsHref} className="mkt-btn mkt-btn-ghost">
-              {copy.navLive}
-            </Link>
-          </div>
-        </section>
-
-        <section className="mkt-section mkt-usecases">
-          <div className="mkt-section-head">
-            <h2>{copy.useCasesTitle}</h2>
-          </div>
-          <div className="mkt-use-grid">
-            {useCases.map((item) => (
-              <article key={item.title} className="mkt-use">
-                <h3>{item.title}</h3>
-                <p>{item.body}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="mkt-section mkt-trust">
-          <div className="mkt-section-head">
-            <h2>{copy.trustTitle}</h2>
-            <p>{copy.trustLede}</p>
-          </div>
-          <dl className="mkt-metrics">
-            <div>
-              <dt>{copy.metricArticles}</dt>
-              <dd>{articlesIndexed.toLocaleString(lang === "ar" ? "ar" : "en")}</dd>
-            </div>
-            <div>
-              <dt>{copy.metricCountries}</dt>
-              <dd>{countriesCovered}</dd>
-            </div>
-            <div>
-              <dt>{copy.metricLanguages}</dt>
-              <dd>{copy.metricLanguagesValue}</dd>
-            </div>
-          </dl>
-        </section>
-
-        <section id="pricing" className="mkt-section mkt-pricing">
-          <div className="mkt-section-head">
-            <h2>{copy.pricingTitle}</h2>
-            <p>{copy.pricingLede}</p>
-          </div>
-          <div className="mkt-price-grid">
-            <article className="mkt-price">
-              <h3>{copy.planFree}</h3>
-              <p className="mkt-price-amount">{copy.planFreePrice}</p>
-              <p>{copy.planFreeBody}</p>
-              <Link href={signupHref} className="mkt-btn mkt-btn-ghost">
-                {copy.planCtaStart}
-              </Link>
-            </article>
-            <article className="mkt-price mkt-price-featured">
-              <h3>{copy.planPro}</h3>
-              <p className="mkt-price-amount">
-                {copy.planProPrice}
-                <span>{copy.planProPeriod}</span>
-              </p>
-              <p>{copy.planProBody}</p>
-              <Link href={signupHref} className="mkt-btn mkt-btn-primary">
-                {copy.planCtaStart}
-              </Link>
-            </article>
-            <article className="mkt-price">
-              <h3>{copy.planEnterprise}</h3>
-              <p className="mkt-price-amount">{copy.planEnterprisePrice}</p>
-              <p>{copy.planEnterpriseBody}</p>
-              <Link href="mailto:hello@brieflynewsstream.com" className="mkt-btn mkt-btn-ghost">
-                {copy.planCtaContact}
-              </Link>
-            </article>
-          </div>
-        </section>
-
-        <section className="mkt-section mkt-faq">
-          <div className="mkt-section-head">
-            <h2>{copy.faqTitle}</h2>
-          </div>
-          <div className="mkt-faq-list">
-            {faqs.map((item) => (
-              <details key={item.q} className="mkt-faq-item">
-                <summary>{item.q}</summary>
-                <p>{item.a}</p>
-              </details>
-            ))}
-          </div>
-        </section>
-
-        <section className="mkt-final">
-          <h2>{copy.finalTitle}</h2>
-          <p>{copy.finalLede}</p>
-          <div className="mkt-cta-row">
-            <Link href={signupHref} className="mkt-btn mkt-btn-primary">
-              {copy.ctaKey}
-            </Link>
-            <Link href={consoleHref} className="mkt-btn mkt-btn-ghost">
-              {copy.navConsole}
-            </Link>
-          </div>
-        </section>
-      </main>
-
-      <footer className="mkt-footer">
-        <div className="mkt-footer-inner">
-          <div>
-            <strong>{copy.brand}</strong>
-            <p>{copy.footerRights}</p>
-          </div>
-          <div>
-            <p>{copy.footerProduct}</p>
-            <Link href={homeHref}>{lang === "en" ? "Home" : "الرئيسية"}</Link>
-            <Link href={coverageHref}>{copy.navCoverage}</Link>
-            <Link href={developersHref}>{copy.navDevelopers}</Link>
-            <Link href={pricingHref}>{copy.navPricing}</Link>
-            <Link href={docsHref}>{copy.footerDocs}</Link>
-            <Link href={consoleHref}>{copy.footerConsole}</Link>
-            <Link href={newsHref}>{copy.footerNews}</Link>
+          <div className="mkt-demo-pane mkt-demo-json" dir="ltr" lang="en">
+            <h3>{copy.demoGet}</h3>
+            <p className="mkt-demo-url" dir="ltr" lang="en">
+              <span className="mkt-demo-method">{copy.demoGet}</span>
+              <code>{copy.apiPath}</code>
+            </p>
+            <pre className="mkt-code" tabIndex={0} dir="ltr" lang="en">
+              <code>{demoJson}</code>
+            </pre>
           </div>
         </div>
-      </footer>
+      </section>
+
+      <section className="mkt-section mkt-bilingual">
+        <div className="mkt-section-head">
+          <h2>{copy.bilingualTitle}</h2>
+          <p>{copy.bilingualLede}</p>
+        </div>
+        <div className="mkt-field-strip" dir="ltr" lang="en">
+          <code>title</code>
+          <code>summary</code>
+          <code>arabic</code>
+          <code>english</code>
+        </div>
+        <div className="mkt-bilingual-pair">
+          <article>
+            <span className="mkt-icon-well">
+              <Translate {...icon} />
+            </span>
+            <h3>{copy.bilingualArTitle}</h3>
+            <p>{copy.bilingualArBody}</p>
+          </article>
+          <article>
+            <span className="mkt-icon-well">
+              <Code {...icon} />
+            </span>
+            <h3>{copy.bilingualEnTitle}</h3>
+            <p>{copy.bilingualEnBody}</p>
+          </article>
+        </div>
+      </section>
+
+      <section className="mkt-section mkt-trust">
+        <div className="mkt-section-head">
+          <h2>{copy.trustTitle}</h2>
+          <p>{copy.trustLede}</p>
+        </div>
+        <div className="mkt-trust-grid">
+          <article className="mkt-trust-tile">
+            <div className="mkt-trust-visual" aria-hidden="true">
+              <div className="mkt-trust-donut">
+                <span>{countryCount}+</span>
+              </div>
+              <p className="mkt-trust-pill">{copy.trustPill}</p>
+            </div>
+            <p>{copy.trustCard1}</p>
+          </article>
+
+          <article className="mkt-trust-tile">
+            <div className="mkt-trust-visual" aria-hidden="true">
+              <div className="mkt-trust-query">
+                <p className="mkt-trust-query-hint">{copy.trustTryTitle}</p>
+              </div>
+            </div>
+            <p>{copy.trustCard2}</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="pricing" className="mkt-section mkt-pricing">
+        <div className="mkt-section-head">
+          <h2>{copy.pricingTitle}</h2>
+          <p>{copy.pricingLede}</p>
+        </div>
+        <PricingPlans lang={lang} variant="compact" />
+      </section>
+
+      <section className="mkt-section mkt-faq">
+        <div className="mkt-section-head">
+          <h2>{copy.faqTitle}</h2>
+        </div>
+        <div className="mkt-faq-list">
+          {faqs.map((item) => (
+            <details key={item.q} className="mkt-faq-item">
+              <summary>{item.q}</summary>
+              <p>{item.a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
+      <section className="mkt-final">
+        <h2>{copy.finalTitle}</h2>
+        <p>{copy.finalLede}</p>
+        <div className="mkt-cta-row">
+          <Link href={signupHref} className="mkt-btn mkt-btn-primary">
+            {copy.ctaKey}
+          </Link>
+          <Link href={docsHref} className="mkt-btn mkt-btn-ghost">
+            {copy.ctaDocs}
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

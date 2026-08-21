@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { Toaster } from "@/components/Toaster";
 import { toast } from "@/lib/toast";
+import { PUBLIC_PAGE_ERROR } from "@/lib/public-error";
 
 export default function GlobalError({
   error,
@@ -12,7 +13,8 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    toast.exception(error, "The application could not continue.");
+    console.error("Global error", error.digest ?? "unknown");
+    toast.error(PUBLIC_PAGE_ERROR, "The application could not continue.");
   }, [error]);
 
   return (
@@ -20,7 +22,8 @@ export default function GlobalError({
       <body>
         <main className="page-shell" style={{ padding: "4rem 1.5rem" }}>
           <h1>The application could not continue</h1>
-          <p>{error.message || "An unexpected error occurred."}</p>
+          <p>{PUBLIC_PAGE_ERROR}</p>
+          {error.digest ? <p>Reference {error.digest}</p> : null}
           <button type="button" className="console-primary-button" onClick={() => reset()}>
             Reload
           </button>

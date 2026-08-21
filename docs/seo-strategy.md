@@ -14,7 +14,7 @@ This doc covers classic SEO **and** Answer Engine Optimization (AEO) so the prod
 2. Rank for **category**: news API, JSON news API, realtime news API, headlines API
 3. Rank for **geo wedge**: Kuwait news API, Middle East / Gulf / MENA / GCC news API, Arabic-speaking countries news API
 4. Win **AEO citations**: clear entity answers, FAQ/HowTo schema, `llms.txt`, allow AI crawlers
-5. Earn **sitelinks**: Home, Live feed, Pricing, Developers, Coverage
+5. Earn **sitelinks**: Home, Briefing, Pricing, Developers, Coverage
 
 ---
 
@@ -88,14 +88,15 @@ Full lists: `src/lib/seo.ts`.
 | Path | Role | Priority |
 | --- | --- | --- |
 | `/` | Home + AEO entity | 1.0 |
-| `/news` | Live feed | 0.95 |
+| `/news` | Briefing | 0.95 |
 | `/pricing` | Plans | 0.9 |
 | `/developers` | API overview | 0.9 |
 | `/coverage` | Geo / country story | 0.85 |
+| `/console/login` | Public console sign-in | 0.6 |
 | `/llms.txt` | AI crawler brief | — |
 | `/sitemap.xml` | Discovery | — |
 
-Console (`/console/*`) stays **noindex**.
+Authenticated console (`/console/overview` and the rest of `/console/*`) stays **noindex**. `/console/login` is public and indexable.
 
 ---
 

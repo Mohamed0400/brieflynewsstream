@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAccount } from "@/lib/account";
-import { extractApiError } from "@/lib/api";
+import { describeQueryFailure, extractApiError } from "@/lib/api";
 import { isTrustedConsoleOrigin } from "@/lib/console-auth";
 import { prisma } from "@/lib/prisma";
 import { createHash } from "node:crypto";
@@ -95,13 +95,14 @@ export async function GET(request: Request) {
       response: payload,
     });
   } catch (error) {
+    const failure = describeQueryFailure(error);
     return NextResponse.json({
       ok: false,
       status: 502,
       durationMs: Math.max(1, Math.round(performance.now() - startedAt)),
       requestPath: `${target.pathname}${target.search}`,
       error: "proxy_failed",
-      message: error instanceof Error ? error.message : "The explorer could not reach the API.",
+      message: failure.message,
       response: null,
     }, { status: 502 });
   }

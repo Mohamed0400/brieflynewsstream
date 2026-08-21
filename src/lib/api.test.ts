@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { describeQueryFailure, parseQuery } from "./api";
+import { describeQueryFailure, parseQuery, publicLanguageFields, searchContains } from "./api";
 import {
   articleLocalizedText,
   isBilingualComplete,
@@ -29,10 +29,10 @@ test("API query supports text, source, and language filters", () => {
     OR: [{
       AND: [{
         OR: [
-          { title: { contains: "gold" } },
-          { displayTitle: { contains: "gold" } },
-          { titleEn: { contains: "gold" } },
-          { titleAr: { contains: "gold" } },
+          { title: searchContains("gold") },
+          { displayTitle: searchContains("gold") },
+          { titleEn: searchContains("gold") },
+          { titleAr: searchContains("gold") },
         ],
       }],
     }],
@@ -50,14 +50,14 @@ test("invalid search locations fall back to title and summary", () => {
     OR: [{
       AND: [{
         OR: [
-          { title: { contains: "inflation" } },
-          { displayTitle: { contains: "inflation" } },
-          { titleEn: { contains: "inflation" } },
-          { titleAr: { contains: "inflation" } },
-          { summary: { contains: "inflation" } },
-          { displaySummary: { contains: "inflation" } },
-          { summaryEn: { contains: "inflation" } },
-          { summaryAr: { contains: "inflation" } },
+          { title: searchContains("inflation") },
+          { displayTitle: searchContains("inflation") },
+          { titleEn: searchContains("inflation") },
+          { titleAr: searchContains("inflation") },
+          { summary: searchContains("inflation") },
+          { displaySummary: searchContains("inflation") },
+          { summaryEn: searchContains("inflation") },
+          { summaryAr: searchContains("inflation") },
         ],
       }],
     }],
@@ -85,6 +85,13 @@ test("Egypt searches translate without falling back to Kuwait", async () => {
   assert.match(serialized, /"contains":"egypt"/);
   assert.match(serialized, /"country":"EG"/);
   assert.doesNotMatch(serialized, /"country":"KW"/);
+});
+
+test("text search matches case-insensitively", () => {
+  const query = parseQuery(new URLSearchParams({ q: "Gold", searchIn: "title" }));
+  const serialized = JSON.stringify(query.where.AND);
+  assert.match(serialized, /"contains":"Gold"/);
+  assert.match(serialized, /"mode":"insensitive"/);
 });
 
 test("multi-word searches require every word but not phrase order", () => {
@@ -123,12 +130,19 @@ test("query failures distinguish Prisma client drift from invalid input", () => 
   );
   assert.equal(prismaFailure.status, 500);
   assert.equal(prismaFailure.error, "server_error");
-  assert.match(prismaFailure.message, /titleEn/);
   assert.match(prismaFailure.message, /Restart/);
+  assert.doesNotMatch(prismaFailure.message, /titleEn|findMany|prisma/);
+
+  const unreachable = describeQueryFailure(
+    new Error("Can't reach database server at `aws-0-ap-northeast-1.pooler.supabase.com:6543`"),
+  );
+  assert.equal(unreachable.status, 503);
+  assert.doesNotMatch(unreachable.message, /supabase|6543|aws-0/i);
 
   const invalid = describeQueryFailure(new Error("date must be YYYY-MM-DD"));
   assert.equal(invalid.status, 400);
   assert.equal(invalid.error, "invalid_query");
+  assert.equal(invalid.message, "date must be YYYY-MM-DD");
 });
 
 test("lang selects display language without filtering source language", () => {
@@ -225,6 +239,23 @@ test("bilingual coverage is complete only when every article has en and ar", () 
   assert.equal(incomplete.missingArabic, 1);
 });
 
+test("public stories expose arabic and english objects, not suffix fields", () => {
+  const fields = publicLanguageFields({
+    title: "Gold prices rise",
+    summary: "Bullion gained as the dollar eased.",
+    displayTitle: "Gold prices rise",
+    displaySummary: "Bullion gained as the dollar eased.",
+    titleEn: "Gold prices rise",
+    summaryEn: "Bullion gained as the dollar eased.",
+    titleAr: "أسعار الذهب ترتفع",
+    summaryAr: "ارتفع المعدن مع تراجع الدولار.",
+  });
+  assert.equal(fields.arabic.title, "أسعار الذهب ترتفع");
+  assert.equal(fields.english.title, "Gold prices rise");
+  assert.equal("titleAr" in fields, false);
+  assert.equal("titleEn" in fields, false);
+});
+
 test("API docs catalog lists every public v1 route", async () => {
   const { apiDocGroups, findApiDocEndpoint } = await import("./api-docs");
   const paths = apiDocGroups.flatMap((group) =>
@@ -240,8 +271,8 @@ test("API docs catalog lists every public v1 route", async () => {
     "GET /api/v1/meta/countries",
     "GET /api/v1/meta/nationalities",
     "GET /api/v1/sources",
-    "GET /api/v1/health",
-    "GET /api/v1/openapi.json",
+    "GET /api/cron/collect",
+    "POST /api/v1/admin/collect",
     "POST /api/v1/admin/rebuild-edition",
   ]) {
     assert.ok(paths.includes(expected), `missing ${expected}`);

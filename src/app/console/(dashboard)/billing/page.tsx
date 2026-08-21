@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { BillingPanel } from "@/components/console/BillingPanel";
 import { getOrCreateAccount, getSessionUser } from "@/lib/account";
+import {
+  listAccountInvoices,
+  serializeInvoice,
+} from "@/lib/billing/invoices";
 import { getConsoleLang } from "@/lib/console-lang";
 import { consoleDashboardCopy } from "@/lib/console-translation";
 import { resolvePlanLimits, utcDayWindow } from "@/lib/plans";
@@ -24,7 +28,7 @@ export default async function BillingPage() {
     maxKeysOverride: account.maxKeysOverride,
   });
   const { start, end } = utcDayWindow();
-  const [usedToday, activeKeys] = await Promise.all([
+  const [usedToday, activeKeys, invoices] = await Promise.all([
     prisma.apiRequest.count({
       where: {
         apiKey: { accountId: account.id },
@@ -34,18 +38,19 @@ export default async function BillingPage() {
     prisma.apiKey.count({
       where: { accountId: account.id, revokedAt: null },
     }),
+    listAccountInvoices(account.id),
   ]);
 
   return (
     <BillingPanel
       plan={account.plan}
       status={account.status}
-      isAdmin={account.role === "SUPER_ADMIN"}
       usedToday={usedToday}
       dailyLimit={limits.dailyRequests}
       activeKeys={activeKeys}
       maxKeys={limits.maxKeys}
       listPriceMonthlyUsd={limits.listPriceMonthlyUsd}
+      invoices={invoices.map(serializeInvoice)}
     />
   );
 }

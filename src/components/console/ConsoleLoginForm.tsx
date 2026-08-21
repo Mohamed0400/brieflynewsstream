@@ -1,24 +1,56 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
-import { persistConsoleLang, type ConsoleLoginCopy } from "@/lib/console-translation";
+import {
+  persistConsoleLang,
+  withConsoleLang,
+  type ConsoleLoginCopy,
+} from "@/lib/console-translation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { getOrCreateAccountClient } from "@/lib/account-client";
+import { ADMIN_OPERATIONS_PATH } from "@/lib/admin-app";
+import { consoleAuthCallbackUrl } from "@/lib/auth-redirect";
+import { COUNTRY_CATALOG } from "@/lib/countries";
+import { normalizeSignupProfile } from "@/lib/signup-profile";
+import { BrandLoader } from "@/components/media/BrandLoader";
 
-type Mode = "signin" | "signup" | "otp" | "forgot";
+type Mode = "signin" | "signup" | "check-email" | "forgot";
 
-export function ConsoleLoginForm({ copy }: { copy: ConsoleLoginCopy }) {
+export function ConsoleLoginForm({
+  copy,
+  variant,
+  audience = "customer",
+  initialError = "",
+}: {
+  copy: ConsoleLoginCopy;
+  variant: "signin" | "signup";
+  audience?: "customer" | "ops";
+  initialError?: string;
+}) {
   const router = useRouter();
-  const [mode, setMode] = useState<Mode>("signin");
+  const emailRef = useRef<HTMLInputElement>(null);
+  const [mode, setMode] = useState<Mode>(variant);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [otp, setOtp] = useState("");
-  const [error, setError] = useState("");
+  const [country, setCountry] = useState("");
+  const [address, setAddress] = useState("");
+  const [mobilePhone, setMobilePhone] = useState("");
+  const [error, setError] = useState(initialError);
   const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
   const [reveal, setReveal] = useState(false);
+  const isOps = audience === "ops";
+
+  const countries = useMemo(() => {
+    return [...COUNTRY_CATALOG].sort((a, b) => {
+      const left = copy.lang === "ar" ? a.nameAr : a.country;
+      const right = copy.lang === "ar" ? b.nameAr : b.country;
+      return left.localeCompare(right, copy.lang === "ar" ? "ar" : "en");
+    });
+  }, [copy.lang]);
 
   useEffect(() => {
     persistConsoleLang(copy.lang);
@@ -28,11 +60,21 @@ export function ConsoleLoginForm({ copy }: { copy: ConsoleLoginCopy }) {
     setMode(next);
     setError("");
     setInfo("");
-    setOtp("");
   }
 
   async function afterAuthenticated() {
-    await getOrCreateAccountClient();
+    const payload = await getOrCreateAccountClient();
+    if (isOps) {
+      if (payload.account.role !== "SUPER_ADMIN") {
+        const supabase = createBrowserSupabaseClient();
+        await supabase.auth.signOut();
+        setError(copy.opsDenied);
+        return;
+      }
+      router.push(ADMIN_OPERATIONS_PATH);
+      router.refresh();
+      return;
+    }
     router.push("/console/overview");
     router.refresh();
   }
@@ -53,6 +95,7 @@ export function ConsoleLoginForm({ copy }: { copy: ConsoleLoginCopy }) {
         });
         if (signInError) {
           setError(signInError.message || copy.authFailed);
+          emailRef.current?.focus();
           return;
         }
         await afterAuthenticated();
@@ -60,38 +103,31 @@ export function ConsoleLoginForm({ copy }: { copy: ConsoleLoginCopy }) {
       }
 
       if (mode === "signup") {
+        const parsed = normalizeSignupProfile({ country, address, mobilePhone });
+        if (parsed.error || !parsed.profile) {
+          setError(parsed.error || copy.profileInvalid);
+          return;
+        }
         const origin = window.location.origin;
         const { data, error: signUpError } = await supabase.auth.signUp({
           email: normalizedEmail,
           password,
           options: {
-            emailRedirectTo: `${origin}/auth/callback?next=/console/overview`,
+            emailRedirectTo: consoleAuthCallbackUrl(origin),
+            data: parsed.profile,
           },
         });
         if (signUpError) {
           setError(signUpError.message || copy.authFailed);
+          emailRef.current?.focus();
           return;
         }
         if (data.session) {
           await afterAuthenticated();
           return;
         }
-        setInfo(copy.otpSent);
-        setMode("otp");
-        return;
-      }
-
-      if (mode === "otp") {
-        const { error: otpError } = await supabase.auth.verifyOtp({
-          email: normalizedEmail,
-          token: otp.trim(),
-          type: "signup",
-        });
-        if (otpError) {
-          setError(otpError.message || copy.otpInvalid);
-          return;
-        }
-        await afterAuthenticated();
+        setInfo(copy.confirmSent);
+        setMode("check-email");
         return;
       }
 
@@ -99,10 +135,11 @@ export function ConsoleLoginForm({ copy }: { copy: ConsoleLoginCopy }) {
         const origin = window.location.origin;
         const { error: resetError } = await supabase.auth.resetPasswordForEmail(
           normalizedEmail,
-          { redirectTo: `${origin}/console/reset-password` },
+          { redirectTo: consoleAuthCallbackUrl(origin, "/console/reset-password") },
         );
         if (resetError) {
           setError(resetError.message || copy.authFailed);
+          emailRef.current?.focus();
           return;
         }
         setInfo(copy.resetSent);
@@ -111,68 +148,63 @@ export function ConsoleLoginForm({ copy }: { copy: ConsoleLoginCopy }) {
     } catch (requestError) {
       setError(copy.networkError);
       toast.exception(requestError, copy.networkError);
+      emailRef.current?.focus();
     } finally {
       setLoading(false);
     }
   }
 
-  const title =
-    mode === "signup" ? copy.signupTitle
-    : mode === "otp" ? copy.otpTitle
+  const heading =
+    mode === "check-email" ? copy.confirmTitle
     : mode === "forgot" ? copy.forgotTitle
     : null;
 
   const submitLabel =
     mode === "signup" ? copy.signupSubmit
-    : mode === "otp" ? copy.otpSubmit
     : mode === "forgot" ? copy.forgotSubmit
     : copy.submit;
+
+  const helpId =
+    mode === "signin" || mode === "signup" || mode === "forgot" ? "login-help" : undefined;
+  const describedBy = error ? "login-error" : info ? "login-info" : helpId;
+
+  if (mode === "check-email") {
+    return (
+      <div className="console-gate-form console-gate-confirm" role="status">
+        <h2 className="console-gate-form-title">{copy.confirmTitle}</h2>
+        <p className="console-gate-help">{info || copy.confirmSent}</p>
+        <p className="console-gate-help">{copy.confirmHint}</p>
+        <Link href={withConsoleLang("/console/login", copy.lang)} className="console-gate-link">
+          {copy.backToSignIn}
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <form
       onSubmit={submit}
       className="console-gate-form"
-      aria-describedby={error ? "login-error" : info ? "login-info" : "login-help"}
+      aria-describedby={describedBy}
     >
-      <div className="console-gate-modes" role="tablist" aria-label={copy.modeAria}>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={mode === "signin" || mode === "otp"}
-          className="console-gate-mode"
-          data-active={mode === "signin" || mode === "otp" ? "true" : "false"}
-          onClick={() => switchMode("signin")}
-        >
-          {copy.modeSignIn}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={mode === "signup"}
-          className="console-gate-mode"
-          data-active={mode === "signup" ? "true" : "false"}
-          onClick={() => switchMode("signup")}
-        >
-          {copy.modeSignUp}
-        </button>
-      </div>
-
-      {title && <h2 className="console-gate-form-title">{title}</h2>}
+      {heading ? <h2 className="console-gate-form-title">{heading}</h2> : null}
 
       <div className="console-gate-field">
         <label htmlFor="email">{copy.emailLabel}</label>
         <input
+          ref={emailRef}
           id="email"
           name="email"
           type="email"
           autoComplete="email"
+          inputMode="email"
           required
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           className="console-gate-input"
           dir="ltr"
           spellCheck={false}
-          disabled={mode === "otp"}
+          aria-invalid={Boolean(error)}
         />
       </div>
 
@@ -185,6 +217,7 @@ export function ConsoleLoginForm({ copy }: { copy: ConsoleLoginCopy }) {
               className="console-gate-reveal"
               onClick={() => setReveal((value) => !value)}
               aria-pressed={reveal}
+              aria-controls="password"
             >
               {reveal ? copy.hidePassword : copy.showPassword}
             </button>
@@ -202,31 +235,66 @@ export function ConsoleLoginForm({ copy }: { copy: ConsoleLoginCopy }) {
             dir="ltr"
             spellCheck={false}
             aria-invalid={Boolean(error)}
+            aria-describedby={helpId}
           />
           <p id="login-help" className="console-gate-help">
-            {mode === "signup" ? copy.signupHelp : copy.passwordHelp}
+            {mode === "signup" ? copy.signupHelp : isOps ? copy.opsPasswordHelp : copy.passwordHelp}
           </p>
         </div>
       )}
 
-      {mode === "otp" && (
-        <div className="console-gate-field">
-          <label htmlFor="otp">{copy.otpLabel}</label>
-          <input
-            id="otp"
-            name="otp"
-            type="text"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            required
-            value={otp}
-            onChange={(event) => setOtp(event.target.value)}
-            className="console-gate-input"
-            dir="ltr"
-            spellCheck={false}
-          />
-          <p className="console-gate-help">{copy.otpHelp}</p>
-        </div>
+      {mode === "signup" && (
+        <>
+          <div className="console-gate-field">
+            <label htmlFor="country">{copy.countryLabel}</label>
+            <select
+              id="country"
+              name="country"
+              required
+              value={country}
+              onChange={(event) => setCountry(event.target.value)}
+              className="console-gate-input"
+            >
+              <option value="">{copy.countryPlaceholder}</option>
+              {countries.map((item) => (
+                <option key={item.code} value={item.code}>
+                  {copy.lang === "ar" ? `${item.nameAr} (${item.code})` : `${item.country} (${item.code})`}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="console-gate-field">
+            <label htmlFor="mobile">{copy.mobileLabel}</label>
+            <input
+              id="mobile"
+              name="mobile"
+              type="tel"
+              autoComplete="tel"
+              inputMode="tel"
+              required
+              value={mobilePhone}
+              onChange={(event) => setMobilePhone(event.target.value)}
+              className="console-gate-input"
+              dir="ltr"
+              placeholder={copy.mobilePlaceholder}
+            />
+            <p className="console-gate-help">{copy.mobileHelp}</p>
+          </div>
+          <div className="console-gate-field">
+            <label htmlFor="address">{copy.addressLabel}</label>
+            <textarea
+              id="address"
+              name="address"
+              required
+              minLength={8}
+              maxLength={200}
+              rows={3}
+              value={address}
+              onChange={(event) => setAddress(event.target.value)}
+              className="console-gate-input"
+            />
+          </div>
+        </>
       )}
 
       {mode === "forgot" && (
@@ -252,21 +320,43 @@ export function ConsoleLoginForm({ copy }: { copy: ConsoleLoginCopy }) {
         className="console-gate-submit"
         aria-busy={loading}
       >
-        {loading ? copy.submitting : submitLabel}
+        {loading ? (
+          <>
+            <BrandLoader size="sm" decorative />
+            <span>{copy.submitting}</span>
+          </>
+        ) : (
+          submitLabel
+        )}
       </button>
 
       <div className="console-gate-links">
-        {mode === "signin" && (
+        {!isOps && mode === "signin" && (
           <button type="button" className="console-gate-link" onClick={() => switchMode("forgot")}>
             {copy.forgotLink}
           </button>
         )}
-        {(mode === "forgot" || mode === "otp") && (
+        {mode === "forgot" && (
           <button type="button" className="console-gate-link" onClick={() => switchMode("signin")}>
             {copy.backToSignIn}
           </button>
         )}
       </div>
+
+      {!isOps && mode !== "forgot" && (
+        <p className="console-gate-switch">
+          {variant === "signup" ? copy.haveAccount : copy.needAccount}{" "}
+          <Link
+            href={withConsoleLang(
+              variant === "signup" ? "/console/login" : "/console/signup",
+              copy.lang,
+            )}
+            className="console-gate-link"
+          >
+            {variant === "signup" ? copy.signInLink : copy.createAccountLink}
+          </Link>
+        </p>
+      )}
     </form>
   );
 }

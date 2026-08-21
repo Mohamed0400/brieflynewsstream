@@ -6,7 +6,9 @@ import {
   optionForCode,
 } from "@/lib/nationalities";
 import { categoryToCode, regionToCode } from "@/lib/market";
+import { publicSourceName } from "@/lib/public-source";
 import { landingCopy } from "@/lib/landing-translation";
+import { BrandLoader } from "@/components/media/BrandLoader";
 
 const timeFormat = new Intl.DateTimeFormat("en", {
   dateStyle: "medium",
@@ -110,9 +112,8 @@ export function HomepageArticleFeed({
 
   return (
     <section id="homepage-feed" className="homepage-feed grid gap-4 pb-16" aria-live="polite">
-      <div className="homepage-feed-searching" role="status" aria-live="polite" aria-hidden="true">
-        <span className="homepage-search-spinner" aria-hidden="true" />
-        <span>{copy.searching}</span>
+      <div className="homepage-feed-searching" aria-hidden="true">
+        <BrandLoader size="md" label={copy.searching} showLabel />
       </div>
       {matchedCount > 0 && (
         <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-900/10 pb-4">
@@ -142,46 +143,45 @@ export function HomepageArticleFeed({
           <article
             key={article.id}
             id={index === 0 ? "homepage-first-article" : undefined}
-            className="group grid gap-4 border-t border-slate-900/15 bg-white/45 p-5 transition-colors hover:bg-white sm:grid-cols-[56px_1fr_auto]"
+            className="mkt-news-article"
           >
-            <span className="font-mono text-2xl text-slate-400">{String(offset + index + 1).padStart(2, "0")}</span>
+            <span className="mkt-news-article-index">{String(offset + index + 1).padStart(2, "0")}</span>
             <div>
               {article.audienceCodes && (
-                <div className="mb-2 flex flex-wrap gap-1">
+                <div className="mkt-news-article-audiences">
                   {audienceCodesFromValue(article.audienceCodes).map((code) => {
                     const option = optionForCode(code);
                     return option ? (
-                      <span key={code} className="rounded-full bg-emerald-900/10 px-2 py-1 text-xs text-emerald-900">
+                      <span key={code} className="mkt-news-article-audience">
                         {option.flag} {option.nationality}
                       </span>
                     ) : null;
                   })}
                 </div>
               )}
-              <div className="mb-2 flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wider">
-                <span className="text-amber-700">{categoryToCode(article.category)}</span>
-                <span className="text-slate-400">/</span>
-                <span className="text-slate-600">{article.country} | {regionToCode(article.region)}</span>
+              <div className="mkt-news-article-meta">
+                <span className="mkt-news-article-cat">{categoryToCode(article.category)}</span>
+                <span aria-hidden="true">/</span>
+                <span>{article.country} | {regionToCode(article.region)}</span>
               </div>
-              <h2 className="max-w-5xl text-2xl font-semibold leading-8 tracking-[-0.02em]">
-                <a href={article.url} target="_blank" rel="noopener noreferrer" className="rounded-sm outline-none transition-colors hover:text-amber-800 focus-visible:ring-2 focus-visible:ring-amber-600">
+              <h2>
+                <a href={article.url} target="_blank" rel="noopener noreferrer">
                   {localized.title}
                 </a>
               </h2>
               {localized.summary && (
-                <p className="mt-3 max-w-4xl text-base leading-6 text-slate-600">
+                <p className="mkt-news-article-summary">
                   {localized.summary}
                 </p>
               )}
-              <p className="mt-3 text-xs text-slate-500">
-                {article.publisher || article.source.name}
-                {article.publisher ? ` | ${copy.discoveredBy} ${article.source.name}` : ""}
+              <p className="mkt-news-article-source">
+                {publicSourceName(article.publisher || article.source.name)}
                 {" | "}{timeFormat.format(article.publishedAt)}
               </p>
             </div>
-            <div className="self-start border border-slate-900/15 bg-[#f4f1e8] px-3 py-2 text-right">
-              <p className="text-[10px] font-semibold tracking-wider text-slate-500">{copy.impact}</p>
-              <p className="font-mono text-xl font-semibold">{Math.round(article.score?.finalScore ?? 0)}</p>
+            <div className="mkt-news-article-score">
+              <p>{copy.impact}</p>
+              <strong>{Math.round(article.score?.finalScore ?? 0)}</strong>
             </div>
           </article>
         );

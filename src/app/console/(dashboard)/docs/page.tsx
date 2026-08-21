@@ -11,13 +11,6 @@ export async function generateMetadata(): Promise<Metadata> {
 const endpointGroups = {
   en: [
     {
-      title: "Operations",
-      items: [
-        ["GET", "/api/v1/health", "Public health probe for load balancers. No API key required."],
-        ["GET", "/api/v1/openapi.json", "OpenAPI 3 contract for code generation and integration testing."],
-      ],
-    },
-    {
       title: "Market feeds",
       items: [
         ["GET", "/api/v1/market-news", "Supports homepage filters, Arabic and English multi-word search, country, region, category, nationality, sorting, date range, and pagination."],
@@ -35,13 +28,6 @@ const endpointGroups = {
     },
   ],
   ar: [
-    {
-      title: "التشغيل",
-      items: [
-        ["GET", "/api/v1/health", "فحص صحة عام لموازنات التحميل. لا يتطلب مفتاح واجهة."],
-        ["GET", "/api/v1/openapi.json", "عقد OpenAPI 3 لتوليد الشيفرة واختبارات التكامل."],
-      ],
-    },
     {
       title: "موجزات السوق",
       items: [
@@ -63,26 +49,26 @@ const endpointGroups = {
 
 const filterRows = {
   en: [
-    ["Search", "`q=` with Arabic or English, including multi-word phrases like `ذهب الكويت` or `gold kuwait`."],
+    ["Search", "`q=` with Arabic or English, including multi-word phrases like `سعر الذهب` or `gold price`."],
     ["Search area", "`searchIn=title|summary|both`."],
     ["Country and region", "`country=KW`, `country=US`, `region=middle_east`, `region=america`, `region=global`."],
     ["Category", "`category=gold`, `finance`, `economics`, `oil`, `me_economy`, `commodities`, `markets`."],
     ["Nationality audience", "`nationality=KW` or any supported slug or ISO code."],
     ["Language filter", "`language=ar` or `language=en` filters by the article's stored source language."],
-    ["Response language", "`lang=ar` (homepage default) or `lang=en` chooses Arabic or English titles without filtering the result set."],
+    ["Response language", "`lang=ar` (default) or `lang=en` chooses `title` and `summary`. `arabic` and `english` stay on every story."],
     ["Date filters", "`date=YYYY-MM-DD` or `from=YYYY-MM-DD&to=YYYY-MM-DD`."],
     ["Sorting", "`sort=score` for market impact or `sort=date` for newest first."],
     ["Pagination", "`limit=` and `offset=`."],
     ["Request limits", "API access is currently available without usage caps in this console."],
   ],
   ar: [
-    ["البحث", "`q=` بالعربية أو الإنجليزية، بما في ذلك عبارات مثل `ذهب الكويت` أو `gold kuwait`."],
+    ["البحث", "`q=` بالعربية أو الإنجليزية، بما في ذلك عبارات مثل `سعر الذهب` أو `gold price`."],
     ["مجال البحث", "`searchIn=title|summary|both`."],
     ["الدولة والمنطقة", "`country=KW`، `country=US`، `region=middle_east`، `region=america`، `region=global`."],
     ["التصنيف", "`category=gold`، `finance`، `economics`، `oil`، `me_economy`، `commodities`، `markets`."],
     ["جمهور الجالية", "`nationality=KW` أو أي رمز أو معرف مدعوم."],
     ["فلتر اللغة", "`language=ar` أو `language=en` يصفي حسب لغة المصدر المخزنة."],
-    ["لغة الاستجابة", "`lang=ar` (افتراضي الصفحة) أو `lang=en` يختار العناوين دون تصفية النتائج."],
+    ["لغة الاستجابة", "`lang=ar` (الافتراضي) أو `lang=en` يختار `title` و`summary`. `arabic` و`english` يبقيان في كل خبر."],
     ["فلاتر التاريخ", "`date=YYYY-MM-DD` أو `from=YYYY-MM-DD&to=YYYY-MM-DD`."],
     ["الترتيب", "`sort=score` لأثر السوق أو `sort=date` للأحدث أولا."],
     ["الصفحات", "`limit=` و `offset=`."],
@@ -116,13 +102,7 @@ export default async function ConsoleDocsPage() {
           </div>
         </div>
         <pre className="console-code-block" dir="ltr"><code>{`curl "http://localhost:3001/api/v1/market-news?q=%D8%B0%D9%87%D8%A8&lang=ar&country=KW&limit=20" \\
-  -H "X-API-Key: mna_test_your_key_here"
-
-# Health (no key)
-curl "http://localhost:3001/api/v1/health"
-
-# OpenAPI contract
-curl "http://localhost:3001/api/v1/openapi.json"`}</code></pre>
+  -H "X-API-Key: mna_test_your_key_here"`}</code></pre>
       </section>
 
       <section className="console-panel" aria-labelledby="filters-heading">

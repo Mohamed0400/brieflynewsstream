@@ -87,7 +87,7 @@ test("console login is Arabic-first and switches language", async ({ page }) => 
   await expect(page.getByRole("heading", { name: "تسجيل الدخول" })).toBeVisible();
   await expect(page.getByLabel("البريد الإلكتروني")).toBeVisible();
   await expect(page.getByLabel("كلمة المرور")).toBeVisible();
-  await expect(page.getByRole("button", { name: "دخول", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "تسجيل الدخول", exact: true })).toBeVisible();
 
   await page.setViewportSize({ width: 320, height: 760 });
   await expect(page.getByRole("heading", { name: "تسجيل الدخول" })).toBeVisible();
@@ -110,7 +110,8 @@ test("console login, navigation, and responsive layout", async ({ page }) => {
   for (const width of widths) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/console/overview");
-    await expect(page.getByRole("heading", { name: "API activity at a glance" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Your Briefly NewsStream platform" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Download platform brief" })).toBeVisible();
     await expect(page.getByRole("navigation", { name: "Console navigation" })).toBeVisible();
     const dimensions = await page.evaluate(() => ({
       scrollWidth: document.documentElement.scrollWidth,
@@ -118,11 +119,16 @@ test("console login, navigation, and responsive layout", async ({ page }) => {
     }));
     expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
   }
+
+  const pdf = await page.request.get("/api/console/platform-overview");
+  expect(pdf.ok()).toBeTruthy();
+  expect(pdf.headers()["content-type"]).toContain("pdf");
+  expect(Buffer.from(await pdf.body()).subarray(0, 5).toString()).toBe("%PDF-");
 });
 
 test("console schedule page exposes collect and publish controls", async ({ page }) => {
   await signIn(page);
-  await page.goto("/console/schedule");
+  await page.goto("/consoleofbrieflynewsstreamapi/operations/schedule");
   await expect(page.getByRole("heading", { name: "Schedule" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Collect news" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Translate articles" })).toBeVisible();
@@ -231,14 +237,13 @@ test("API docs page has section tabs and endpoint examples", async ({ page }) =>
   await page.getByRole("tab", { name: "Response" }).click();
   await expect(page.locator(".api-docs-code")).toContainText('"items"');
 
-  await page.getByRole("tab", { name: "Operations" }).click();
-  await expect(page.getByRole("heading", { name: "Health" })).toBeVisible();
-  await expect(page.getByText("No key")).toBeVisible();
+  await page.getByRole("tab", { name: "Editions" }).click();
+  await expect(page.getByRole("heading", { name: "Today's edition" })).toBeVisible();
 
   for (const width of widths) {
     await page.setViewportSize({ width, height: 900 });
     await expect(page.getByRole("navigation", { name: "Console navigation" })).toBeVisible();
-    await expect(page.getByRole("tab", { name: "Operations" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Editions" })).toBeVisible();
     const dimensions = await page.evaluate(() => ({
       scrollWidth: document.documentElement.scrollWidth,
       clientWidth: document.documentElement.clientWidth,
@@ -267,29 +272,30 @@ test("console defaults to Arabic and the language switcher flips the dashboard",
   await page.goto("/console/login");
   await page.getByLabel("البريد الإلكتروني").fill(e2eEmail);
   await page.getByLabel("كلمة المرور").fill(e2ePassword);
-  await page.getByRole("button", { name: "دخول", exact: true }).click();
+  await page.getByRole("button", { name: "تسجيل الدخول", exact: true }).click();
   await expect(page).toHaveURL(/\/console\/overview$/, { timeout: 30_000 });
   await expect(page.locator(".console-shell")).toHaveAttribute("dir", "rtl");
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   await expect(page.locator("html")).toHaveAttribute("lang", "ar");
-  await expect(page.getByRole("heading", { name: "نشاط الواجهة في لمحة" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "منصتك في Briefly NewsStream" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "نزّل موجز المنصة" })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "تنقل اللوحة" })).toBeVisible();
   await expect(page.getByRole("button", { name: "English" })).toBeVisible();
 
   await page.getByRole("button", { name: "English" }).click();
-  await expect(page.getByRole("heading", { name: "API activity at a glance" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your Briefly NewsStream platform" })).toBeVisible();
   await expect(page.locator(".console-shell")).toHaveAttribute("dir", "ltr");
   await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
-  await expect(page.getByRole("link", { name: "Schedule" })).toBeVisible();
+  await expect(page.getByText("Active session")).toBeVisible();
 
   await page.reload();
-  await expect(page.getByRole("heading", { name: "API activity at a glance" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your Briefly NewsStream platform" })).toBeVisible();
 });
 
 test("schedule metric words stay intact from 320px through 1440px", async ({ page }) => {
   await signIn(page);
-  await page.goto("/console/schedule");
+  await page.goto("/consoleofbrieflynewsstreamapi/operations/schedule");
 
   for (const width of [320, 360, 375, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 });

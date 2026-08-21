@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { Category, PrismaClient, Region } from "@prisma/client";
-import { COUNTRY_SOURCES, RETIRED_COUNTRY_SOURCE_CODES } from "../src/lib/country-sources";
+import { COUNTRY_SOURCES, generatedCountrySources, RETIRED_COUNTRY_SOURCE_CODES } from "../src/lib/country-sources";
 import { storyKey } from "../src/lib/dedupe";
 import { kuwaitDate } from "../src/lib/market";
 import { audienceValue } from "../src/lib/nationalities";
@@ -263,7 +263,7 @@ const sources = [
   },
 ] as const;
 
-const allSources = [...sources, ...COUNTRY_SOURCES];
+const allSources = [...sources, ...COUNTRY_SOURCES, ...generatedCountrySources()];
 
 function shouldSeedBilingualFixtures() {
   const databaseUrl = process.env.DATABASE_URL || "";
@@ -353,6 +353,7 @@ async function seedBilingualFixtures() {
         publishedAt,
         contentHash: hash,
         storyKey: storyKey(fixture.title),
+        finalScore: fixture.scores.finalScore,
         score: { create: fixture.scores },
       },
       update: {
@@ -365,6 +366,7 @@ async function seedBilingualFixtures() {
         translatedAt: publishedAt,
         publishedAt,
         language: "en",
+        finalScore: fixture.scores.finalScore,
       },
     });
     articleIds.push(article.id);

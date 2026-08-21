@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createContext, useContext, useLayoutEffect, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, type ReactNode } from "react";
 import {
   consoleDashboardCopy,
   persistConsoleLang,
@@ -37,6 +37,13 @@ export function useConsoleCopy() {
   return value;
 }
 
+export function ConsoleAuthLangSync({ lang }: { lang: ConsoleLang }) {
+  useEffect(() => {
+    persistConsoleLang(lang);
+  }, [lang]);
+  return null;
+}
+
 export function ConsoleDocumentLang({
   lang,
   dir,
@@ -64,9 +71,11 @@ export function ConsoleDocumentLang({
 export function ConsoleLangSwitcher({
   lang,
   login = false,
+  basePath = "/console/login",
 }: {
   lang: ConsoleLang;
   login?: boolean;
+  basePath?: string;
 }) {
   const router = useRouter();
   const label = lang === "en" ? "Language" : "اللغة";
@@ -80,7 +89,7 @@ export function ConsoleLangSwitcher({
     return (
       <nav className="console-gate-lang" aria-label={label}>
         <Link
-          href="/console/login"
+          href={basePath}
           className={lang === "ar" ? "is-active" : ""}
           hrefLang="ar"
           lang="ar"
@@ -90,7 +99,7 @@ export function ConsoleLangSwitcher({
           العربية
         </Link>
         <Link
-          href="/console/login?lang=en"
+          href={`${basePath}?lang=en`}
           className={lang === "en" ? "is-active" : ""}
           hrefLang="en"
           lang="en"

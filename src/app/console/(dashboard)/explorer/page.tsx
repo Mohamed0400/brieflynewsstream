@@ -7,6 +7,8 @@ import { CATEGORY_META, REGION_META } from "@/lib/market";
 import { NATIONALITY_GROUPS, NATIONALITY_OPTIONS } from "@/lib/nationalities";
 import { prisma } from "@/lib/prisma";
 import { localizedCountryLabel, supportedCountryCodes } from "@/lib/supported-countries";
+import { publicSourceName } from "@/lib/public-source";
+import { limits } from "@/lib/limits";
 
 export async function generateMetadata(): Promise<Metadata> {
   const copy = consoleDashboardCopy(await getConsoleLang());
@@ -27,19 +29,21 @@ export default async function ConsoleExplorerPage() {
         where: { accountId: account.id, revokedAt: null },
         orderBy: { createdAt: "desc" },
         select: { id: true, name: true, prefix: true, lastFour: true },
-      })
+      }).catch(() => [])
     : [];
+  const liveCutoff = new Date(Date.now() - Math.max(1, limits.newsMaxAgeHours) * 60 * 60 * 1000);
   const [countryRows, sourceRows] = await Promise.all([
     prisma.article.findMany({
+      where: { publishedAt: { gte: liveCutoff } },
       distinct: ["country"],
       select: { country: true },
       orderBy: { country: "asc" },
-    }),
+    }).catch(() => []),
     prisma.source.findMany({
       where: { enabled: true },
       select: { code: true, name: true },
       orderBy: { name: "asc" },
-    }),
+    }).catch(() => []),
   ]);
 
   return (
@@ -84,7 +88,7 @@ export default async function ConsoleExplorerPage() {
       ]}
       sources={[
         { value: "", label: copy.explorer.allSources },
-        ...sourceRows.map((source) => ({ value: source.code, label: source.name })),
+        ...sourceRows.map((source) => ({ value: source.code, label: publicSourceName(source.name) })),
       ]}
     />
   );

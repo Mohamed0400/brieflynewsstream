@@ -15,6 +15,7 @@ export const MEDIA_FOLDER = "briefly-newsstream/static";
 export const MEDIA = {
   logoMark: `${MEDIA_FOLDER}/brand/logo-mark`,
   logoWordmark: `${MEDIA_FOLDER}/brand/logo-wordmark`,
+  logoWordmarkOnDark: `${MEDIA_FOLDER}/brand/logo-wordmark-on-dark`,
   heroNewsstream: `${MEDIA_FOLDER}/hero/hero-newsstream`,
   heroMarkets: `${MEDIA_FOLDER}/hero/hero-markets`,
   ogShare: `${MEDIA_FOLDER}/og/og-share`,
@@ -25,6 +26,9 @@ export const MEDIA = {
   conceptBilingualPro: `${MEDIA_FOLDER}/concepts/concept-bilingual-pro`,
   conceptStreamIcons: `${MEDIA_FOLDER}/concepts/concept-stream-icons`,
 } as const;
+
+/** Cloudinary public id for the branded platform brief (raw PDF). */
+export const PLATFORM_OVERVIEW_PDF_ID = `${MEDIA_FOLDER}/console/platform-overview`;
 
 export type MediaKey = keyof typeof MEDIA;
 
@@ -61,7 +65,7 @@ export function mediaUrl(
 ): string {
   const cloudName = publicCloudinaryCloudName();
   const publicId = MEDIA[key];
-  if (!cloudName) {
+  if (!cloudName || key.startsWith("logo")) {
     return fallbackPath || localFallback(key);
   }
 
@@ -84,10 +88,18 @@ export function mediaAbsoluteUrl(key: MediaKey, options: MediaUrlOptions = {}): 
   return `${origin.replace(/\/$/, "")}${url.startsWith("/") ? url : `/${url}`}`;
 }
 
+/** Archive URL. Console download uses the signed-in /api/console/platform-overview route. */
+export function platformOverviewPdfUrl() {
+  const cloudName = publicCloudinaryCloudName();
+  if (!cloudName) return "/console/platform-overview.pdf";
+  return `https://res.cloudinary.com/${cloudName}/raw/upload/${PLATFORM_OVERVIEW_PDF_ID}.pdf`;
+}
+
 function localFallback(key: MediaKey): string {
   const map: Record<MediaKey, string> = {
     logoMark: "/brand/logo-mark.png",
     logoWordmark: "/brand/logo-wordmark.png",
+    logoWordmarkOnDark: "/brand/logo-wordmark-on-dark.png",
     heroNewsstream: "/hero-newsstream.jpg",
     heroMarkets: "/hero-markets.png",
     ogShare: "/og/og-share.jpg",

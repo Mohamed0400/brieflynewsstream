@@ -1,10 +1,12 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { ADMIN_APP_PATH, isAdminAppPath, isCustomerConsolePath } from "@/lib/admin-app";
 import { apiCorsHeaders, preflightApi } from "@/lib/api-cors";
 import { updateSession } from "@/lib/supabase/middleware";
 
 const PUBLIC_CONSOLE_PATHS = new Set([
   "/console/login",
+  "/console/signup",
   "/console/reset-password",
 ]);
 
@@ -31,11 +33,17 @@ export async function middleware(request: NextRequest) {
   }
 
   const needsAuthRefresh =
-    pathname.startsWith("/console") ||
+    isCustomerConsolePath(pathname) ||
+    isAdminAppPath(pathname) ||
     pathname.startsWith("/api/console") ||
     pathname.startsWith("/auth");
 
   if (!needsAuthRefresh) return NextResponse.next();
+
+  // Do not touch auth cookies before the server exchanges the email token.
+  if (pathname === "/auth/callback" || pathname === "/auth/confirm") {
+    return NextResponse.next();
+  }
 
   const { user, supabaseResponse } = await updateSession(request);
 
@@ -50,7 +58,18 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse;
   }
 
-  if (pathname.startsWith("/console")) {
+  if (isAdminAppPath(pathname)) {
+    const isPublic = pathname === ADMIN_APP_PATH;
+    if (!user && !isPublic) {
+      const login = request.nextUrl.clone();
+      login.pathname = ADMIN_APP_PATH;
+      login.search = "";
+      return NextResponse.redirect(login);
+    }
+    return supabaseResponse;
+  }
+
+  if (isCustomerConsolePath(pathname)) {
     const isPublic = [...PUBLIC_CONSOLE_PATHS].some(
       (path) => pathname === path || pathname.startsWith(`${path}/`),
     );
@@ -60,7 +79,7 @@ export async function middleware(request: NextRequest) {
       login.searchParams.set("next", pathname);
       return NextResponse.redirect(login);
     }
-    if (user && (pathname === "/console/login" || pathname === "/console")) {
+    if (user && (pathname === "/console/login" || pathname === "/console/signup" || pathname === "/console")) {
       const overview = request.nextUrl.clone();
       overview.pathname = "/console/overview";
       overview.search = "";
@@ -77,6 +96,8 @@ export const config = {
     "/api/console/:path*",
     "/console",
     "/console/:path*",
+    "/consoleofbrieflynewsstreamapi",
+    "/consoleofbrieflynewsstreamapi/:path*",
     "/auth/:path*",
   ],
 };

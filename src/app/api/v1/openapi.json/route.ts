@@ -6,7 +6,7 @@ const spec = {
   openapi: "3.0.3",
   info: {
     title: "Market News API",
-    description: "Arabic-first market news feed for GCC and global financial coverage. Send X-API-Key on every request except /health.",
+    description: "Arabic-first market news feed for GCC and global financial coverage. Send X-API-Key on every request.",
     version: API_VERSION,
   },
   servers: [{ url: "/api/v1", description: "Current deployment" }],
@@ -14,7 +14,6 @@ const spec = {
     { name: "Feeds", description: "Market news articles" },
     { name: "Editions", description: "Daily ranked editions" },
     { name: "Meta", description: "Discovery helpers" },
-    { name: "Operations", description: "Health and status" },
   ],
   components: {
     securitySchemes: {
@@ -47,12 +46,22 @@ const spec = {
         type: "object",
         properties: {
           id: { type: "string" },
-          title: { type: "string", description: "Localized headline (Arabic by default)" },
-          summary: { type: "string" },
-          titleAr: { type: "string", nullable: true },
-          titleEn: { type: "string", nullable: true },
-          summaryAr: { type: "string", nullable: true },
-          summaryEn: { type: "string", nullable: true },
+          title: { type: "string", description: "Headline in the requested lang. Arabic by default." },
+          summary: { type: "string", description: "Summary in the requested lang. Arabic by default." },
+          arabic: {
+            type: "object",
+            properties: {
+              title: { type: "string", nullable: true },
+              summary: { type: "string", nullable: true },
+            },
+          },
+          english: {
+            type: "object",
+            properties: {
+              title: { type: "string", nullable: true },
+              summary: { type: "string", nullable: true },
+            },
+          },
           category: { type: "string" },
           country: { type: "string" },
           region: { type: "string" },
@@ -74,17 +83,6 @@ const spec = {
     },
   },
   paths: {
-    "/health": {
-      get: {
-        tags: ["Operations"],
-        summary: "Service health, cron jobs, and bilingual coverage (no API key required)",
-        description: "Use this after deploy. status is ok only when collect/translate/publish jobs exist and every fresh article has both Arabic and English fields.",
-        responses: {
-          "200": { description: "Healthy or scheduler-degraded; jobs exist and fresh articles are bilingual" },
-          "503": { description: "Jobs missing/disabled, database down, or fresh articles missing ar/en fields" },
-        },
-      },
-    },
     "/market-news": {
       get: {
         tags: ["Feeds"],

@@ -120,7 +120,7 @@ async function collectRss(source: Source): Promise<CollectedItem[]> {
   } catch {
     const fallback = collectRssFallback(xml, source);
     if (fallback.length === 0) throw new Error("Feed not recognized as RSS 1 or 2.");
-    return applyLimit(fallback, limits.rss);
+    return applyLimit(fallback, rssLimit(source));
   }
   const items = (feed.items ?? []).flatMap((item) => {
     const link = item.link;
@@ -142,7 +142,11 @@ async function collectRss(source: Source): Promise<CollectedItem[]> {
       rawJson: JSON.stringify(item),
     }];
   });
-  return applyLimit(items, limits.rss);
+  return applyLimit(items, rssLimit(source));
+}
+
+function rssLimit(source: Source) {
+  return source.code.startsWith("GNEWS_") ? limits.googleNewsRss : limits.rss;
 }
 
 function dateFromText(value: string) {

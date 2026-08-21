@@ -8,10 +8,10 @@ Arabic-first market news for Kuwait and related markets. The public homepage def
 |---------|-----|---------|
 | Homepage | `/` | Arabic hero, filters, live article list |
 | English homepage | `/?lang=en` | Same feed with English titles |
+| Console sign-in | `/console/login` | Public email/password sign-in (super-admin if listed in `SUPER_ADMIN_EMAILS`) |
 | Console | `/console` | Schedule, API keys, explorer, docs |
 | Public API | `/api/v1/*` | Machine-readable feeds (`X-API-Key`) |
 | Health | `/api/v1/health` | Database, cron jobs, bilingual coverage |
-| OpenAPI | `/api/v1/openapi.json` | API schema |
 
 Sign in to the console with your **email and password** (Supabase Auth). New accounts confirm via email OTP. Schedule is limited to super-admins listed in `SUPER_ADMIN_EMAILS`.
 
@@ -51,7 +51,7 @@ Send `X-API-Key` on every feed request. `lang=ar` (default) or `lang=en` changes
 
 | Endpoint | Role |
 |----------|------|
-| `GET /api/v1/market-news` | Filterable live stream (72-hour default window) |
+| `GET /api/v1/market-news` | Filterable market briefing (72-hour default window) |
 | `GET /api/v1/market-news/today` | Today's stored edition |
 | `GET /api/v1/market-news/daily?date=YYYY-MM-DD` | Historical edition |
 | `GET /api/v1/market-news/editions` | Edition index |
@@ -63,7 +63,7 @@ Send `X-API-Key` on every feed request. `lang=ar` (default) or `lang=en` changes
 | `GET /api/v1/health` | Production readiness |
 | `POST /api/v1/admin/rebuild-edition` | Rebuild a stored edition |
 
-Each article payload includes `title`, `summary` (localized), `titleAr`, `titleEn`, `summaryAr`, `summaryEn`, and `translated`.
+Each article payload includes `title`, `summary` (localized), `arabic`, `english`, and `translated`.
 
 Country filters cover about 70 ISO markets plus EU/Global. The Kuwait community briefing (`nationality=`) is a smaller audience list, not the full country catalog.
 

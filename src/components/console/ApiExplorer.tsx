@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useConsoleCopy } from "@/components/console/ConsoleLang";
 import { toast } from "@/lib/toast";
 import { CATEGORY_META } from "@/lib/market";
+import { BrandLoader } from "@/components/media/BrandLoader";
 
 type Option = { value: string; label: string };
 
@@ -17,10 +18,8 @@ type ExplorerArticle = {
   nationalityCodes: string[];
   title: string;
   summary: string;
-  titleAr?: string | null;
-  titleEn?: string | null;
-  summaryAr?: string | null;
-  summaryEn?: string | null;
+  arabic?: { title: string | null; summary: string | null };
+  english?: { title: string | null; summary: string | null };
   translated?: boolean;
   url: string;
   source: string;
@@ -138,16 +137,15 @@ function maskApiKey(value: string) {
 }
 
 function localizedExplorerText(article: ExplorerArticle, lang: string) {
-  const arabic = /[\u0600-\u06ff]/;
   if (lang === "ar") {
     return {
-      title: (article.titleAr && arabic.test(article.titleAr) ? article.titleAr : null) || article.title,
-      summary: (article.summaryAr && arabic.test(article.summaryAr) ? article.summaryAr : null) || article.summary,
+      title: article.arabic?.title || article.title,
+      summary: article.arabic?.summary || article.summary,
     };
   }
   return {
-    title: article.titleEn || article.title,
-    summary: article.summaryEn || article.summary,
+    title: article.english?.title || article.title,
+    summary: article.english?.summary || article.summary,
   };
 }
 
@@ -432,7 +430,7 @@ export function ApiExplorer({
                   update("q", nextQuery);
                   scheduleSearch(nextQuery);
                 }}
-                placeholder="ذهب مصر، Egypt gold…"
+                placeholder="سعر الذهب، gold price…"
               />
               <small>{text.searchHint}</small>
             </label>
@@ -519,7 +517,16 @@ export function ApiExplorer({
               aria-busy={loading}
               data-state={loading ? "loading" : requestDone ? "done" : undefined}
             >
-              {loading ? text.running : requestDone ? text.done : text.run}
+              {loading ? (
+                <>
+                  <BrandLoader size="sm" decorative />
+                  <span>{text.running}</span>
+                </>
+              ) : requestDone ? (
+                text.done
+              ) : (
+                text.run
+              )}
             </button>
           </form>
         </aside>
@@ -580,9 +587,9 @@ export function ApiExplorer({
           )}
 
           {loading && (
-            <div className="explorer-loading" role="status" aria-live="polite" aria-label={text.loading}>
-              <p>{text.loading}</p>
-              {Array.from({ length: 5 }, (_, index) => <span key={index} />)}
+            <div className="explorer-loading">
+              <BrandLoader size="md" label={text.loading} showLabel />
+              {Array.from({ length: 3 }, (_, index) => <span key={index} />)}
             </div>
           )}
 

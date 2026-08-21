@@ -1,0 +1,76 @@
+name: Collect news
+
+on:
+  schedule:
+    # 06:00, 14:00, 22:00 Asia/Kuwait (UTC+3)
+    - cron: "0 3 * * *"
+    - cron: "0 11 * * *"
+    - cron: "0 19 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: collect-news
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    name: Collect all countries
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      APP_TIMEZONE: Asia/Kuwait
+      NEXT_PUBLIC_APP_ENV: live
+      GOOGLE_GROUNDED_SEARCH_ENABLED: "false"
+      GOOGLE_EDITORIAL_ENABLED: "false"
+      MIN_COUNTRY_ARTICLES: "3"
+      COLLECT_CONCURRENCY: "4"
+      TRANSLATE_BATCH_SIZE: "80"
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+      ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+      SITE_URL: ${{ secrets.SITE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/ci?schema=public
+          DIRECT_URL: postgresql://postgres:postgres@127.0.0.1:5432/ci?schema=public
+        run: npx prisma generate
+
+      - name: Collect via database pipeline
+        id: pipeline
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "No DATABASE_URL secret; will try HTTP collect."
+            echo "used_http=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          npx tsx src/worker/run-once.ts
+          echo "used_http=false" >> "$GITHUB_OUTPUT"
+
+      - name: Collect via cron HTTP
+        if: steps.pipeline.outputs.used_http == 'true'
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          token="${CRON_SECRET:-$ADMIN_API_KEY}"
+          if [ -z "$token" ]; then
+            echo "Add GitHub Actions secrets DATABASE_URL and DIRECT_URL, or CRON_SECRET/ADMIN_API_KEY and SITE_URL."
+            exit 1
+          fi
+          base="${SITE_URL:-https://www.brieflynewsstream.com}"
+          curl -fsS -X POST "$base/api/cron/collect" \
+            -H "Authorization: Bearer $token" \
+            -H "Content-Type: application/json" \
+            --max-time 300

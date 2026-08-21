@@ -38,33 +38,35 @@ test("API stores each daily article in Arabic and English", async ({ request }) 
   const payload = await feed.json() as {
     items: Array<{
       title: string;
-      titleAr: string | null;
-      titleEn: string | null;
-      summaryAr: string | null;
-      summaryEn: string | null;
+      titleAr?: string | null;
+      titleEn?: string | null;
+      arabic: { title: string | null; summary: string | null };
+      english: { title: string | null; summary: string | null };
       translated: boolean;
     }>;
   };
 
   expect(payload.items.length, "seed bilingual fixtures with npm run seed:test").toBeGreaterThan(0);
   for (const article of payload.items) {
-    expect(article.titleEn).toMatch(new RegExp(fixtureQuery, "i"));
-    expect(article.titleAr, `missing Arabic title for ${article.titleEn || article.title}`).toMatch(arabic);
-    expect(article.titleEn, `missing English title for ${article.titleAr || article.title}`).toMatch(latin);
-    expect(article.summaryAr, "missing Arabic summary").toMatch(arabic);
-    expect(article.summaryEn, "missing English summary").toMatch(latin);
+    expect(article.titleAr).toBeUndefined();
+    expect(article.titleEn).toBeUndefined();
+    expect(article.english.title).toMatch(new RegExp(fixtureQuery, "i"));
+    expect(article.arabic.title, `missing Arabic title for ${article.english.title || article.title}`).toMatch(arabic);
+    expect(article.english.title, `missing English title for ${article.arabic.title || article.title}`).toMatch(latin);
+    expect(article.arabic.summary, "missing Arabic summary").toMatch(arabic);
+    expect(article.english.summary, "missing English summary").toMatch(latin);
     expect(article.title).toMatch(arabic);
     expect(article.translated).toBe(true);
   }
 
   expect(today.ok()).toBeTruthy();
   const edition = await today.json() as {
-    items: Array<{ titleAr: string | null; titleEn: string | null }>;
+    items: Array<{ arabic: { title: string | null }; english: { title: string | null } }>;
   };
   expect(edition.items.length).toBeGreaterThan(0);
   for (const article of edition.items) {
-    expect(article.titleAr).toMatch(arabic);
-    expect(article.titleEn).toMatch(latin);
+    expect(article.arabic.title).toMatch(arabic);
+    expect(article.english.title).toMatch(latin);
   }
 });
 
@@ -73,6 +75,10 @@ test("search engines can read robots.txt and sitemap.xml", async ({ request }) =
   expect(robots.ok()).toBeTruthy();
   const robotsBody = await robots.text();
   expect(robotsBody).toMatch(/Allow:\s*\//);
+  expect(robotsBody).toMatch(/Allow:\s*\/favicon\.ico/);
+  expect(robotsBody).toMatch(/Allow:\s*\/favicon-48x48\.png/);
+  expect(robotsBody).toMatch(/Allow:\s*\/favicon-96x96\.png/);
+  expect(robotsBody).toMatch(/Allow:\s*\/brand\//);
   expect(robotsBody).toMatch(/Disallow:\s*\/console/);
   expect(robotsBody).toMatch(/Disallow:\s*\/api/);
   expect(robotsBody).toMatch(/Sitemap:\s*https?:\/\/.+\//);
@@ -81,6 +87,7 @@ test("search engines can read robots.txt and sitemap.xml", async ({ request }) =
   expect(sitemap.ok()).toBeTruthy();
   const sitemapBody = await sitemap.text();
   expect(sitemapBody).toContain("<urlset");
+  expect(sitemapBody).toContain("/console/login");
   expect(sitemapBody).toContain("lang=en");
   expect(sitemapBody).toContain("hreflang=\"ar\"");
 });

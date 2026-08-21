@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireApiKey } from "@/lib/auth";
 import {
-  articleListOrderBy,
-  countDedupedArticles,
   describeQueryFailure,
-  fetchDedupedArticles,
+  listDedupedArticles,
   parseQuery,
   serializeArticles,
 } from "@/lib/api";
@@ -35,11 +33,13 @@ export async function GET(request: Request) {
     }
     const searchVariants = await expandSearchQuery(url.searchParams.get("q") ?? "");
     const query = parseQuery(url.searchParams, { searchVariants });
-    const orderBy = [{ publishedAt: "desc" as const }, { score: { finalScore: "desc" as const } }];
-    const [count, articles] = await Promise.all([
-      countDedupedArticles(query.where, orderBy),
-      fetchDedupedArticles(query.where, orderBy, query.limit, query.offset),
-    ]);
+    const orderBy = [{ publishedAt: "desc" as const }, { finalScore: "desc" as const }];
+    const { count, items: articles } = await listDedupedArticles(
+      query.where,
+      orderBy,
+      query.limit,
+      query.offset,
+    );
     const displaySeconds = articles.length
       ? Math.min(20, Math.max(8, Math.floor(120 / articles.length)))
       : 0;

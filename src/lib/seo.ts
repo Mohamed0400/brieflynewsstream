@@ -1,9 +1,20 @@
 import type { Metadata } from "next";
-import { publicSiteUrl } from "@/lib/site-url";
 import { mediaAbsoluteUrl, mediaUrl } from "@/lib/media";
+import { PLAN_DEFINITIONS } from "@/lib/plans";
+import { publicSiteUrl } from "@/lib/site-url";
+
+export type SeoLang = "ar" | "en";
 
 export const SITE_NAME = "Briefly NewsStream";
 export const SITE_NAME_AR = "Briefly NewsStream";
+export const PRODUCT_LINE_AR = "موجز أخبار الأسواق العالمية و المحلية";
+export const PRODUCT_LINE_EN = "Global and local market news briefing";
+
+export function siteTitle(lang: SeoLang, page?: string) {
+  const line = lang === "en" ? PRODUCT_LINE_EN : PRODUCT_LINE_AR;
+  if (!page) return `${SITE_NAME} | ${line}`;
+  return `${page} | ${line}`;
+}
 
 /** Default Open Graph / Twitter share card (1200x630) via Cloudinary. */
 export const OG_IMAGE_PATH = mediaUrl("ogShare", {
@@ -15,10 +26,28 @@ export const OG_IMAGE_PATH = mediaUrl("ogShare", {
 export const OG_IMAGE_WIDTH = 1200;
 export const OG_IMAGE_HEIGHT = 630;
 export const OG_SHARE_TAGLINE =
-  "Market news as a stream - scored, bilingual, and built for global and regional markets.";
+  "Global and local market news briefing. Scored, bilingual, and ready for products.";
+export const OG_SHARE_TAGLINE_AR =
+  "موجز أخبار الأسواق العالمية و المحلية. منظّم، ثنائي اللغة، وجاهز للمنتجات.";
 
+/** Square brand mark on a light ground. Google shows this beside the site name. */
 export function brandLogoUrl() {
-  return mediaAbsoluteUrl("logoMark", { width: 512, quality: "auto" });
+  return absoluteUrl("/brand/logo-mark-on-light.png");
+}
+
+export function brandWordmarkUrl() {
+  return absoluteUrl("/brand/logo-wordmark.png");
+}
+
+export function brandLogoJsonLd() {
+  return {
+    "@type": "ImageObject",
+    url: brandLogoUrl(),
+    contentUrl: brandLogoUrl(),
+    width: 1024,
+    height: 1024,
+    caption: SITE_NAME,
+  };
 }
 
 export function ogShareAbsoluteUrl() {
@@ -84,7 +113,7 @@ export const SEO_KEYWORDS_EN = [
   "REST news API",
   "realtime news API",
   "real-time news API",
-  "live news API",
+  "market briefing API",
   "breaking news API",
   "headlines API",
   "news data API",
@@ -159,19 +188,17 @@ export const SEO_KEYWORDS_AR = [
 
 /** Answer-first descriptions for SEO + AI Overviews / AEO. */
 export const SEO_DESCRIPTION_EN =
-  "Briefly NewsStream is an Arabic-first bilingual market news API for global and regional markets: AR/EN articles, impact scoring, and ~70-country coverage for developers.";
+  "Briefly NewsStream is a global and local market news briefing: Arabic and English fields, impact scores, and about 70 countries in one API for products.";
 
 export const SEO_DESCRIPTION_AR =
-  "Briefly NewsStream واجهة أخبار أسواق عربية أولاً للأسواق العالمية والإقليمية: مقالات عربية وإنجليزية، تقييم أثر السوق، وتغطية نحو ٧٠ دولة للمطوّرين.";
+  "Briefly NewsStream موجز أخبار الأسواق العالمية و المحلية: حقول عربية وإنجليزية، درجات أثر، ونحو ٧٠ دولة في واجهة واحدة للمنتجات.";
 
 /** Short direct answers AI systems can cite (also used in FAQ / speakable). */
 export const AEO_ENTITY_ANSWER_EN =
-  "Briefly NewsStream is a bilingual Arabic-English market news API with impact scoring, built for global and regional markets.";
+  "Briefly NewsStream is a global and local market news briefing with Arabic and English fields and impact scoring.";
 
 export const AEO_ENTITY_ANSWER_AR =
-  "Briefly NewsStream واجهة برمجة لأخبار الأسواق بالعربية والإنجليزية مع تقييم أثر السوق، مبنية للأسواق العالمية والإقليمية.";
-
-export type SeoLang = "ar" | "en";
+  "Briefly NewsStream موجز أخبار الأسواق العالمية و المحلية، بحقول عربية وإنجليزية ودرجات أثر.";
 
 export function absoluteUrl(path = "/") {
   const origin = publicSiteUrl();
@@ -308,10 +335,10 @@ export function organizationJsonLd() {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: SITE_NAME,
-    alternateName: ["Briefly News Stream", "NewsStream API", "موجز الأسواق"],
+    alternateName: ["Briefly News Stream", "NewsStream API", "موجز الأسواق", PRODUCT_LINE_AR, PRODUCT_LINE_EN],
     url,
-    logo: brandLogoUrl(),
-    image: ogShareAbsoluteUrl(),
+    logo: brandLogoJsonLd(),
+    image: [brandWordmarkUrl(), ogShareAbsoluteUrl()],
     description: AEO_ENTITY_ANSWER_EN,
     knowsAbout: [
       "Market news API",
@@ -345,11 +372,16 @@ export function websiteJsonLd() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: SITE_NAME,
-    alternateName: ["Briefly News Stream", "NewsStream API", "موجز الأسواق"],
+    alternateName: ["Briefly News Stream", "NewsStream API", "موجز الأسواق", PRODUCT_LINE_AR, PRODUCT_LINE_EN],
     url,
     inLanguage: ["ar", "en"],
-    description: AEO_ENTITY_ANSWER_EN,
-    publisher: { "@type": "Organization", name: SITE_NAME, url },
+    description: AEO_ENTITY_ANSWER_AR,
+    publisher: {
+      "@type": "Organization",
+      name: SITE_NAME,
+      url,
+      logo: brandLogoJsonLd(),
+    },
     potentialAction: {
       "@type": "SearchAction",
       target: {
@@ -404,7 +436,7 @@ export function softwareApplicationJsonLd(lang: SeoLang) {
     "@type": "SoftwareApplication",
     name: SITE_NAME,
     applicationCategory: "DeveloperApplication",
-    applicationSubCategory: "News API",
+    applicationSubCategory: lang === "en" ? PRODUCT_LINE_EN : PRODUCT_LINE_AR,
     operatingSystem: "Web",
     url: absoluteUrl("/"),
     description: lang === "en" ? SEO_DESCRIPTION_EN : SEO_DESCRIPTION_AR,
@@ -426,9 +458,9 @@ export function softwareApplicationJsonLd(lang: SeoLang) {
       {
         "@type": "Offer",
         name: "Pro",
-        price: "60",
+        price: String(PLAN_DEFINITIONS.PRO.listPriceMonthlyUsd),
         priceCurrency: "USD",
-        description: "Production quotas, full filters, and commercial use. Manual upgrade.",
+        description: "Production daily limits, full filters, and commercial use. Request from Billing.",
         availability: "https://schema.org/InStock",
       },
       {
@@ -512,7 +544,7 @@ export function serviceJsonLd(lang: SeoLang) {
   return {
     "@context": "https://schema.org",
     "@type": "Service",
-    name: lang === "en" ? "Market news API" : "واجهة أخبار الأسواق",
+    name: lang === "en" ? PRODUCT_LINE_EN : PRODUCT_LINE_AR,
     serviceType: "News API",
     provider: { "@type": "Organization", name: SITE_NAME, url: absoluteUrl("/") },
     description: lang === "en" ? AEO_ENTITY_ANSWER_EN : AEO_ENTITY_ANSWER_AR,

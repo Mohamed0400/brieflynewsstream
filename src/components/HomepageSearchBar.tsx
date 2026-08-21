@@ -1,9 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { X } from "@phosphor-icons/react";
 import { FormEvent, useEffect, useRef, useState, useTransition } from "react";
+import { BrandLoader } from "@/components/media/BrandLoader";
 
-const SEARCH_DEBOUNCE_MS = 2000;
+const SEARCH_DEBOUNCE_MS = 400;
 const SCROLL_FLAG = "homepage-search-scroll";
 
 type SearchParams = {
@@ -68,12 +70,14 @@ export function HomepageSearchBar({
   searchPlaceholder,
   searchButton,
   searchingLabel,
+  searchClearLabel,
   params,
 }: {
   initialQuery: string;
   searchPlaceholder: string;
   searchButton: string;
   searchingLabel: string;
+  searchClearLabel: string;
   params: SearchParams;
 }) {
   const router = useRouter();
@@ -158,26 +162,45 @@ export function HomepageSearchBar({
       aria-label="Search market news"
       aria-busy={loading}
     >
-      <input
-        ref={inputRef}
-        id="homepage-search"
-        type="search"
-        name="q"
-        value={query}
-        onChange={(event) => {
-          const nextQuery = event.target.value;
-          setQuery(nextQuery);
-          pendingQueryRef.current = null;
-          sessionStorage.removeItem(SCROLL_FLAG);
-          setSearching(false);
-          scheduleNavigate(nextQuery);
-        }}
-        placeholder={searchPlaceholder}
-        aria-label="Search articles"
-        autoComplete="off"
-        autoCorrect="off"
-        spellCheck={false}
-      />
+      <div className="homepage-search-field">
+        <input
+          ref={inputRef}
+          id="homepage-search"
+          type="search"
+          name="q"
+          value={query}
+          onChange={(event) => {
+            const nextQuery = event.target.value;
+            setQuery(nextQuery);
+            pendingQueryRef.current = null;
+            sessionStorage.removeItem(SCROLL_FLAG);
+            setSearching(false);
+            scheduleNavigate(nextQuery);
+          }}
+          placeholder={searchPlaceholder}
+          aria-label="Search articles"
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+        />
+        {query ? (
+          <button
+            type="button"
+            className="homepage-search-clear"
+            aria-label={searchClearLabel}
+            onClick={() => {
+              setQuery("");
+              pendingQueryRef.current = null;
+              sessionStorage.removeItem(SCROLL_FLAG);
+              setSearching(false);
+              scheduleNavigate("");
+              inputRef.current?.focus();
+            }}
+          >
+            <X size={16} weight="bold" aria-hidden="true" />
+          </button>
+        ) : null}
+      </div>
       <button
         type="submit"
         className={`homepage-search-button${loading ? " is-loading" : ""}`}
@@ -185,7 +208,7 @@ export function HomepageSearchBar({
       >
         {loading ? (
           <>
-            <span className="homepage-search-spinner" aria-hidden="true" />
+            <BrandLoader size="sm" decorative />
             <span>{searchingLabel}</span>
           </>
         ) : (

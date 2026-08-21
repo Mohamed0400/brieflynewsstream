@@ -1,3 +1,5 @@
+import { publicErrorMessage } from "./public-error";
+
 export type ToastKind = "error" | "success" | "warning" | "info";
 
 export type ToastInput = {
@@ -118,9 +120,7 @@ export function pushToast(input: ToastInput) {
 }
 
 export function toastMessage(error: unknown, fallback: string) {
-  if (error instanceof Error && error.message.trim()) return error.message.trim();
-  if (typeof error === "string" && error.trim()) return error.trim();
-  return fallback;
+  return publicErrorMessage(error, fallback);
 }
 
 export const toast = {

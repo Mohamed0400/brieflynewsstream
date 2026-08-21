@@ -10,10 +10,14 @@ export const JOB_TRANSLATE = "translate";
 
 const HEARTBEAT_ID = "default";
 const HEARTBEAT_MS = 30_000;
-const LOCK_MS = 15 * 60 * 1000;
+const LOCK_MS = 25 * 60 * 1000;
 const ONLINE_MS = 90_000;
 
+/** 06:00, 14:00, 22:00 in APP_TIMEZONE (Asia/Kuwait). */
+export const COLLECT_THREE_TIMES_DAILY = "0 6,14,22 * * *";
+
 export const COLLECT_PRESETS = [
+  { value: COLLECT_THREE_TIMES_DAILY, label: "Three times daily (06:00, 14:00, 22:00)" },
   { value: "*/15 * * * *", label: "Every 15 minutes" },
   { value: "*/30 * * * *", label: "Every 30 minutes" },
   { value: "0 * * * *", label: "Every hour" },
@@ -37,8 +41,8 @@ export const DEFAULT_SCHEDULED_JOBS = [
   {
     key: JOB_COLLECT,
     name: "Collect news",
-    description: "Fetch sources, store new articles, translate bilingual fields, and refresh today's edition.",
-    cron: "*/30 * * * *",
+    description: "Fetch every country source three times daily, store articles, fill markets below 3 stories, translate, and refresh today's edition.",
+    cron: COLLECT_THREE_TIMES_DAILY,
   },
   {
     key: JOB_TRANSLATE,
@@ -102,8 +106,14 @@ export async function ensureDefaultJobs() {
   await Promise.all(DEFAULT_SCHEDULED_JOBS.map((job) => (
     prisma.scheduledJob.upsert({
       where: { key: job.key },
-      create: { ...job, timezone },
-      update: job.key === JOB_TRANSLATE ? { description: job.description } : {},
+      create: { ...job, timezone, enabled: true },
+      update: {
+        name: job.name,
+        description: job.description,
+        cron: job.cron,
+        timezone,
+        enabled: true,
+      },
     })
   )));
 }
@@ -161,6 +171,7 @@ export async function runScheduledJob(key: string) {
     });
     return { ok: true, skipped: false, message: lastSummary };
   } catch (error) {
+    console.error("scheduled job failed", key, error);
     const failure = describeQueryFailure(error);
     const lastError = failure.message;
     await prisma.scheduledJob.update({
@@ -287,6 +298,7 @@ async function syncScheduledTasks(processName: string) {
 }
 
 export function startEmbeddedScheduler(processName: string) {
+  if (!embeddedSchedulerEnabled()) return;
   const state = schedulerState();
   if (state.started) return;
   state.started = true;
@@ -298,4 +310,12 @@ export function startEmbeddedScheduler(processName: string) {
   tick();
   state.timer = setInterval(tick, HEARTBEAT_MS);
   if (typeof state.timer.unref === "function") state.timer.unref();
+}
+
+/** In-process node-cron only on a long-lived Node host. Vercel serverless sleeps. */
+export function embeddedSchedulerEnabled() {
+  if (process.env.ENABLE_EMBEDDED_SCHEDULER === "true") return true;
+  if (process.env.ENABLE_EMBEDDED_SCHEDULER === "false") return false;
+  if (process.env.VERCEL) return false;
+  return true;
 }

@@ -1,173 +1,297 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
 import { useConsoleCopy } from "@/components/console/ConsoleLang";
+import { formatUsd } from "@/lib/billing/types";
 import { PLAN_DEFINITIONS } from "@/lib/plans";
+
+type InvoiceRow = {
+  id: string;
+  number: string;
+  status: "OPEN" | "PAID" | "VOID";
+  description: string;
+  totalCents: number;
+  issuedAt: string;
+  paidAt: string | null;
+  example: boolean;
+  receiptAvailable: boolean;
+};
 
 type BillingProps = {
   plan: keyof typeof PLAN_DEFINITIONS;
   status: string;
-  isAdmin: boolean;
   usedToday: number;
   dailyLimit: number;
   activeKeys: number;
   maxKeys: number;
   listPriceMonthlyUsd: number | null;
+  invoices: InvoiceRow[];
 };
+
+function statusTone(status: InvoiceRow["status"]) {
+  if (status === "PAID") return "paid";
+  if (status === "VOID") return "void";
+  return "open";
+}
 
 export function BillingPanel({
   plan,
-  status,
-  isAdmin,
+  status: _status,
   usedToday,
   dailyLimit,
   activeKeys,
   maxKeys,
   listPriceMonthlyUsd,
+  invoices: initialInvoices,
 }: BillingProps) {
+  const router = useRouter();
   const { copy, lang } = useConsoleCopy();
   const t = copy.billing;
-  const [email, setEmail] = useState("");
-  const [nextPlan, setNextPlan] = useState<keyof typeof PLAN_DEFINITIONS>("PRO");
-  const [nextStatus, setNextStatus] = useState("ACTIVE");
-  const [dailyOverride, setDailyOverride] = useState("");
-  const [keysOverride, setKeysOverride] = useState("");
+  const [invoices, setInvoices] = useState(initialInvoices);
+  const [checkout, setCheckout] = useState<InvoiceRow | null>(
+    () => initialInvoices.find((row) => row.status === "OPEN") ?? null,
+  );
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
   const remaining = Math.max(0, dailyLimit - usedToday);
   const usagePct = dailyLimit > 0 ? Math.min(100, Math.round((usedToday / dailyLimit) * 100)) : 0;
+  const locale = lang === "en" ? "en-US" : "ar";
+  const dateFmt = useMemo(
+    () => new Intl.DateTimeFormat(locale, { dateStyle: "medium" }),
+    [locale],
+  );
+  const statusLabel = {
+    OPEN: t.statusOpen,
+    PAID: t.statusPaid,
+    VOID: t.statusVoid,
+  } as const;
+  const proCents = (PLAN_DEFINITIONS.PRO.listPriceMonthlyUsd ?? 70) * 100;
+  const payLabel = `${t.pay} ${formatUsd(proCents)}`;
 
-  async function saveAdmin() {
+  async function openUpgrade() {
     setBusy(true);
     setMessage("");
     try {
-      const response = await fetch("/api/console/admin/accounts", {
-        method: "PATCH",
+      const response = await fetch("/api/console/billing/invoices", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email.trim() || undefined,
-          plan: nextPlan,
-          status: nextStatus,
-          dailyPointsOverride: dailyOverride.trim() === "" ? undefined : Number(dailyOverride),
-          maxKeysOverride: keysOverride.trim() === "" ? undefined : Number(keysOverride),
-        }),
+        body: JSON.stringify({ plan: "PRO" }),
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
-        setMessage(payload.message || payload.error || t.adminFailed);
-      } else {
-        setMessage(t.adminSaved(payload.item?.email || email));
+        setMessage(payload.message || payload.error || t.requestFailed);
+        return;
       }
+      const next = payload.item as InvoiceRow;
+      setInvoices((current) => {
+        if (current.some((row) => row.id === next.id)) return current;
+        return [next, ...current];
+      });
+      setCheckout(next);
     } catch {
-      setMessage(t.adminFailed);
+      setMessage(t.requestFailed);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function act(invoiceId: string, action: "pay" | "cancel") {
+    setBusy(true);
+    setMessage("");
+    try {
+      const response = await fetch(`/api/console/billing/invoices/${invoiceId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setMessage(payload.message || payload.error || t.payFailed);
+        return;
+      }
+      if (action === "cancel") {
+        setCheckout(null);
+        setMessage(t.cancelledOpen);
+        return;
+      }
+      router.push(`/console/billing/success?invoice=${invoiceId}`);
+      router.refresh();
+    } catch {
+      setMessage(t.payFailed);
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <div className="console-panel-stack">
+    <div className="console-page">
       <header className="console-page-header">
         <p className="console-kicker">{t.kicker}</p>
         <h1>{t.heading}</h1>
         <p>{t.description}</p>
       </header>
 
-      <section className="console-card" aria-labelledby="billing-plan-title">
-        <h2 id="billing-plan-title">{t.currentPlan}</h2>
-        <p className="console-muted">
-          <strong>{PLAN_DEFINITIONS[plan].label}</strong>
-          {listPriceMonthlyUsd != null ? ` · $${listPriceMonthlyUsd}/mo list` : ` · ${t.customPrice}`}
-          {" · "}
-          {status}
-        </p>
-        <p>{t.noCheckout}</p>
-        <div className="console-inline-actions">
-          <a className="console-primary-button" href="mailto:hello@brieflynewsstream.com">
-            {t.contactCta}
-          </a>
-          <Link className="console-secondary-button" href={lang === "en" ? "/console/keys?lang=en" : "/console/keys"}>
-            {t.manageKeys}
-          </Link>
-        </div>
+      <section className="console-metric-grid" aria-label={t.usageTitle}>
+        <article className="console-metric console-metric-primary">
+          <span>{t.currentPlan}</span>
+          <strong className="console-word-metric">{PLAN_DEFINITIONS[plan].label}</strong>
+          <small>
+            {listPriceMonthlyUsd != null
+              ? `${formatUsd(listPriceMonthlyUsd * 100)} / ${t.month}`
+              : t.customPrice}
+          </small>
+        </article>
+        <article className="console-metric">
+          <span>{t.requestsToday}</span>
+          <strong dir="ltr">
+            {usedToday.toLocaleString("en-US")} / {dailyLimit.toLocaleString("en-US")}
+          </strong>
+          <small>{t.remaining(remaining)} · {usagePct}%</small>
+        </article>
+        <article className="console-metric">
+          <span>{t.activeKeys}</span>
+          <strong dir="ltr">
+            {activeKeys} / {maxKeys}
+          </strong>
+          <small>{t.usageTitle}</small>
+        </article>
       </section>
 
-      <section className="console-card" aria-labelledby="billing-usage-title">
-        <h2 id="billing-usage-title">{t.usageTitle}</h2>
-        <dl className="console-metric-grid">
-          <div>
-            <dt>{t.requestsToday}</dt>
-            <dd>
-              {usedToday.toLocaleString()} / {dailyLimit.toLocaleString()}
-            </dd>
-            <p className="console-muted">{t.remaining(remaining)} · {usagePct}%</p>
+      {plan === "FREE" ? (
+        <section className="console-panel" aria-labelledby="billing-upgrade-title">
+          <div className="console-panel-heading">
+            <div>
+              <h2 id="billing-upgrade-title">{t.upgradeTitle}</h2>
+              <p>{t.upgradeHint}</p>
+            </div>
           </div>
-          <div>
-            <dt>{t.activeKeys}</dt>
-            <dd>
-              {activeKeys} / {maxKeys}
-            </dd>
-          </div>
-        </dl>
-      </section>
-
-      {isAdmin ? (
-        <section className="console-card" aria-labelledby="billing-admin-title">
-          <h2 id="billing-admin-title">{t.adminTitle}</h2>
-          <p className="console-muted">{t.adminHint}</p>
-          <div className="console-form-grid">
-            <label>
-              <span>{t.adminEmail}</span>
-              <input
-                className="console-input"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="user@example.com"
-              />
-            </label>
-            <label>
-              <span>{t.adminPlan}</span>
-              <select className="console-input" value={nextPlan} onChange={(event) => setNextPlan(event.target.value as keyof typeof PLAN_DEFINITIONS)}>
-                <option value="FREE">Free</option>
-                <option value="PRO">Pro</option>
-                <option value="ENTERPRISE">Enterprise</option>
-              </select>
-            </label>
-            <label>
-              <span>{t.adminStatus}</span>
-              <select className="console-input" value={nextStatus} onChange={(event) => setNextStatus(event.target.value)}>
-                <option value="ACTIVE">Active</option>
-                <option value="SUSPENDED">Suspended</option>
-                <option value="CLOSED">Closed</option>
-              </select>
-            </label>
-            <label>
-              <span>{t.adminDailyOverride}</span>
-              <input
-                className="console-input"
-                value={dailyOverride}
-                onChange={(event) => setDailyOverride(event.target.value)}
-                placeholder={t.adminOverridePlaceholder}
-              />
-            </label>
-            <label>
-              <span>{t.adminKeysOverride}</span>
-              <input
-                className="console-input"
-                value={keysOverride}
-                onChange={(event) => setKeysOverride(event.target.value)}
-                placeholder={t.adminOverridePlaceholder}
-              />
-            </label>
-          </div>
-          <button type="button" className="console-primary-button" disabled={busy || !email.trim()} onClick={() => void saveAdmin()}>
-            {busy ? t.adminSaving : t.adminSave}
-          </button>
-          {message ? <p className="console-muted" role="status">{message}</p> : null}
+          {checkout ? (
+            <div className="billing-checkout">
+              <p className="billing-checkout-amount" dir="ltr">
+                {formatUsd(checkout.totalCents)}
+              </p>
+              <p className="console-help">{t.gatewayPending}</p>
+              <div className="console-inline-actions">
+                <button
+                  type="button"
+                  className="console-primary-button"
+                  disabled={busy}
+                  onClick={() => void act(checkout.id, "pay")}
+                >
+                  {busy ? t.paying : payLabel}
+                </button>
+                <button
+                  type="button"
+                  className="console-secondary-button"
+                  disabled={busy}
+                  onClick={() => void act(checkout.id, "cancel")}
+                >
+                  {t.cancel}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="console-inline-actions">
+              <button
+                type="button"
+                className="console-primary-button"
+                disabled={busy}
+                onClick={() => void openUpgrade()}
+              >
+                {busy ? t.requesting : t.upgradeCta}
+              </button>
+              <Link className="console-secondary-button" href={lang === "en" ? "/console/keys?lang=en" : "/console/keys"}>
+                {t.manageKeys}
+              </Link>
+            </div>
+          )}
         </section>
       ) : null}
+
+      <aside className="console-policy-note" aria-label={t.waitingTitle}>
+        <strong>{t.waitingTitle}</strong>
+        <p>{t.waitingBody}</p>
+      </aside>
+
+      <section className="console-panel" aria-labelledby="billing-history-title">
+        <div className="console-panel-heading">
+          <div>
+            <h2 id="billing-history-title">{t.historyTitle}</h2>
+            <p>{t.historyHint}</p>
+          </div>
+        </div>
+        <ul className="billing-status-legend">
+          <li><span data-status="open">{t.statusOpen}</span> {t.statusOpenHint}</li>
+          <li><span data-status="void">{t.statusVoid}</span> {t.statusVoidHint}</li>
+          <li><span data-status="paid">{t.statusPaid}</span> {t.statusPaidHint}</li>
+        </ul>
+        {invoices.length === 0 ? (
+          <div className="console-empty-state console-empty-state-compact">
+            <strong>{t.emptyTitle}</strong>
+            <p>{t.emptyHint}</p>
+          </div>
+        ) : (
+          <div className="console-key-list">
+            {invoices.map((invoice) => (
+              <article key={invoice.id} className="console-key-row billing-invoice-row">
+                <div className="console-key-identity">
+                  <strong>{invoice.description}</strong>
+                  <code dir="ltr">{invoice.number}</code>
+                  <p className="console-key-meta">
+                    {dateFmt.format(new Date(invoice.issuedAt))}
+                  </p>
+                </div>
+                <p className="billing-invoice-amount" dir="ltr">
+                  {formatUsd(invoice.totalCents)}
+                </p>
+                <span className="billing-status" data-status={statusTone(invoice.status)}>
+                  {statusLabel[invoice.status]}
+                </span>
+                <div className="console-inline-actions">
+                  {invoice.status === "OPEN" ? (
+                    <>
+                      <button
+                        type="button"
+                        className="console-primary-button"
+                        disabled={busy}
+                        onClick={() => void act(invoice.id, "pay")}
+                      >
+                        {t.pay}
+                      </button>
+                      <button
+                        type="button"
+                        className="console-secondary-button"
+                        disabled={busy}
+                        onClick={() => void act(invoice.id, "cancel")}
+                      >
+                        {t.cancel}
+                      </button>
+                    </>
+                  ) : invoice.receiptAvailable ? (
+                    <a
+                      className="console-secondary-button"
+                      href={`/api/console/billing/invoices/${invoice.id}/receipt`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {t.openReceipt}
+                    </a>
+                  ) : (
+                    <span className="billing-receipt-wait">
+                      {invoice.status === "VOID" ? t.receiptVoid : t.receiptWaiting}
+                    </span>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {message ? <p className="console-muted" role="status">{message}</p> : null}
     </div>
   );
 }

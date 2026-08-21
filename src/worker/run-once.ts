@@ -1,8 +1,12 @@
 import { prisma } from "../lib/prisma";
-import { runPipeline } from "../lib/pipeline";
+import { ensureDefaultJobs, JOB_COLLECT, runScheduledJob } from "../lib/scheduler";
 
-runPipeline({ forceCollect: true, forceEdition: true })
-  .then((result) => console.log(JSON.stringify(result, null, 2)))
+ensureDefaultJobs()
+  .then(() => runScheduledJob(JOB_COLLECT))
+  .then((result) => {
+    console.log(JSON.stringify(result, null, 2));
+    if (!result.ok && !result.skipped) process.exitCode = 1;
+  })
   .catch((error) => {
     console.error(error);
     process.exitCode = 1;

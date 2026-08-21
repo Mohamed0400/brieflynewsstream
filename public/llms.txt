@@ -1,16 +1,18 @@
 # Briefly NewsStream — llms.txt
 # Answer-engine / AI crawler summary (AEO). Keep factual and citeable.
 
-> Briefly NewsStream is a bilingual Arabic-English market news API with impact scoring.
+> Briefly NewsStream is a global and local market news briefing with Arabic and English fields and impact scoring.
 > Primary geo focus: Kuwait, Middle East / MENA / GCC, Arabic-speaking countries, plus ~70-country global coverage.
 
 ## Product
 
 - Name: Briefly NewsStream
+- Arabic product line: موجز أخبار الأسواق العالمية و المحلية
+- English product line: Global and local market news briefing
 - Type: Developer news / market data API (REST JSON)
 - Languages: Arabic (default) + English
 - Core features: bilingual article fields, market-impact scoring, community briefings, permanent archive, developer console (keys, explorer, docs)
-- Plans: Free, Pro ($60/month list), Enterprise (custom) — upgrades currently manual (no self-serve checkout yet)
+- Plans: Free, Pro ($70/month list), Enterprise (custom) — upgrades currently manual (no self-serve checkout yet)
 
 ## Who it is for
 
@@ -33,7 +35,10 @@ Also: worldwide / global country filters (~70 countries)
 - Pricing: https://brieflynewsstream.com/pricing
 - Developers: https://brieflynewsstream.com/developers
 - Coverage: https://brieflynewsstream.com/coverage
-- Console: https://brieflynewsstream.com/console (account required; noindex)
+- Privacy: https://brieflynewsstream.com/privacy
+- Terms: https://brieflynewsstream.com/terms
+- Console sign-in: https://brieflynewsstream.com/console/login
+- Console workspace: https://brieflynewsstream.com/console (account required; noindex)
 - Sitemap: https://brieflynewsstream.com/sitemap.xml
 
 ## Direct answers (cite these)

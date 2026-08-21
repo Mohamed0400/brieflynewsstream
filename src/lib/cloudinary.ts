@@ -146,6 +146,33 @@ export async function uploadImageFile(
   return toResult(uploaded);
 }
 
+/** Upload a PDF or other non-image file with a stable public_id. */
+export async function uploadRawFile(
+  filePath: string,
+  options: {
+    publicId?: string;
+    overwrite?: boolean;
+  } = {},
+): Promise<CloudinaryUploadResult> {
+  ensureCloudinary();
+  const overwrite = options.overwrite ?? Boolean(options.publicId);
+  const folder =
+    options.publicId?.includes("/")
+      ? undefined
+      : "briefly-newsstream";
+  const uploaded = await cloudinary.uploader.upload(filePath, {
+    ...(folder ? { folder } : {}),
+    public_id: options.publicId,
+    resource_type: "raw",
+    type: "upload",
+    access_mode: "public",
+    overwrite,
+    invalidate: overwrite,
+    unique_filename: !options.publicId,
+  });
+  return toResult(uploaded);
+}
+
 /** Fetch a remote image and store it on Cloudinary (article mirroring). */
 export async function uploadImageFromUrl(
   remoteUrl: string,

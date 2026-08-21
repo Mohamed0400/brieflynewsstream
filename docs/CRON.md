@@ -1,59 +1,75 @@
 # Cron jobs
 
-The app stores every fresh article with both language pairs:
+This app needs an **external wake-up**. Collecting news from ~70 countries takes minutes. Serverless Next.js (Vercel) sleeps between requests, so in-process `node-cron` is only a backup on a long-lived host.
 
-- `titleEn` / `summaryEn`
-- `titleAr` / `summaryAr`
+Timezone is `APP_TIMEZONE` (default `Asia/Kuwait`). Collect runs **three times daily**: 06:00, 14:00, 22:00 Kuwait (03:00, 11:00, 19:00 UTC).
 
-Cron jobs keep collection, translation, and the daily edition running after deploy. The Next.js server starts the scheduler from `src/instrumentation.ts`. A dedicated worker (`npm run worker:live`) can run the same jobs if you prefer a separate process.
+## How we run cron (pick the host)
 
-Timezone is `APP_TIMEZONE` (default `Asia/Kuwait`).
+| Host | Mechanism | What to configure |
+|------|-----------|-------------------|
+| **Vercel** | `vercel.json` → `GET /api/cron/collect` | Set `CRON_SECRET` in the Vercel project. Vercel sends `Authorization: Bearer $CRON_SECRET`. Hobby may only allow one run per day; GitHub Actions still covers all three. |
+| **DigitalOcean / other VPS** | In-process `node-cron` via `src/instrumentation.ts` | `npm start` or `npm run worker:live` on a process that stays up. Do **not** set `VERCEL`. |
+| **Any host (recommended)** | GitHub Actions `.github/workflows/collect.yml` | Secrets `DATABASE_URL` + `DIRECT_URL` (preferred) or `CRON_SECRET`/`ADMIN_API_KEY` + `SITE_URL` to HTTP-call `/api/cron/collect`. |
 
-## Jobs
+GitHub Actions is the guaranteed 3× daily runner. Vercel Cron and node-cron are extras. The DB job lock prevents a double collect if two of them fire at once.
 
-| Key | Name | Default cron | What it does |
-|-----|------|--------------|--------------|
-| `collect` | Collect news | `*/30 * * * *` | Fetch RSS/HTML/Gemini sources, store new articles, seed the source-language side (`en` or `ar`), translate the other side, refresh today's edition |
-| `translate` | Translate articles | `*/15 * * * *` | Backfill any fresh article missing a real Arabic or English title/summary pair |
-| `publish-daily` | Publish today's edition | `0 6 * * *` | Rebuild the stored `/today` edition, then fill remaining `ar`/`en` pairs |
+## HTTP routes
 
-Change schedules in **Console → Schedule**. Presets are listed there. **Run now** executes the same job the cron would run.
+Vercel and any external cron (cron-job.org, Cloudflare Workers, curl) call these. GET or POST. Auth is `Authorization: Bearer $CRON_SECRET` or `X-API-Key: $ADMIN_API_KEY`.
+
+| Path | Job |
+|------|-----|
+| `/api/cron/collect` | Fetch every country source, fill markets below 3 stories, translate, refresh today's edition |
+| `/api/cron/translate` | Backfill missing `ar`/`en` pairs |
+| `/api/cron/publish` | Rebuild `/today` |
+| `/api/v1/admin/collect` | Same as `/api/cron/collect` (console / admin alias) |
+
+```bash
+curl -X GET "https://www.brieflynewsstream.com/api/cron/collect" \
+  -H "Authorization: Bearer $CRON_SECRET"
+```
+
+## Jobs stored in the database
+
+| Key | Default cron | Used by |
+|-----|--------------|---------|
+| `collect` | `0 6,14,22 * * *` | Vercel Cron, GitHub Actions, node-cron on VPS |
+| `translate` | `*/15 * * * *` | node-cron on VPS only (collect already translates) |
+| `publish-daily` | `0 6 * * *` | node-cron on VPS; collect also refreshes today's edition |
+
+On Vercel, `node-cron` does **not** start (`VERCEL=1`). Set `ENABLE_EMBEDDED_SCHEDULER=true` only if you are sure the Node process never sleeps.
+
+Set `CRON_SECRET` in the Vercel project env. Vercel Cron sends `Authorization: Bearer $CRON_SECRET` to `GET /api/cron/collect`. Without that secret the scheduled run returns 401.
+
+## GitHub Actions secrets
+
+| Secret | Required | Purpose |
+|--------|----------|---------|
+| `DATABASE_URL` | Yes (preferred) | Run the pipeline in the Actions runner (no Vercel timeout) |
+| `DIRECT_URL` | With `DATABASE_URL` | Prisma session URL |
+| `GOOGLE_API_KEY` | No | Translate during collect |
+| `CRON_SECRET` or `ADMIN_API_KEY` | HTTP fallback | If `DATABASE_URL` is missing, POST `/api/cron/collect` |
+| `SITE_URL` | HTTP fallback | Defaults to `https://www.brieflynewsstream.com` |
+
+After adding secrets: **Actions → Collect news → Run workflow** once. Then leave the schedule on. You do not need Console → Run now.
+
+## Coverage floor
+
+Each collect run upserts publisher + Google News sources for all catalog countries, fetches them in parallel, then fills any country still below `MIN_COUNTRY_ARTICLES` (default 3) in the last 72 hours.
 
 ## Bilingual contract
 
-A stored article is complete only when:
-
-- English title and summary contain Latin letters and no Arabic script
-- Arabic title and summary contain Arabic script
-
-Failed Gemini calls must not copy English into `titleAr`. Collect runs translation after ingest. Publish runs translation after editorial rewrite. The 15-minute translate job catches anything still pending.
+A stored article is complete only when English title/summary are Latin and Arabic title/summary contain Arabic script. Collect translates after ingest. The translate route catches leftovers.
 
 ## Production checks
 
-The deploy gate is `GET /api/v1/health` (no API key). It fails closed:
+`GET /api/v1/health` (no API key):
 
-- `jobs`: `collect`, `translate`, `publish-daily` must exist and be enabled
-- `bilingual.today` and `bilingual.fresh`: every article in the window must have real `ar` and `en` title/summary text
-- `status`: `ok`, `degraded` (scheduler heartbeat offline), or `error` (HTTP 503)
+- `jobs`: `collect`, `translate`, `publish-daily` exist and are enabled
+- `bilingual.today` / `bilingual.fresh`: every article in the window has real `ar` and `en`
+- On Vercel, `checks.scheduler` is often `offline`. That is expected. GitHub/Vercel HTTP collect still writes articles.
 
 ```bash
-# Test app (localhost:3001)
-npm run smoke
-
-# Local live app
-npm run smoke:live
-
-# Deployed URL
-BASE_URL="https://your-domain" npm run smoke
+BASE_URL="https://www.brieflynewsstream.com" npm run smoke
 ```
-
-CI also runs Playwright (`tests/bilingual.spec.ts`) after `npm run seed:test`. That seed writes bilingual `E2EBILINGUAL` fixtures into the test/CI SQLite files only, never into live. Playwright asserts those stored `ar`/`en` pairs plus cron job presence. Full-window coverage (`every` fresh article bilingual) is enforced by `npm run smoke` against production. Set GitHub Actions variable `PRODUCTION_BASE_URL` so `smoke-production` hits the deployed app on every push to `main`.
-
-The Next.js Node process must stay running so `src/instrumentation.ts` can tick cron. Serverless freeze/unfreeze is not enough; use `npm start` or `npm run worker:live` on a long-lived host.
-
-After deploy:
-
-1. Confirm `GET /api/v1/health` is `200` with `checks.jobs=ok` and `checks.bilingual=ok`
-2. Run `BASE_URL=https://your-domain npm run smoke`
-3. Open Console → Schedule and confirm last run times move after collect / translate / publish
-4. Spot-check `/api/v1/market-news?lang=ar` and `?lang=en` for `titleAr` / `titleEn`

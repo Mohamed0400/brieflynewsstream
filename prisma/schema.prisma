@@ -46,6 +46,26 @@ enum AccountStatus {
   CLOSED
 }
 
+enum PlanSource {
+  DEFAULT
+  ADMIN
+  SUBSCRIPTION
+  INVOICE
+}
+
+enum InvoiceStatus {
+  OPEN
+  PAID
+  VOID
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
 enum SupportTicketStatus {
   OPEN
   PENDING
@@ -70,6 +90,8 @@ model Source {
   normalized      Article[]
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+
+  @@index([enabled, country])
 }
 
 model RawArticle {
@@ -90,6 +112,7 @@ model RawArticle {
 
   @@unique([sourceId, externalId])
   @@index([processedAt])
+  @@index([publishedAt])
 }
 
 model Article {
@@ -118,6 +141,7 @@ model Article {
   publishedAt     DateTime
   contentHash     String             @unique
   storyKey        String             @default("")
+  finalScore      Float              @default(0)
   score           ArticleScore?
   editionItems    DailyEditionItem[]
   createdAt       DateTime           @default(now())
@@ -128,6 +152,9 @@ model Article {
   @@index([region, category])
   @@index([audienceCodes])
   @@index([publishedAt])
+  @@index([sourceId, publishedAt(sort: Desc)])
+  @@index([publishedAt(sort: Desc), finalScore(sort: Desc)])
+  @@index([country, publishedAt(sort: Desc), finalScore(sort: Desc)])
   @@index([storyKey, sourceId, publishedAt])
 }
 
@@ -150,6 +177,7 @@ model ArticleScore {
   updatedAt        DateTime @updatedAt
 
   @@index([finalScore])
+  @@index([finalScore(sort: Desc), articleId])
 }
 
 model DailyEdition {
@@ -162,6 +190,8 @@ model DailyEdition {
   items     DailyEditionItem[]
   createdAt DateTime           @default(now())
   updatedAt DateTime           @updatedAt
+
+  @@index([status, date(sort: Desc)])
 }
 
 model DailyEditionItem {
@@ -184,12 +214,16 @@ model Account {
   role                AccountRole         @default(MEMBER)
   status              AccountStatus       @default(ACTIVE)
   plan                PlanTier            @default(FREE)
+  planSource          PlanSource          @default(DEFAULT)
   dailyPointsOverride Int?
   maxKeysOverride     Int?
   stripeCustomerId    String?             @unique
+  country             String              @default("")
+  address             String              @default("")
+  mobilePhone         String              @default("")
   keys                ApiKey[]
   subscription        Subscription?
-  invoices            InvoiceSnapshot[]
+  invoices            Invoice[]
   notes               AccountNote[]
   tickets             SupportTicket[]
   enterpriseReqs      EnterpriseRequest[]
@@ -236,27 +270,66 @@ model Subscription {
   id                   String    @id @default(cuid())
   accountId            String    @unique
   account              Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  provider             String    @default("manual")
   stripeSubscriptionId String?   @unique
   status               String    @default("inactive")
+  planTier             PlanTier  @default(PRO)
   unitAmountCents      Int       @default(0)
   currency             String    @default("usd")
   currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 }
 
-model InvoiceSnapshot {
-  id              String    @id @default(cuid())
+model Invoice {
+  id              String        @id @default(cuid())
   accountId       String
-  account         Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  stripeInvoiceId String    @unique
-  amountPaidCents Int
-  currency        String    @default("usd")
-  status          String
+  account         Account       @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  number          String        @unique
+  status          InvoiceStatus @default(OPEN)
+  currency        String        @default("usd")
+  planTier        PlanTier
+  description     String
+  subtotalCents   Int
+  taxCents        Int           @default(0)
+  totalCents      Int
+  amountPaidCents Int           @default(0)
+  periodStart     DateTime?
+  periodEnd       DateTime?
+  issuedAt        DateTime      @default(now())
+  dueAt           DateTime?
   paidAt          DateTime?
-  createdAt       DateTime  @default(now())
+  voidedAt        DateTime?
+  voidReason      String?
+  provider        String        @default("manual")
+  providerRef     String?       @unique
+  example         Boolean       @default(false)
+  lineItems       Json          @default("[]")
+  payments        Payment[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
-  @@index([accountId, paidAt])
+  @@index([accountId, issuedAt])
+  @@index([status, issuedAt])
+  @@index([accountId, status, planTier, example])
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  invoiceId     String
+  invoice       Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  status        PaymentStatus @default(PENDING)
+  amountCents   Int
+  currency      String        @default("usd")
+  method        String?
+  provider      String        @default("manual")
+  providerRef   String?       @unique
+  paidAt        DateTime?
+  failureReason String?
+  createdAt     DateTime      @default(now())
+
+  @@index([invoiceId, createdAt])
 }
 
 model AdminAuditLog {

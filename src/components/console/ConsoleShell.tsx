@@ -3,45 +3,41 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
+import {
+  BookOpenText,
+  Code,
+  CreditCard,
+  House,
+  Key,
+  MagnifyingGlass,
+} from "@phosphor-icons/react";
 import { ConsoleDocumentLang, ConsoleLangSwitcher, useConsoleCopy } from "@/components/console/ConsoleLang";
-import { CloudinaryImage } from "@/components/media/CloudinaryImage";
+import { BrandLogo } from "@/components/media/BrandLogo";
 import type { ConsoleLang } from "@/lib/console-translation";
 
 const customerNav = [
-  { href: "/console/overview", key: "overview" },
-  { href: "/console/explorer", key: "explorer" },
-  { href: "/console/keys", key: "keys" },
-  { href: "/console/billing", key: "billing" },
-  { href: "/console/docs", key: "docs" },
-  { href: "/console/docs/api", key: "apiDocs" },
-] as const;
-
-const adminNav = [
-  { href: "/console/schedule", key: "schedule" },
+  { href: "/console/overview", key: "overview", Icon: House },
+  { href: "/console/explorer", key: "explorer", Icon: MagnifyingGlass },
+  { href: "/console/keys", key: "keys", Icon: Key },
+  { href: "/console/billing", key: "billing", Icon: CreditCard },
+  { href: "/console/docs", key: "docs", Icon: BookOpenText },
+  { href: "/console/docs/api", key: "apiDocs", Icon: Code },
 ] as const;
 
 export function ConsoleShell({
   children,
-  environment,
   lang,
   accountEmail,
   accountPlan,
-  accountRole,
 }: {
   children: ReactNode;
-  environment: string;
   lang: ConsoleLang;
   accountEmail: string;
   accountPlan: string;
-  accountRole: string;
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const { copy } = useConsoleCopy();
-  const isAdmin = accountRole === "SUPER_ADMIN";
-  const navigation = isAdmin
-    ? [...customerNav.slice(0, 2), ...adminNav, ...customerNav.slice(2)]
-    : customerNav;
 
   async function logOut() {
     await fetch("/api/console/session", { method: "DELETE" });
@@ -55,76 +51,61 @@ export function ConsoleShell({
     : copy.workspacePlan;
 
   return (
-    <div className="console-shell console-shell-branded" lang={copy.lang} dir={copy.dir}>
+    <div className="console-shell console-app" lang={copy.lang} dir={copy.dir}>
       <ConsoleDocumentLang lang={copy.lang} dir={copy.dir} />
-      <header className="console-header">
-        <div className="console-header-inner">
-          <Link href="/console/overview" className="console-brand" aria-label={copy.brandAria}>
-            <CloudinaryImage
-              media="logoMark"
-              alt=""
-              width={40}
-              height={40}
-              deliveryWidth={80}
-              className="console-brand-logo"
-              priority
-            />
-            <span>
-              <strong>{copy.brandName}</strong>
-              <small>{copy.brandMark}</small>
-            </span>
-          </Link>
-          <div className="console-header-actions">
-            <ConsoleLangSwitcher lang={lang} />
-            <span className="console-environment">{environment}</span>
-            <Link href={lang === "en" ? "/news?lang=en" : "/news"} className="console-header-link">
-              {copy.newsFeed}
-            </Link>
-            <button type="button" onClick={logOut} className="console-header-link console-logout">
-              {copy.logOut}
-            </button>
-          </div>
+      <a className="console-app-skip" href="#console-main">
+        {copy.skipToMain}
+      </a>
+
+      <header className="console-app-bar">
+        <Link href="/console/overview" className="console-app-brand" aria-label={copy.brandAria}>
+          <BrandLogo className="console-app-wordmark" priority />
+        </Link>
+        <p className="console-app-account" title={accountEmail}>
+          {accountEmail}
+        </p>
+        <div className="console-app-bar-actions">
+          <ConsoleLangSwitcher lang={lang} />
+          <button type="button" onClick={logOut} className="console-app-logout">
+            {copy.logOut}
+          </button>
         </div>
       </header>
 
-      <div className="console-frame">
-        <aside className="console-sidebar">
-          <div className="console-account-block">
-            <p>{copy.workspace}</p>
-            <strong title={accountEmail}>{accountEmail}</strong>
-            <span>{planLabel}{isAdmin ? (lang === "ar" ? " · مسؤول" : " · Admin") : ""}</span>
-          </div>
-          <nav className="console-navigation" aria-label={copy.navAria}>
-            {navigation.map((item) => {
-              const active = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="console-nav-link"
-                  aria-current={active ? "page" : undefined}
-                  data-active={active ? "true" : "false"}
-                >
-                  {copy.nav[item.key]}
-                </Link>
-              );
-            })}
-          </nav>
-          <div className="console-sidebar-art" aria-hidden="true">
-            <CloudinaryImage
-              media="conceptStreamIcons"
-              alt=""
-              width={320}
-              height={180}
-              deliveryWidth={640}
-              className="console-sidebar-art-image"
-            />
-          </div>
-        </aside>
-        <main id="console-main" className="console-main">
-          {children}
-        </main>
-      </div>
+      <aside className="console-app-nav">
+        <div className="console-app-account-block">
+          <p>{copy.workspace}</p>
+          <strong title={accountEmail}>{accountEmail}</strong>
+          <span>{planLabel}</span>
+          <span className="console-session-live">{copy.sessionActive}</span>
+        </div>
+        <nav className="console-app-links" aria-label={copy.navAria}>
+          {customerNav.map((item) => {
+            const active = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="console-app-link"
+                aria-current={active ? "page" : undefined}
+                data-active={active ? "true" : "false"}
+              >
+                <item.Icon size={18} weight="regular" aria-hidden="true" />
+                {copy.nav[item.key]}
+              </Link>
+            );
+          })}
+        </nav>
+        <div className="console-app-extra">
+          <Link href={lang === "en" ? "/news?lang=en" : "/news"}>
+            {copy.newsFeed}
+          </Link>
+        </div>
+      </aside>
+
+      <main id="console-main" className="console-app-main">
+        {children}
+      </main>
     </div>
   );
 }

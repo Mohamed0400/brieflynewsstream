@@ -430,7 +430,7 @@ export function ApiExplorer({
                   update("q", nextQuery);
                   scheduleSearch(nextQuery);
                 }}
-                placeholder="سعر الذهب، gold price…"
+                placeholder="أسعار النفط، oil prices…"
               />
               <small>{text.searchHint}</small>
             </label>

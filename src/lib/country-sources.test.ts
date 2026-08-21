@@ -3,10 +3,12 @@ import test from "node:test";
 import { COUNTRY_CATALOG } from "./countries";
 import {
   allLiveCountrySources,
+  allSeedSources,
   countriesNeedingArticles,
   countrySourceCoverage,
   generatedCountrySources,
   googleNewsRssUrl,
+  RETIRED_COUNTRY_SOURCE_CODES,
 } from "./country-sources";
 
 test("Google News RSS URLs encode the query", () => {
@@ -16,7 +18,7 @@ test("Google News RSS URLs encode the query", () => {
   assert.equal(url.includes("hl=en-US"), true);
 });
 
-test("every catalog country has at least two live sources", () => {
+test("every catalog country has at least eight live sources", () => {
   const { gaps, thin } = countrySourceCoverage();
   assert.deepEqual(gaps, []);
   assert.deepEqual(thin, []);
@@ -25,7 +27,7 @@ test("every catalog country has at least two live sources", () => {
     byCountry.set(source.country, (byCountry.get(source.country) ?? 0) + 1);
   }
   for (const item of COUNTRY_CATALOG) {
-    assert.ok((byCountry.get(item.code) ?? 0) >= 2, `${item.code} needs two sources`);
+    assert.ok((byCountry.get(item.code) ?? 0) >= 8, `${item.code} needs eight sources`);
   }
 });
 
@@ -43,6 +45,26 @@ test("generated country source codes are unique", () => {
   assert.equal(new Set(codes).size, codes.length);
   assert.equal(new Set(urls).size, urls.length);
   assert.ok(generated.length >= COUNTRY_CATALOG.length * 2);
+});
+
+test("seed catalog has unique codes and urls and is at least 900 sources", () => {
+  const { codes, urls, live } = allSeedSources();
+  assert.equal(new Set(codes).size, codes.length, "duplicate source codes");
+  assert.equal(new Set(urls).size, urls.length, "duplicate source urls");
+  assert.ok(live.length >= 850, `live country sources ${live.length} < 850`);
+  assert.ok(codes.length >= 900, `total unique sources ${codes.length} < 900`);
+});
+
+test("catalog includes at least eight Investing.com RSS sources", () => {
+  const investing = allSeedSources().urls.filter((url) => url.includes("investing.com"));
+  assert.ok(investing.length >= 8, `investing.com sources ${investing.length} < 8`);
+});
+
+test("retired source codes stay out of the live list", () => {
+  const retired = new Set<string>(RETIRED_COUNTRY_SOURCE_CODES);
+  for (const source of allLiveCountrySources()) {
+    assert.equal(retired.has(source.code), false, source.code);
+  }
 });
 
 test("countries needing articles include empty and under-filled markets", () => {

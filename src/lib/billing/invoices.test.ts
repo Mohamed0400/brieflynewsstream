@@ -3,6 +3,7 @@ import test from "node:test";
 import { buildReceiptPdf, EXAMPLE_RECEIPT } from "./receipt-pdf";
 import {
   applyInvoiceAction,
+  billingProviderReady,
   canDownloadReceipt,
   canPayInvoice,
   canVoidInvoice,
@@ -29,6 +30,16 @@ test("receipts are available only after payment", () => {
   assert.equal(canDownloadReceipt("PAID"), true);
   assert.equal(canDownloadReceipt("OPEN"), false);
   assert.equal(canDownloadReceipt("VOID"), false);
+});
+
+test("customer self-pay is off while billing stays manual", () => {
+  const previous = process.env.BILLING_PROVIDER;
+  process.env.BILLING_PROVIDER = "manual";
+  assert.equal(billingProviderReady(), false);
+  process.env.BILLING_PROVIDER = "stripe";
+  assert.equal(billingProviderReady(), true);
+  if (previous === undefined) delete process.env.BILLING_PROVIDER;
+  else process.env.BILLING_PROVIDER = previous;
 });
 
 test("receipt PDF is a valid paid receipt", () => {

@@ -6,6 +6,7 @@ import {
   listAccountInvoices,
   serializeInvoice,
 } from "@/lib/billing/invoices";
+import { billingProviderReady } from "@/lib/billing/types";
 import { getConsoleLang } from "@/lib/console-lang";
 import { consoleDashboardCopy } from "@/lib/console-translation";
 import { resolvePlanLimits, utcDayWindow } from "@/lib/plans";
@@ -51,6 +52,7 @@ export default async function BillingPage() {
       maxKeys={limits.maxKeys}
       listPriceMonthlyUsd={limits.listPriceMonthlyUsd}
       invoices={invoices.map(serializeInvoice)}
+      paymentsLive={billingProviderReady()}
     />
   );
 }

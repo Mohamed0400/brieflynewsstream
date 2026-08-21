@@ -1,6 +1,7 @@
 import type { InvoiceStatus, PlanTier } from "@prisma/client";
 import {
   applyInvoiceAction,
+  billingProviderReady,
   type InvoiceAction,
   type InvoiceLineItem,
 } from "@/lib/billing/types";
@@ -226,6 +227,9 @@ export async function markInvoicePaid(input: {
 }
 
 export async function payCustomerInvoice(accountId: string, invoiceId: string) {
+  if (!billingProviderReady()) {
+    return { error: "billing_not_live" as const };
+  }
   const invoice = await getAccountInvoice(accountId, invoiceId);
   if (!invoice) return { error: "not_found" as const };
   if (invoice.example) return { error: "not_found" as const };

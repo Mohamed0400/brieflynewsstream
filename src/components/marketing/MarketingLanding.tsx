@@ -1,9 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
+  Archive,
   ChartLineUp,
   Check,
   Code,
+  Globe,
+  PlugsConnected,
   Stack,
   Translate,
 } from "@phosphor-icons/react/ssr";
@@ -13,22 +16,40 @@ import { marketingCopy, type MarketingLang } from "@/lib/marketing-copy";
 import { marketingRegionPins } from "@/lib/region-coverage";
 
 const demoJson = `{
-  "category": "gold",
-  "country": "US",
-  "title": "ارتفاع أسعار الذهب مع ترقّب قرارات أسعار الفائدة",
-  "summary": "ارتفع المعدن مع ترقّب قرارات أسعار الفائدة.",
+  "category": "markets",
+  "country": "GLOBAL",
+  "title": "أسواق الأسهم العالمية تتماسك مع ترقّب قرارات الفائدة",
+  "summary": "الأسواق تبقى منتظمة بينما ينتظر المتعاملون الخطوة التالية في السياسة النقدية.",
   "arabic": {
-    "title": "ارتفاع أسعار الذهب مع ترقّب قرارات أسعار الفائدة",
-    "summary": "ارتفع المعدن مع ترقّب قرارات أسعار الفائدة."
+    "title": "أسواق الأسهم العالمية تتماسك مع ترقّب قرارات الفائدة",
+    "summary": "الأسواق تبقى منتظمة بينما ينتظر المتعاملون الخطوة التالية في السياسة النقدية."
   },
   "english": {
-    "title": "Gold prices climb ahead of rate decisions",
-    "summary": "Bullion gained as traders watched rate decisions."
+    "title": "Global equities hold as desks watch the next rate decision",
+    "summary": "Stock markets stay orderly while traders wait for the next move in policy."
   },
   "scores": {
     "final": 86,
-    "goldImpact": 91,
     "marketImpact": 84
+  }
+}`;
+
+const demoSectionJson = `{
+  "category": "oil",
+  "country": "GLOBAL",
+  "title": "أسعار النفط تتراجع مع ترقّب مخزونات الطاقة العالمية",
+  "summary": "خام القياس يتداول في نطاق ضيق بينما تترقّب الأسواق بيانات العرض والطلب.",
+  "arabic": {
+    "title": "أسعار النفط تتراجع مع ترقّب مخزونات الطاقة العالمية",
+    "summary": "خام القياس يتداول في نطاق ضيق بينما تترقّب الأسواق بيانات العرض والطلب."
+  },
+  "english": {
+    "title": "Oil prices ease as desks watch global energy inventories",
+    "summary": "Benchmark crude trades in a tight range while markets wait on supply data."
+  },
+  "scores": {
+    "final": 79,
+    "marketImpact": 81
   }
 }`;
 
@@ -71,6 +92,22 @@ export function MarketingLanding({
     { icon: <Stack {...icon} />, title: copy.provideLiveTitle, body: copy.provideLiveBody },
     { icon: <ChartLineUp {...icon} />, title: copy.provideArchiveTitle, body: copy.provideArchiveBody },
     { icon: <Code {...icon} />, title: copy.provideScoreTitle, body: copy.provideScoreBody },
+  ];
+
+  const capabilities = [
+    { n: "01", icon: <Globe {...icon} />, title: copy.intelCap1Title, body: copy.intelCap1Body },
+    { n: "02", icon: <ChartLineUp {...icon} />, title: copy.intelCap2Title, body: copy.intelCap2Body },
+    { n: "03", icon: <Code {...icon} />, title: copy.intelCap3Title, body: copy.intelCap3Body },
+    { n: "04", icon: <Translate {...icon} />, title: copy.intelCap4Title, body: copy.intelCap4Body },
+    { n: "05", icon: <Archive {...icon} />, title: copy.intelCap5Title, body: copy.intelCap5Body },
+    { n: "06", icon: <PlugsConnected {...icon} />, title: copy.intelCap6Title, body: copy.intelCap6Body },
+  ];
+
+  const flowSteps = [
+    { n: "01", title: copy.flowStep1Title, body: copy.flowStep1Body },
+    { n: "02", title: copy.flowStep2Title, body: copy.flowStep2Body },
+    { n: "03", title: copy.flowStep3Title, body: copy.flowStep3Body },
+    { n: "04", title: copy.flowStep4Title, body: copy.flowStep4Body },
   ];
 
   const scores = [
@@ -176,6 +213,44 @@ export function MarketingLanding({
             <Image src="/marketing/data-network.webp" alt="" width={1536} height={1024} />
           </figure>
         </div>
+      </section>
+
+      <section className="mkt-section mkt-intel" aria-labelledby="mkt-intel-title">
+        <div className="mkt-section-head">
+          <h2 id="mkt-intel-title">{copy.intelTitle}</h2>
+          <p>{copy.intelLede}</p>
+        </div>
+        <ul className="mkt-intel-grid">
+          {capabilities.map((item) => (
+            <li key={item.n}>
+              <span className="mkt-intel-index" aria-hidden="true">
+                {item.n}
+              </span>
+              <span className="mkt-icon-well">{item.icon}</span>
+              <h3>{item.title}</h3>
+              <p>{item.body}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="mkt-section mkt-flow" aria-labelledby="mkt-flow-title">
+        <div className="mkt-section-head">
+          <h2 id="mkt-flow-title">{copy.flowTitle}</h2>
+          <p>{copy.flowLede}</p>
+        </div>
+        <ol className="mkt-flow-steps">
+          {flowSteps.map((item) => (
+            <li key={item.n}>
+              <span className="mkt-flow-index" aria-hidden="true">
+                {item.n}
+              </span>
+              <h3>{item.title}</h3>
+              <p>{item.body}</p>
+            </li>
+          ))}
+        </ol>
+        <p className="mkt-flow-closer">{copy.flowCloser}</p>
       </section>
 
       <section id="coverage" className="mkt-section mkt-coverage">
@@ -335,7 +410,7 @@ export function MarketingLanding({
               <code>{copy.apiPath}</code>
             </p>
             <pre className="mkt-code" tabIndex={0} dir="ltr" lang="en">
-              <code>{demoJson}</code>
+              <code>{demoSectionJson}</code>
             </pre>
           </div>
         </div>

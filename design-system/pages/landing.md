@@ -9,6 +9,7 @@
 - Primary CTA is “Start free” / “ابدأ مجاناً”. Do not use “Get API key” as the homepage CTA.
 - Keep product truth: 70 countries, 3 regions (`middle_east`, `america`, `global`), 7 categories, Pro $70, 72-hour live window.
 - Do not name collection methods, adapters, or upstream vendors on marketing pages. Sell the API outcome, not how the index is built.
-- Kuwait stays out of homepage narrative. It can appear in coverage and API docs.
+- Do not name Kuwait or gold in product copy. The country catalog may still list every ISO market, including KW.
 - English copy is localized, not a literal translation of the Arabic.
+- After the signal block, two native EN/AR sections: six market-intelligence capabilities, then a four-step news-to-data flow with a closing statement. Do not merge them with the JSON demo.
 - Arabic titles: IBM Plex Bold 700, zero tracking, line-height 1.45. No italic.

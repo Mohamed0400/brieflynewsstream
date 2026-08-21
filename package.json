@@ -37,7 +37,7 @@
     "db:migrate:sqlite": "tsx scripts/migrate-sqlite-to-supabase.ts",
     "seed:test": "dotenv -e .env.test -- tsx prisma/seed.ts",
     "seed:live": "dotenv -e .env.live -- tsx prisma/seed.ts",
-    "test": "tsx --test src/lib/api.test.ts src/lib/auth-redirect.test.ts src/lib/billing/invoices.test.ts src/lib/classify.test.ts src/lib/cloudinary.test.ts src/lib/console/platform-overview-pdf.test.ts src/lib/country-sources.test.ts src/lib/dedupe.test.ts src/lib/public-error.test.ts src/lib/public-source.test.ts src/lib/scheduler.test.ts src/lib/signup-profile.test.ts src/lib/toast.test.ts"
+    "test": "tsx --test src/lib/api.test.ts src/lib/auth-redirect.test.ts src/lib/billing/invoices.test.ts src/lib/classify.test.ts src/lib/cloudinary.test.ts src/lib/console/platform-overview-pdf.test.ts src/lib/country-sources.test.ts src/lib/dedupe.test.ts src/lib/plans.test.ts src/lib/public-error.test.ts src/lib/public-source.test.ts src/lib/scheduler.test.ts src/lib/signup-profile.test.ts src/lib/toast.test.ts"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",

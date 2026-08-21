@@ -59,21 +59,14 @@ export function ogShareAbsoluteUrl() {
   });
 }
 
-/** Primary geo focus: Kuwait + Middle East + Arabic-speaking markets. */
+/** Regional geo for search engines. No single-country product identity. */
 export const GEO_PRIMARY = {
-  countryCode: "KW",
-  countryName: "Kuwait",
-  countryNameAr: "الكويت",
   region: "Middle East",
   regionAr: "الشرق الأوسط",
-  timezone: "Asia/Kuwait",
-  /** Kuwait City approximate coordinates for geo meta */
-  icbm: "29.3759, 47.9774",
 } as const;
 
 /** Countries / markets we explicitly target in SEO + AEO (ISO 3166-1 alpha-2). */
 export const GEO_TARGET_COUNTRIES = [
-  { code: "KW", en: "Kuwait", ar: "الكويت" },
   { code: "SA", en: "Saudi Arabia", ar: "السعودية" },
   { code: "AE", en: "United Arab Emirates", ar: "الإمارات" },
   { code: "QA", en: "Qatar", ar: "قطر" },
@@ -96,7 +89,6 @@ export const GEO_TARGET_COUNTRIES = [
 
 export const GEO_AREA_SERVED = [
   "Worldwide",
-  "Kuwait",
   "Middle East",
   "Gulf Cooperation Council",
   "MENA",
@@ -124,7 +116,6 @@ export const SEO_KEYWORDS_EN = [
   "market news API",
   "financial news API",
   "business news API",
-  "gold news API",
   "commodities news API",
   "stock market news API",
   "Arabic news API",
@@ -134,8 +125,6 @@ export const SEO_KEYWORDS_EN = [
   "Gulf news API",
   "MENA news API",
   "GCC news API",
-  "Kuwait news API",
-  "Kuwait market news",
   "Arabic speaking countries news API",
   "Saudi news API",
   "UAE news API",
@@ -156,20 +145,17 @@ export const SEO_KEYWORDS_EN = [
   "community briefings API",
 ] as const;
 
-/** Arabic / bilingual discovery terms including Kuwait + Arabic-speaking markets. */
+/** Arabic / bilingual discovery terms including Middle East and Arabic-speaking markets. */
 export const SEO_KEYWORDS_AR = [
   "Briefly NewsStream",
   "واجهة برمجة أخبار",
   "API أخبار",
   "أخبار الأسواق",
   "أخبار مالية API",
-  "أخبار الذهب",
   "أخبار عربية إنجليزية",
   "واجهة أخبار ثنائية اللغة",
   "أخبار الشرق الأوسط",
   "أخبار الخليج",
-  "أخبار الكويت",
-  "API أخبار الكويت",
   "أخبار الدول العربية",
   "أخبار السعودية",
   "أخبار الإمارات",
@@ -232,13 +218,10 @@ export function ogImages(alt = SITE_NAME) {
 /** Geo + language meta for search engines and AI crawlers. */
 export function geoMetaTags(): Record<string, string> {
   return {
-    "geo.region": GEO_PRIMARY.countryCode,
-    "geo.placename": `${GEO_PRIMARY.countryName}, ${GEO_PRIMARY.region}`,
-    "geo.position": `${GEO_PRIMARY.icbm.replace(",", ";")}`,
-    ICBM: GEO_PRIMARY.icbm,
+    "geo.placename": GEO_PRIMARY.region,
     "content-language": "ar,en",
     "DC.language": "ar,en",
-    "audience": "developers, fintech, media, Middle East, Kuwait, Arabic-speaking markets",
+    "audience": "developers, fintech, media, Middle East, Arabic-speaking markets",
   };
 }
 
@@ -294,9 +277,9 @@ export function pageMetadata(input: {
     },
     openGraph: {
       type: input.ogType || "website",
-      locale: isEn ? "en_US" : "ar_KW",
+      locale: isEn ? "en_US" : "ar_SA",
       alternateLocale: isEn
-        ? ["ar_KW", "ar_SA", "ar_AE", "ar_EG"]
+        ? ["ar_SA", "ar_AE", "ar_EG"]
         : ["en_US", "ar_SA", "ar_AE", "ar_EG"],
       url: canonical,
       siteName: SITE_NAME,
@@ -344,7 +327,6 @@ export function organizationJsonLd() {
       "Market news API",
       "Arabic news",
       "Bilingual news",
-      "Kuwait",
       "Middle East",
       "MENA",
       "GCC",
@@ -443,7 +425,7 @@ export function softwareApplicationJsonLd(lang: SeoLang) {
     inLanguage: ["ar", "en"],
     audience: {
       "@type": "Audience",
-      audienceType: "Developers, fintech teams, media desks in Kuwait, Middle East, and Arabic-speaking countries",
+      audienceType: "Developers, fintech teams, media desks in the Middle East and Arabic-speaking countries",
       geographicArea: areaServedSchema(),
     },
     offers: [
@@ -474,7 +456,7 @@ export function softwareApplicationJsonLd(lang: SeoLang) {
     ],
     featureList: [
       "Arabic-first bilingual AR+EN news API",
-      "Kuwait and Middle East market coverage",
+      "Middle East market coverage",
       "Arabic-speaking countries filters",
       "Market-impact scoring",
       "Community briefings",
@@ -496,8 +478,8 @@ export function howToGetApiKeyJsonLd(lang: SeoLang) {
       ? "How to get a Briefly NewsStream API key"
       : "كيف تحصل على مفتاح API من Briefly NewsStream",
     description: isEn
-      ? "Create a free console account and generate an API key for bilingual market news from Kuwait, the Middle East, and Arabic-speaking markets."
-      : "أنشئ حساباً مجانياً في اللوحة وأصدِر مفتاح API لأخبار الأسواق ثنائية اللغة من الكويت والشرق الأوسط والدول الناطقة بالعربية.",
+      ? "Create a free console account and generate an API key for bilingual market news from the Middle East and Arabic-speaking markets."
+      : "أنشئ حساباً مجانياً في اللوحة وأصدِر مفتاح API لأخبار الأسواق ثنائية اللغة من الشرق الأوسط والدول الناطقة بالعربية.",
     totalTime: "PT5M",
     inLanguage: isEn ? "en" : "ar",
     step: [

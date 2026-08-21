@@ -40,6 +40,15 @@ export async function POST(
 
   const result = await payCustomerInvoice(auth.account.id, id);
   if ("error" in result) {
+    if (result.error === "billing_not_live") {
+      return NextResponse.json(
+        {
+          error: "billing_not_live",
+          message: "Card payments are not live. Open the Pro order and we confirm the upgrade.",
+        },
+        { status: 409 },
+      );
+    }
     const status = result.error === "not_found" ? 404 : 409;
     return NextResponse.json({ error: result.error }, { status });
   }

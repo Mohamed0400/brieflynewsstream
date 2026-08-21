@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { redirect } from "next/navigation";
 import { ConsoleLangProvider } from "@/components/console/ConsoleLang";
 import { ConsoleShell } from "@/components/console/ConsoleShell";
@@ -18,6 +18,14 @@ export const metadata: Metadata = {
       noimageindex: true,
     },
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  colorScheme: "light",
+  themeColor: "#f7f9fc",
 };
 
 export default async function ConsoleDashboardLayout({

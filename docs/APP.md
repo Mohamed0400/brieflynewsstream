@@ -1,6 +1,6 @@
 # App functionality
 
-Arabic-first market news for Kuwait and related markets. The public homepage defaults to Arabic. The API defaults to `lang=ar`. Every article is stored in both languages.
+Arabic-first bilingual market news. The public homepage defaults to Arabic. The API defaults to `lang=ar`. Every article is stored in both languages.
 
 ## Surfaces
 
@@ -42,7 +42,7 @@ npm run seed:live
 3. **Store** writes the original publisher title/summary plus the source-language pair (`titleEn` or `titleAr`). Stored articles are a permanent archive and are not deleted; the 72-hour window only filters the live homepage/API feed.
 4. **Translate** fills the other language in the background and sets `translatedAt` when both sides exist.
 5. **Score** ranks market impact.
-6. **Daily edition** stores a ranked Top N for the Kuwait calendar day.
+6. **Daily edition** stores a ranked Top N for the calendar day in `APP_TIMEZONE`.
 7. Homepage and API read stored `titleAr`/`titleEn`. They do not invent a language at request time except as a last-resort fill that is then saved.
 
 ## API
@@ -59,13 +59,13 @@ Send `X-API-Key` on every feed request. `lang=ar` (default) or `lang=en` changes
 | `GET /api/v1/sources` | Source health |
 | `GET /api/v1/meta/categories` | Categories |
 | `GET /api/v1/meta/countries` | ~70 ISO countries (plus EU/Global) |
-| `GET /api/v1/meta/nationalities` | Kuwait-facing nationality audiences |
+| `GET /api/v1/meta/nationalities` | Community briefing audiences |
 | `GET /api/v1/health` | Production readiness |
 | `POST /api/v1/admin/rebuild-edition` | Rebuild a stored edition |
 
 Each article payload includes `title`, `summary` (localized), `arabic`, `english`, and `translated`.
 
-Country filters cover about 70 ISO markets plus EU/Global. The Kuwait community briefing (`nationality=`) is a smaller audience list, not the full country catalog.
+Country filters cover about 70 ISO markets plus EU/Global. Community briefing (`nationality=`) is a smaller audience list, not the full country catalog.
 
 ## Console
 

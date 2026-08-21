@@ -32,13 +32,13 @@ const keyHeader = `-H "X-API-Key: mna_test_your_key_here"`;
 const origin = "http://localhost:3001";
 
 const feedQuery: ApiParam[] = [
-  { name: "q", type: "string", description: "Arabic or English search, including multi-word phrases such as سعر الذهب or gold price." },
+  { name: "q", type: "string", description: "Arabic or English search, including multi-word phrases such as أسعار النفط or oil prices." },
   { name: "searchIn", type: "title | summary | both", description: "Fields searched by q. Default both." },
   { name: "lang", type: "ar | en", description: "Response language for title and summary. Default ar. Does not filter the result set." },
   { name: "language", type: "ar | en", description: "Filter by the article's stored source language." },
-  { name: "country", type: "string", description: "ISO country code, comma-separated. Example: KW,US." },
+  { name: "country", type: "string", description: "ISO country code, comma-separated. Example: US,AE." },
   { name: "region", type: "middle_east | america | global", description: "Market region filter." },
-  { name: "category", type: "string", description: "gold, finance, economics, oil, me_economy, commodities, or markets." },
+  { name: "category", type: "string", description: "Catalog code such as finance, oil, commodities, or markets. See /api/v1/meta/categories." },
   { name: "nationality", type: "string", description: "Audience ISO code, slug, or group such as AFRICA. Repeatable." },
   { name: "source", type: "string", description: "Source identifier, comma-separated." },
   { name: "sort", type: "score | date", description: "score ranks by market impact. date is newest first. Default score." },
@@ -101,21 +101,21 @@ export const apiDocGroups: ApiDocGroup[] = [
   "offset": 0,
   "items": [{
     "id": "clxarticle01",
-    "category": "gold",
-    "country": "KW",
-    "region": "middle_east",
-    "title": "الذهب يرتفع مع ترقب بيانات التضخم",
-    "summary": "ارتفعت أسعار الذهب مع ترقب المستثمرين لبيانات التضخم.",
+    "category": "markets",
+    "country": "US",
+    "region": "global",
+    "title": "البنوك المركزية تثبّت الفائدة مع استمرار التركيز على النفط",
+    "summary": "تابع المتعاملون إشارات السياسة قبل الخطوة التالية في الطاقة والفائدة.",
     "arabic": {
-      "title": "الذهب يرتفع مع ترقب بيانات التضخم",
-      "summary": "ارتفعت أسعار الذهب مع ترقب المستثمرين لبيانات التضخم."
+      "title": "البنوك المركزية تثبّت الفائدة مع استمرار التركيز على النفط",
+      "summary": "تابع المتعاملون إشارات السياسة قبل الخطوة التالية في الطاقة والفائدة."
     },
     "english": {
-      "title": "Gold rises ahead of inflation data",
-      "summary": "Gold prices rose as investors watched inflation data."
+      "title": "Central banks hold rates as oil stays in focus",
+      "summary": "Desks watch policy signals before the next move in energy and rates."
     },
     "translated": true,
-    "url": "https://example.com/gold",
+    "url": "https://example.com/markets",
     "source": "Reuters",
     "publishedAt": "2026-08-18T08:12:00.000Z",
     "scores": { "final": 0.82, "relevance": 0.9, "marketImpact": 0.76 }
@@ -139,14 +139,14 @@ export const apiDocGroups: ApiDocGroup[] = [
         summary: "Deduplicated market briefing. Default window is 72 hours unless date, from, or to is set. Arabic titles are the default.",
         auth: "api-key",
         query: feedQuery,
-        curl: curlGet("/api/v1/market-news?q=%D8%B0%D9%87%D8%A8&lang=ar&country=KW&limit=20"),
-        fetch: fetchGet("/api/v1/market-news?q=ذهب&lang=ar&country=KW&limit=20"),
+        curl: curlGet("/api/v1/market-news?q=oil&lang=ar&country=US&limit=20"),
+        fetch: fetchGet("/api/v1/market-news?q=oil&lang=ar&country=US&limit=20"),
         response: `{
   "meta": { "version": "1.0.0", "lang": "ar", "timezone": "Asia/Kuwait", "freshnessHours": 72, "deduplicated": true },
   "count": 42,
   "limit": 20,
   "offset": 0,
-  "filters": { "q": "ذهب", "lang": "ar", "country": "KW", "sort": "score" },
+  "filters": { "q": "oil", "lang": "ar", "country": "US", "sort": "score" },
   "items": []
 }`,
         errors: [unauthorized, invalidQuery],
@@ -157,7 +157,7 @@ export const apiDocGroups: ApiDocGroup[] = [
         method: "GET",
         path: "/api/v1/market-news/nationality",
         title: "Community briefing",
-        summary: "Nationality audience rotation for Kuwait-facing coverage. nationality is required. Default page size is 12 items in a 48-hour window.",
+        summary: "Nationality audience rotation for community briefings. nationality is required. Default page size is 12 items in a 48-hour window.",
         auth: "api-key",
         query: [
           { name: "nationality", required: true, type: "string", description: "ISO code, slug, or group from /api/v1/meta/nationalities." },
@@ -266,7 +266,7 @@ export const apiDocGroups: ApiDocGroup[] = [
         fetch: fetchGet("/api/v1/meta/categories?lang=ar"),
         response: `{
   "meta": { "version": "1.0.0", "lang": "ar" },
-  "items": [{ "code": "gold", "label": "الذهب والمعادن الثمينة", "labelEn": "Gold & precious metals", "labelAr": "الذهب والمعادن الثمينة" }]
+  "items": [{ "code": "markets", "label": "أخبار السوق المؤثرة", "labelEn": "Other market-moving news", "labelAr": "أخبار السوق المؤثرة" }]
 }`,
         errors: [unauthorized],
       },
@@ -275,7 +275,7 @@ export const apiDocGroups: ApiDocGroup[] = [
         method: "GET",
         path: "/api/v1/meta/countries",
         title: "Countries",
-        summary: "ISO country catalog (~70 markets) plus which codes currently have fresh articles in the default window. Community briefing audiences are a smaller Kuwait-facing subset.",
+        summary: "ISO country catalog (~70 markets) plus which codes currently have fresh articles in the default window. Community briefing audiences are a smaller nationality subset.",
         auth: "api-key",
         curl: curlGet("/api/v1/meta/countries"),
         fetch: fetchGet("/api/v1/meta/countries"),
@@ -283,7 +283,7 @@ export const apiDocGroups: ApiDocGroup[] = [
   "freshnessHours": 72,
   "inFeedCount": 18,
   "supportedCount": 72,
-  "items": [{ "code": "KW", "name": "Kuwait", "nameAr": "الكويت", "flag": "🇰🇼", "inFeed": true }]
+  "items": [{ "code": "AE", "name": "United Arab Emirates", "nameAr": "الإمارات", "flag": "🇦🇪", "inFeed": true }]
 }`,
         errors: [unauthorized],
       },

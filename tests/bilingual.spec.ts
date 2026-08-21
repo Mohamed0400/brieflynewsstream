@@ -92,12 +92,36 @@ test("search engines can read robots.txt and sitemap.xml", async ({ request }) =
   expect(sitemapBody).toContain("hreflang=\"ar\"");
 });
 
+test("homepage icon tags use stable favicon URLs", async ({ request }) => {
+  const home = await request.get("/");
+  expect(home.ok()).toBeTruthy();
+  const html = await home.text();
+  expect(html).toContain('href="/favicon-48x48.png"');
+  expect(html).toContain('href="/favicon-96x96.png"');
+  expect(html).not.toMatch(/favicon\.ico\?favicon\./);
+  expect(html).not.toMatch(/icon\.png\?icon\./);
+  expect(html).not.toMatch(/apple-icon[^"]*\?/);
+});
+
+test("landing market-intelligence copy is native in Arabic and English", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "ذكاء السوق، بصيغة جاهزة للاستخدام" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "من الخبر إلى بيانات يمكنك البناء عليها" })).toBeVisible();
+  await expect(page.getByText("واجهة API واحدة. ذكاء سوقي منظم. مصمم لما هو قادم.")).toBeVisible();
+
+  await page.goto("/?lang=en");
+  await expect(page.getByRole("heading", { name: "Built for Market Intelligence" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "From News to Actionable Data" })).toBeVisible();
+  await expect(page.getByText("One API. Structured market intelligence. Built for what comes next.")).toBeVisible();
+  await expect(page.locator(".mkt-demo-url code")).toHaveText("/api/v1/market-news?category=oil&region=global&sort=score");
+});
+
 test("homepage is Arabic-first and shows stored Arabic headlines", async ({ page }) => {
-  await page.goto(`/?q=${fixtureQuery}`);
+  await page.goto(`/news?q=${fixtureQuery}`);
   await expect(page.getByRole("heading", { name: "موجز الأسواق" })).toBeVisible();
-  await expect(page.getByText("أحدث أخبار الذهب والأسواق المالية، في مكان واحد.")).toBeVisible();
+  await expect(page.getByText("أخبار الأسواق العالمية خلال آخر 72 ساعة، مرتّبة حسب الأثر.")).toBeVisible();
   const firstHeadline = page.locator("main article h2 a").first();
   await expect(firstHeadline).toBeVisible();
   await expect(firstHeadline).toHaveText(arabic);
-  await expect(page.getByText("فحص ثنائي اللغة أسعار الذهب في الكويت مستقرة مع تراجع الدولار")).toBeVisible();
+  await expect(page.getByText("فحص ثنائي اللغة البنوك المركزية تثبّت الفائدة مع استمرار التركيز على النفط")).toBeVisible();
 });

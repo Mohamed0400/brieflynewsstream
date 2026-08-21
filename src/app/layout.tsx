@@ -70,7 +70,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    locale: "ar_KW",
+    locale: "ar_SA",
     alternateLocale: ["en_US", "ar_SA", "ar_AE", "ar_EG"],
     url: "/",
     siteName: SITE_NAME,
@@ -86,11 +86,10 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/favicon.ico", sizes: "48x48", type: "image/x-icon" },
       { url: "/favicon-48x48.png", sizes: "48x48", type: "image/png" },
       { url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
       { url: "/favicon-192x192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icon.png", sizes: "512x512", type: "image/png" },
+      { url: "/favicon.ico", type: "image/x-icon" },
     ],
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
     shortcut: "/favicon-48x48.png",

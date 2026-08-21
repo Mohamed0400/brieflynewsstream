@@ -44,8 +44,17 @@ export function PricingPlans({
   ];
   const startSteps = [copy.startStep1, copy.startStep2, copy.startStep3];
   const freeFeatures = [copy.featureFree1, copy.featureFree2, copy.featureFree3, copy.featureFree4];
-  const proFeatures = [copy.featurePro1, copy.featurePro2, copy.featurePro3, copy.featurePro4];
-  const entFeatures = [copy.featureEnt1, copy.featureEnt2, copy.featureEnt3, copy.featureEnt4];
+  const proFeatures = [
+    `${formatCount(pro.dailyRequests)} ${copy.featureQuotaUnit}`,
+    copy.featureProCommercial,
+    copy.featureProBilling,
+  ];
+  const entFeatures = [
+    `${formatCount(enterprise.dailyRequests)} ${copy.featureQuotaUnit}${copy.featureEntQuotaNote}`,
+    `${copy.featureEntKeysPrefix}${formatCount(enterprise.maxKeys)}${copy.featureEntKeysSuffix}`,
+    copy.featureEntSla,
+    copy.featureEntCustom,
+  ];
   const compactFeatures = variant === "compact";
   const PlanHeading = variant === "full" ? "h2" : "h3";
 
@@ -68,7 +77,7 @@ export function PricingPlans({
             copy={copy}
             requests={free.dailyRequests}
             keys={free.maxKeys}
-            license={copy.licenseEval}
+            license={free.commercialUse ? copy.licenseCommercial : copy.licenseEval}
             sla={copy.slaNone}
             compact={compactFeatures}
           />
@@ -92,16 +101,16 @@ export function PricingPlans({
                 {copy.ctaStart}
               </Link>
             ) : (
-              <a href={mailto("Pro plan upgrade")} className="mkt-btn mkt-btn-primary">
+              <Link href={signupHref} className="mkt-btn mkt-btn-primary">
                 {copy.ctaPro}
-              </a>
+              </Link>
             )}
           </div>
           <PlanMeters
             copy={copy}
             requests={pro.dailyRequests}
             keys={pro.maxKeys}
-            license={copy.licenseCommercial}
+            license={pro.commercialUse ? copy.licenseCommercial : copy.licenseEval}
             sla={copy.slaNone}
             compact={compactFeatures}
           />
@@ -125,7 +134,7 @@ export function PricingPlans({
             copy={copy}
             requests={enterprise.dailyRequests}
             keys={enterprise.maxKeys}
-            license={copy.licenseCommercial}
+            license={enterprise.commercialUse ? copy.licenseCommercial : copy.licenseEval}
             sla={copy.slaScoped}
             compact={compactFeatures}
           />

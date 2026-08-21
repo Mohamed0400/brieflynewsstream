@@ -1,4 +1,5 @@
 import type { MarketingLang } from "@/lib/marketing-copy";
+import { PLAN_DEFINITIONS, formatPlanCount } from "@/lib/plans";
 
 const en = {
   crumb: "Developers",
@@ -34,10 +35,10 @@ const en = {
   paramDesc: "Description",
   paramQ: "Arabic or English search, including multi-word phrases.",
   paramSearchIn: "title, summary, or both. Default both.",
-  paramCountry: "ISO country code. Comma-separated. Example: US,KW.",
+  paramCountry: "ISO country code. Comma-separated. Example: US,AE.",
   paramRegion: "Market region. middle_east, america, or global.",
   paramCategory:
-    "gold, finance, economics, oil, me_economy, commodities, or markets.",
+    "finance, economics, oil, me_economy, commodities, markets, or the precious-metals catalog code.",
   paramNationality: "Audience code. Required on /market-news/nationality. Example: IN.",
   paramLang: "Response language for title and summary. ar or en. Default ar.",
   paramLanguage: "Filter by the story's stored source language. ar or en.",
@@ -65,7 +66,7 @@ const en = {
   fieldTitle: "Title",
   fieldTitleBody: "title follows lang. arabic and english stay on the same object.",
   fieldCategory: "Category",
-  fieldCategoryBody: "A fixed market category such as markets, finance, or gold.",
+  fieldCategoryBody: "A fixed market category such as markets, finance, or oil.",
   fieldMarket: "Market",
   fieldMarketBody: "country is an ISO code. region is middle_east, america, or global.",
   fieldImpact: "Impact",
@@ -95,7 +96,7 @@ const en = {
   error503: "The service is temporarily unavailable.",
   limitsTitle: "Usage limits",
   limitsLede:
-    "Free includes 5 requests a day. Pro includes 20,000. Enterprise is custom. The daily limit renews automatically every day.",
+    `Free includes ${PLAN_DEFINITIONS.FREE.dailyRequests} requests a day. Pro includes ${formatPlanCount(PLAN_DEFINITIONS.PRO.dailyRequests)}. Enterprise includes ${formatPlanCount(PLAN_DEFINITIONS.ENTERPRISE.dailyRequests)} by default. The daily limit renews automatically every day.`,
   limitsPage: "Default page size is 50. Maximum is 500.",
   limitsWindow:
     "Without from, to, or date, results use the default 72-hour live window. Indexed stories stay in the archive on every plan. Use from and to to query further back.",
@@ -154,10 +155,10 @@ const ar = {
   paramDesc: "الوصف",
   paramQ: "بحث بالعربية أو الإنجليزية، بما في ذلك العبارات متعددة الكلمات.",
   paramSearchIn: "title أو summary أو both. الافتراضي both.",
-  paramCountry: "رمز الدولة ISO. يمكن فصله بفاصلة. مثال: US,KW.",
+  paramCountry: "رمز الدولة ISO. يمكن فصله بفاصلة. مثال: US,AE.",
   paramRegion: "منطقة السوق. middle_east أو america أو global.",
   paramCategory:
-    "gold أو finance أو economics أو oil أو me_economy أو commodities أو markets.",
+    "finance أو economics أو oil أو me_economy أو commodities أو markets أو رمز المعادن الثمينة في الكتالوج.",
   paramNationality: "رمز الجمهور. مطلوب في /market-news/nationality. مثال: IN.",
   paramLang: "لغة العنوان والملخص في الاستجابة. ar أو en. الافتراضي ar.",
   paramLanguage: "فلتر حسب لغة المصدر المخزّنة للقصة. ar أو en.",
@@ -185,7 +186,7 @@ const ar = {
   fieldTitle: "العنوان",
   fieldTitleBody: "title يتبع lang. arabic وenglish يبقيان في الكائن نفسه.",
   fieldCategory: "التصنيف",
-  fieldCategoryBody: "فئة سوق ثابتة مثل markets أو finance أو gold.",
+  fieldCategoryBody: "فئة سوق ثابتة مثل markets أو finance أو oil.",
   fieldMarket: "السوق",
   fieldMarketBody: "country رمز ISO. region هي middle_east أو america أو global.",
   fieldImpact: "التأثير",
@@ -214,7 +215,7 @@ const ar = {
   error503: "الخدمة غير متاحة مؤقتاً.",
   limitsTitle: "حدود الاستخدام",
   limitsLede:
-    "المجاني يشمل 5 طلبات يومياً. Pro يشمل 20,000. Enterprise حسب الاتفاق. يتجدد الحد اليومي تلقائياً كل يوم.",
+    `المجاني يشمل ${PLAN_DEFINITIONS.FREE.dailyRequests} طلبات يومياً. Pro يشمل ${formatPlanCount(PLAN_DEFINITIONS.PRO.dailyRequests)}. Enterprise يشمل ${formatPlanCount(PLAN_DEFINITIONS.ENTERPRISE.dailyRequests)} افتراضياً. يتجدد الحد اليومي تلقائياً كل يوم.`,
   limitsPage: "حجم الصفحة الافتراضي 50. الحد الأقصى 500.",
   limitsWindow:
     "من دون from أو to أو date تستخدم النتائج النافذة الحية الافتراضية لمدة 72 ساعة. القصص المفهرسة تبقى في الأرشيف على كل خطة. استخدم from وto للاستعلام أبعد.",
@@ -255,18 +256,18 @@ export const DEVELOPERS_CURL = `curl "https://www.brieflynewsstream.com/api/v1/m
 
 export const DEVELOPERS_ITEM_JSON = `{
   "id": "...",
-  "title": "ارتفاع أسعار الذهب مع ترقّب قرارات أسعار الفائدة",
-  "summary": "ارتفع المعدن مع ترقّب قرارات أسعار الفائدة.",
+  "title": "أسواق الأسهم العالمية تتماسك مع ترقّب قرارات الفائدة",
+  "summary": "الأسواق تبقى منتظمة بينما ينتظر المتعاملون الخطوة التالية في السياسة النقدية.",
   "arabic": {
-    "title": "ارتفاع أسعار الذهب مع ترقّب قرارات أسعار الفائدة",
-    "summary": "ارتفع المعدن مع ترقّب قرارات أسعار الفائدة."
+    "title": "أسواق الأسهم العالمية تتماسك مع ترقّب قرارات الفائدة",
+    "summary": "الأسواق تبقى منتظمة بينما ينتظر المتعاملون الخطوة التالية في السياسة النقدية."
   },
   "english": {
-    "title": "Gold prices climb ahead of rate decisions",
-    "summary": "Bullion gained as traders watched rate decisions."
+    "title": "Global equities hold as desks watch the next rate decision",
+    "summary": "Stock markets stay orderly while traders wait for the next move in policy."
   },
   "category": "markets",
-  "country": "US",
+  "country": "GLOBAL",
   "publishedAt": "2026-08-21T12:00:00.000Z",
   "scores": {
     "final": 86,
@@ -275,10 +276,10 @@ export const DEVELOPERS_ITEM_JSON = `{
 }`;
 
 export const DEVELOPERS_NEWS_EXAMPLE =
-  "GET /market-news?country=US&category=markets&sort=score&limit=10";
+  "GET /market-news?region=global&category=markets&sort=score&limit=10";
 
 export const DEVELOPERS_FILTER_EXAMPLE = `GET /market-news
-  ?country=US
+  ?region=global
   &category=finance
   &lang=ar
   &sort=score

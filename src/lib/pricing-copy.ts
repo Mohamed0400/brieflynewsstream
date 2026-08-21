@@ -1,4 +1,5 @@
 import type { MarketingLang } from "@/lib/marketing-copy";
+import { PLAN_DEFINITIONS, formatPlanCount } from "@/lib/plans";
 
 const en = {
   pageTitle: "Market news API plans",
@@ -23,14 +24,14 @@ const en = {
   featureFree2: "Arabic and English JSON on every news endpoint",
   featureFree3: "The same filters as Pro, within the Free limit",
   featureFree4: "Not licensed for commercial production",
-  featurePro1: "20,000 requests a day",
-  featurePro2: "Commercial use of the API",
-  featurePro3: "Market briefings and advanced time filters",
-  featurePro4: "Request Pro from Billing at $70 a month",
-  featureEnt1: "200,000 requests a day by default, adjustable",
-  featureEnt2: "Up to 100 API keys",
-  featureEnt3: "Support and an SLA set to your needs",
-  featureEnt4: "Free and Pro have no published SLA",
+  featureQuotaUnit: "requests a day",
+  featureEntQuotaNote: " by default, adjustable",
+  featureProCommercial: "Commercial use of the API",
+  featureProBilling: "Request Pro from Billing at $70 a month",
+  featureEntKeysPrefix: "Up to ",
+  featureEntKeysSuffix: " API keys",
+  featureEntSla: "Support and an SLA set to your needs",
+  featureEntCustom: "Custom volume, support, and a scoped SLA",
   includedTitle: "Core features on every plan",
   includedLede: "Same API, same data shape. Usage limits change with the plan.",
   included1Title: "Arabic and English fields",
@@ -38,7 +39,7 @@ const en = {
   included2Title: "Coverage across 70+ countries",
   included2Body: "Filter by country and market using ISO codes.",
   included3Title: "7 core categories",
-  included3Body: "Gold, finance, economics, oil, Middle East economy, commodities, and markets.",
+  included3Body: "Finance, economics, oil, Middle East economy, commodities, markets, and precious metals.",
   included4Title: "Story impact score",
   included4Body: "Rank news by likely market impact, not recency alone.",
   included5Title: "Historical archive",
@@ -58,7 +59,7 @@ const en = {
   faqTitle: "Plan questions",
   faqRequestQ: "What counts as an API request?",
   faqRequestA:
-    "Each news request counts toward your daily limit.",
+    "Every authenticated API request counts toward your daily limit, including catalog and source endpoints. Health does not.",
   faqResetQ: "When does the daily limit renew?",
   faqResetA: "The daily limit renews automatically every day.",
   faqFreeQ: "Can I use the Free plan in a commercial product?",
@@ -75,7 +76,7 @@ const en = {
   nextTitle: "Start using the news API",
   nextLede: "Create a free account, create an API key, and start testing news and data.",
   nextProof:
-    "Free includes 5 API requests a day. Pro starts at $70 per month and includes 20,000 API requests a day.",
+    `Free includes ${PLAN_DEFINITIONS.FREE.dailyRequests} API requests a day. Pro starts at $${PLAN_DEFINITIONS.PRO.listPriceMonthlyUsd} per month and includes ${formatPlanCount(PLAN_DEFINITIONS.PRO.dailyRequests)} API requests a day.`,
 } as const;
 
 const ar = {
@@ -101,14 +102,14 @@ const ar = {
   featureFree2: "JSON بالعربية والإنجليزية على كل نقطة أخبار",
   featureFree3: "نفس فلاتر Pro ضمن الحد اليومي للمجاني",
   featureFree4: "غير مرخّص للإنتاج التجاري",
-  featurePro1: "20,000 طلب يومياً",
-  featurePro2: "استخدام تجاري لواجهة برمجة التطبيقات",
-  featurePro3: "إحاطات السوق وفلاتر زمنية متقدمة",
-  featurePro4: "اطلب Pro من الفوترة مقابل 70 دولاراً شهرياً",
-  featureEnt1: "200,000 طلب يومياً افتراضياً، قابلة للتعديل",
-  featureEnt2: "حتى 100 مفتاح API",
-  featureEnt3: "دعم واتفاقية مستوى خدمة تُحدَّد حسب احتياجاتك",
-  featureEnt4: "المجاني وPro بلا اتفاقية مستوى خدمة منشورة",
+  featureQuotaUnit: "طلب يومياً",
+  featureEntQuotaNote: " افتراضياً، قابلة للتعديل",
+  featureProCommercial: "استخدام تجاري لواجهة برمجة التطبيقات",
+  featureProBilling: "اطلب Pro من الفوترة مقابل 70 دولاراً شهرياً",
+  featureEntKeysPrefix: "حتى ",
+  featureEntKeysSuffix: " مفاتيح API",
+  featureEntSla: "دعم واتفاقية مستوى خدمة تُحدَّد حسب احتياجاتك",
+  featureEntCustom: "حجم مخصص ودعم واتفاقية مستوى خدمة محددة",
   includedTitle: "المزايا الأساسية متاحة على جميع الخطط",
   includedLede: "نفس الواجهة، نفس بنية البيانات، مع حدود استخدام تختلف حسب الخطة.",
   included1Title: "حقول عربية وإنجليزية",
@@ -116,7 +117,7 @@ const ar = {
   included2Title: "تغطية لأكثر من 70 دولة",
   included2Body: "فلترة حسب الدولة والأسواق باستخدام رموز ISO.",
   included3Title: "7 فئات رئيسية",
-  included3Body: "الذهب، المالية، الاقتصاد، النفط، اقتصاد الشرق الأوسط، السلع، والأسواق.",
+  included3Body: "المالية، الاقتصاد، النفط، اقتصاد الشرق الأوسط، السلع، الأسواق، والمعادن الثمينة.",
   included4Title: "درجة تأثير الخبر",
   included4Body: "رتّب الأخبار حسب مدى تأثيرها المحتمل على السوق، وليس حسب حداثتها فقط.",
   included5Title: "أرشيف تاريخي",
@@ -136,7 +137,7 @@ const ar = {
   faqTitle: "أسئلة الخطط",
   faqRequestQ: "ما الذي يُحتسب كطلب API؟",
   faqRequestA:
-    "كل طلب أخبار يُحتسب من حدك اليومي.",
+    "كل طلب API موثّق يُحتسب من حدك اليومي، بما في ذلك مسارات الكتالوج والمصادر. طلب الحالة الصحية لا يُحتسب.",
   faqResetQ: "متى يتجدد الحد اليومي؟",
   faqResetA: "يتجدد الحد اليومي تلقائياً كل يوم.",
   faqFreeQ: "هل يمكنني استخدام الخطة المجانية في منتج تجاري؟",
@@ -153,7 +154,7 @@ const ar = {
   nextTitle: "ابدأ باستخدام واجهة الأخبار",
   nextLede: "أنشئ حساباً مجانياً، أنشئ مفتاح API، وابدأ باختبار الأخبار والبيانات.",
   nextProof:
-    "تتضمن الخطة المجانية 5 طلبات API يومياً. تبدأ خطة Pro بسعر 70 دولاراً شهرياً وتشمل 20,000 طلب API يومياً.",
+    `تتضمن الخطة المجانية ${PLAN_DEFINITIONS.FREE.dailyRequests} طلبات API يومياً. تبدأ خطة Pro بسعر ${PLAN_DEFINITIONS.PRO.listPriceMonthlyUsd} دولاراً شهرياً وتشمل ${formatPlanCount(PLAN_DEFINITIONS.PRO.dailyRequests)} طلب API يومياً.`,
 } as const;
 
 export type PricingCopy = { [K in keyof typeof en]: string };

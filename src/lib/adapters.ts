@@ -27,9 +27,14 @@ const headers = {
   accept: "application/rss+xml, application/atom+xml, application/xml, text/xml, text/html",
 };
 
+function parseDate(value: string | undefined) {
+  if (!value?.trim()) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 function validDate(value: string | undefined) {
-  const date = value ? new Date(value) : new Date();
-  return Number.isNaN(date.getTime()) ? new Date() : date;
+  return parseDate(value) ?? new Date();
 }
 
 async function fetchText(url: string) {
@@ -150,10 +155,19 @@ function rssLimit(source: Source) {
 }
 
 function dateFromText(value: string) {
-  const match = value.match(
+  const english = value.match(
     /(?:\d{1,2}\s+[A-Z][a-z]+\s+20\d{2}|[A-Z][a-z]+\s+\d{1,2},\s+20\d{2}|\d{1,2}\/\d{1,2}\/20\d{2})/,
   );
-  return validDate(match?.[0]);
+  if (english) return parseDate(english[0]);
+  const numeric = value.match(/(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})/);
+  if (!numeric) return null;
+  const day = Number(numeric[1]);
+  const month = Number(numeric[2]);
+  let year = Number(numeric[3]);
+  if (year < 100) year += year >= 70 ? 1900 : 2000;
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 async function collectHtml(source: Source): Promise<CollectedItem[]> {
@@ -184,6 +198,9 @@ async function collectHtml(source: Source): Promise<CollectedItem[]> {
       : cleanText(container.text()).slice(0, 700);
     const image = container.find("img").first().attr("src");
     const datetime = container.find("time").first().attr("datetime");
+    const publishedAt = parseDate(datetime) ?? dateFromText(`${title} ${summary}`);
+    const oldestAllowed = Date.now() - Math.max(1, limits.newsMaxAgeHours) * 60 * 60 * 1000;
+    if (!publishedAt || publishedAt.getTime() < oldestAllowed) return;
     items.push({
       externalId: url,
       title,
@@ -191,7 +208,7 @@ async function collectHtml(source: Source): Promise<CollectedItem[]> {
       summary: summary === title ? "" : summary,
       publisher: source.name,
       imageUrl: image ? new URL(image, rule.origin).toString() : undefined,
-      publishedAt: datetime ? validDate(datetime) : dateFromText(summary),
+      publishedAt,
       rawJson: JSON.stringify({ href, title, summary, datetime }),
     });
   });
@@ -272,6 +289,15 @@ const TRUSTED_GROUNDED_DOMAINS = [
   "cp24.com", "bssnews.net", "arabnews.pk", "saudigazette.com",
   "marinelink.com", "theguardian.com", "cnbcafrica.com", "gov.cn",
   "police.uk", "khaama.com", "chinadaily.com.cn", "sharjah24.ae",
+  "oecd.org", "bis.org", "wto.org", "iea.org", "eia.gov", "opec.org",
+  "bankofengland.co.uk", "boj.or.jp", "nytimes.com", "npr.org",
+  "oilprice.com", "france24.com", "dw.com", "reutersagency.com",
+  "khaleejtimes.com", "arabianbusiness.com", "economictimes.indiatimes.com",
+  "livemint.com", "straitstimes.com", "scmp.com", "japantimes.co.jp",
+  "al-monitor.com", "hurriyetdailynews.com", "aa.com.tr", "nairametrics.com",
+  "bangkokpost.com", "abc.net.au", "rnz.co.nz", "financialpost.com",
+  "elpais.com", "lemonde.fr", "spiegel.de", "ap.org", "sec.gov",
+  "bls.gov", "bea.gov", "newyorkfed.org", "stlouisfed.org",
 ];
 
 export function isTrustedGroundedUrl(url: string) {

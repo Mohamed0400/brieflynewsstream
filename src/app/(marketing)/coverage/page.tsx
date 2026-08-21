@@ -26,12 +26,11 @@ export async function generateMetadata({
       ? siteTitle("en", "Coverage")
       : siteTitle("ar", "التغطية"),
     description: isEn
-      ? "Briefly NewsStream covers about 70 countries with bilingual AR/EN market news for Kuwait, GCC, Middle East, MENA, Arabic-speaking countries, and global markets."
-      : "Briefly NewsStream يغطي نحو ٧٠ دولة بأخبار أسواق ثنائية اللغة للكويت ومجلس التعاون والشرق الأوسط والدول الناطقة بالعربية والعالم.",
+      ? "Briefly NewsStream covers about 70 countries with bilingual AR/EN market news for Middle East, GCC, MENA, Arabic-speaking countries, and global markets."
+      : "Briefly NewsStream يغطي نحو ٧٠ دولة بأخبار أسواق ثنائية اللغة للشرق الأوسط ومجلس التعاون والدول الناطقة بالعربية والعالم.",
     path: "/coverage",
     pathEn: "/coverage?lang=en",
     keywords: [
-      "Kuwait news API",
       "Middle East news API",
       "MENA news API",
       "Gulf news API",
@@ -62,8 +61,8 @@ export default async function CoveragePage({
           collectionPageJsonLd({
             name: isEn ? "News coverage" : "تغطية الأخبار",
             description: isEn
-              ? "Country-level market news coverage for Kuwait, Middle East, Arabic-speaking countries, and global markets."
-              : "تغطية أخبار الأسواق حسب الدولة للكويت والشرق الأوسط والدول الناطقة بالعربية والأسواق العالمية.",
+              ? "Country-level market news coverage for the Middle East, Arabic-speaking countries, and global markets."
+              : "تغطية أخبار الأسواق حسب الدولة للشرق الأوسط والدول الناطقة بالعربية والأسواق العالمية.",
             path: "/coverage",
             lang,
           }),

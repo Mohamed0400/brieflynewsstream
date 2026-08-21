@@ -8,7 +8,11 @@ Dials: VARIANCE 4, MOTION 3, DENSITY 6.
 
 ## Theme lock
 
-Light only. Paper `#f7f9fc`, surface `#ffffff`, ink `#0b1422`, muted `#4b5c6e`, one cyan accent. No purple. No dark header. No marketing search bar.
+Light only. Paper `#f7f9fc`, surface `#ffffff`, ink `#0b1422`, muted `#3a4b5c`, one cyan accent. No purple. No dark header. No marketing search bar.
+
+OS dark mode must not remap console tokens. `color-scheme: light` on `.console-app`. Cyan `#5ec8dc` is for CTAs, focus rings, and active indicators only. Never use cyan as heading or body text on white (fails WCAG). Never use ink `#0b1422` as text on navy. Code panes use navy `#0b1422` with paper `#f7f9fc` text.
+
+Contrast: body and labels ≥4.5:1 on paper. Placeholders `#526274` at full opacity. Secondary buttons use navy text and a visible 22% ink border so they do not look disabled.
 
 ## Chrome (the break to fix)
 

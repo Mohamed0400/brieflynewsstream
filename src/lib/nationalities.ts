@@ -3,7 +3,7 @@ import { COUNTRY_CATALOG, type CountryRecord } from "./countries";
 export type NationalityOption = CountryRecord;
 
 /**
- * Practical audience options for Kuwait-facing content.
+ * Practical audience options for community briefings.
  * Ordering is editorial, not an asserted demographic ranking.
  * Article-country coverage lives in COUNTRY_CATALOG, not this list.
  */

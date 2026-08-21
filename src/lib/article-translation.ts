@@ -201,8 +201,8 @@ function parseTranslationJson(text: string) {
 
 function translationPrompt(items: TranslationInput[], direction: "to-ar" | "to-en") {
   const instruction = direction === "to-ar"
-    ? "Translate these English financial-news headlines and summaries into professional modern Arabic for a Kuwait-first market news service. Keep facts exact. Preserve names, numbers, currencies, and market terms. Return only JSON."
-    : "Translate these Arabic financial-news headlines and summaries into professional modern English for a Kuwait-first market news service. Keep facts exact. Preserve names, numbers, currencies, and market terms. Return only JSON.";
+    ? "Translate these English financial-news headlines and summaries into professional modern Arabic for a bilingual market news service. Keep facts exact. Preserve names, numbers, currencies, and market terms. Return only JSON."
+    : "Translate these Arabic financial-news headlines and summaries into professional modern English for a bilingual market news service. Keep facts exact. Preserve names, numbers, currencies, and market terms. Return only JSON.";
   return `${instruction}\n\nArticles:\n${JSON.stringify(items)}`;
 }
 

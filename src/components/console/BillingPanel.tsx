@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useConsoleCopy } from "@/components/console/ConsoleLang";
-import { formatUsd } from "@/lib/billing/types";
+import { BILLING_CONTACT, formatUsd } from "@/lib/billing/types";
 import { PLAN_DEFINITIONS } from "@/lib/plans";
 
 type InvoiceRow = {
@@ -28,6 +28,7 @@ type BillingProps = {
   maxKeys: number;
   listPriceMonthlyUsd: number | null;
   invoices: InvoiceRow[];
+  paymentsLive: boolean;
 };
 
 function statusTone(status: InvoiceRow["status"]) {
@@ -45,6 +46,7 @@ export function BillingPanel({
   maxKeys,
   listPriceMonthlyUsd,
   invoices: initialInvoices,
+  paymentsLive,
 }: BillingProps) {
   const router = useRouter();
   const { copy, lang } = useConsoleCopy();
@@ -173,16 +175,25 @@ export function BillingPanel({
               <p className="billing-checkout-amount" dir="ltr">
                 {formatUsd(checkout.totalCents)}
               </p>
-              <p className="console-help">{t.gatewayPending}</p>
+              <p className="console-help">{paymentsLive ? t.gatewayLive : t.gatewayPending}</p>
               <div className="console-inline-actions">
-                <button
-                  type="button"
-                  className="console-primary-button"
-                  disabled={busy}
-                  onClick={() => void act(checkout.id, "pay")}
-                >
-                  {busy ? t.paying : payLabel}
-                </button>
+                {paymentsLive ? (
+                  <button
+                    type="button"
+                    className="console-primary-button"
+                    disabled={busy}
+                    onClick={() => void act(checkout.id, "pay")}
+                  >
+                    {busy ? t.paying : payLabel}
+                  </button>
+                ) : (
+                  <a
+                    className="console-primary-button"
+                    href={`mailto:${BILLING_CONTACT}?subject=${encodeURIComponent("Pro plan upgrade")}`}
+                  >
+                    {t.contactCta}
+                  </a>
+                )}
                 <button
                   type="button"
                   className="console-secondary-button"
@@ -253,14 +264,16 @@ export function BillingPanel({
                 <div className="console-inline-actions">
                   {invoice.status === "OPEN" ? (
                     <>
-                      <button
-                        type="button"
-                        className="console-primary-button"
-                        disabled={busy}
-                        onClick={() => void act(invoice.id, "pay")}
-                      >
-                        {t.pay}
-                      </button>
+                      {paymentsLive ? (
+                        <button
+                          type="button"
+                          className="console-primary-button"
+                          disabled={busy}
+                          onClick={() => void act(invoice.id, "pay")}
+                        >
+                          {t.pay}
+                        </button>
+                      ) : null}
                       <button
                         type="button"
                         className="console-secondary-button"

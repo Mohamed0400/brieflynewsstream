@@ -2,7 +2,7 @@
 
 Last updated: 2026-08-20  
 Primary domain: `https://www.brieflynewsstream.com` (apex redirects to www)  
-Primary geo: **Kuwait** + **Middle East / MENA / GCC** + **Arabic-speaking countries**, with global (~70 country) coverage.
+Primary geo: **Middle East / MENA / GCC** + **Arabic-speaking countries**, with global (~70 country) coverage.
 
 This doc covers classic SEO **and** Answer Engine Optimization (AEO) so the product can appear in Google Search, Bing, and AI Overviews / answer engines—not SEO alone.
 
@@ -12,7 +12,7 @@ This doc covers classic SEO **and** Answer Engine Optimization (AEO) so the prod
 
 1. Rank for **brand**: `Briefly NewsStream`, `Briefly News Stream`, `NewsStream API`
 2. Rank for **category**: news API, JSON news API, realtime news API, headlines API
-3. Rank for **geo wedge**: Kuwait news API, Middle East / Gulf / MENA / GCC news API, Arabic-speaking countries news API
+3. Rank for **geo wedge**: Middle East / Gulf / MENA / GCC news API, Arabic-speaking countries news API
 4. Win **AEO citations**: clear entity answers, FAQ/HowTo schema, `llms.txt`, allow AI crawlers
 5. Earn **sitelinks**: Home, Briefing, Pricing, Developers, Coverage
 
@@ -22,7 +22,6 @@ This doc covers classic SEO **and** Answer Engine Optimization (AEO) so the prod
 
 | Priority | Region | Languages | Intent |
 | --- | --- | --- | --- |
-| 1 | **Kuwait** | AR + EN | Home market; Arabic-first product default |
 | 1 | **GCC** (SA, AE, QA, BH, OM) | AR + EN | Gulf market news API |
 | 1 | **Wider Middle East / MENA** | AR + EN | Regional bilingual coverage |
 | 1 | **Arabic-speaking countries** (EG, JO, LB, IQ, SY, YE, PS, SD, MA, TN, DZ, LY, MR, …) | AR + EN | Language + market filters |
@@ -30,9 +29,9 @@ This doc covers classic SEO **and** Answer Engine Optimization (AEO) so the prod
 
 Technical signals:
 
-- `geo.region=KW`, `geo.placename=Kuwait, Middle East`, ICBM (Kuwait City)
-- Open Graph locale `ar_KW` + alternates (`ar_SA`, `ar_AE`, `ar_EG`, `en_US`)
-- JSON-LD `areaServed` Country list for KW + Arabic-speaking markets
+- `geo.placename=Middle East`
+- Open Graph locale `ar_SA` + alternates (`ar_AE`, `ar_EG`, `en_US`)
+- JSON-LD `areaServed` for Middle East, GCC, MENA, and Arabic-speaking markets
 - `hreflang`: `ar` (default `/`), `en` (`/?lang=en`), `x-default` → Arabic home
 
 Country list lives in `src/lib/seo.ts` (`GEO_TARGET_COUNTRIES`).
@@ -74,7 +73,6 @@ AEO makes the product **easy to quote** in Google AI Overviews, Bing Copilot, Pe
 - news API / newsapi / JSON / REST / realtime / live / headlines / free / pricing / API key
 
 ### Geo differentiation (win)
-- Kuwait news API / Kuwait market news / أخبار الكويت
 - Middle East / Gulf / MENA / GCC news API
 - Arabic news API / bilingual AR+EN / Arabic-speaking countries news API
 - Saudi / UAE / Egypt / Jordan / … national API terms (see `SEO_KEYWORDS_*`)
@@ -122,7 +120,7 @@ Validate: [Google Rich Results Test](https://search.google.com/test/rich-results
 2. Request indexing: `/`, `/news`, `/pricing`, `/developers`, `/coverage`
 3. **Bing Webmaster Tools** (strong for MENA + Copilot)
 4. Confirm Search Console “International targeting” / language settings for AR+EN (optional; hreflang is primary)
-5. Monitor queries: brand, “Kuwait news API”, “Arabic news API”, “Middle East news API”
+5. Monitor queries: brand, “Arabic news API”, “Middle East news API”
 
 Ranking for head terms takes time. Schema + geo + AEO make the site **eligible and citeable**; they do not buy #1 overnight.
 

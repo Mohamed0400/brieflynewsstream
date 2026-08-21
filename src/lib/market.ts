@@ -1,7 +1,7 @@
 import { Category, Region } from "@prisma/client";
 
 export const CATEGORY_META = [
-  { code: "gold", value: Category.GOLD, label: "Gold & precious metals", labelAr: "الذهب والمعادن الثمينة" },
+  { code: "gold", value: Category.GOLD, label: "Precious metals", labelAr: "المعادن الثمينة" },
   { code: "finance", value: Category.FINANCE, label: "Financial markets", labelAr: "الأسواق المالية" },
   { code: "economics", value: Category.ECONOMICS, label: "Economics & central banks", labelAr: "الاقتصاد والبنوك المركزية" },
   { code: "oil", value: Category.OIL, label: "Oil & energy", labelAr: "النفط والطاقة" },

@@ -36,7 +36,7 @@ function country(
 
 /**
  * Market-news country catalog (~70 ISO codes).
- * `community` marks Kuwait-facing nationality briefings; every row is a filterable article country.
+ * `community` marks nationality briefings; every row is a filterable article country.
  */
 export const COUNTRY_CATALOG: CountryRecord[] = [
   country("KW", "kuwaiti", "Kuwait", "Kuwaiti", "🇰🇼", "الكويت", "كويتي", ["kuwait"], true),

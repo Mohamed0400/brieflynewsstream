@@ -91,7 +91,7 @@ export function CommunityBriefingFilter({
   return (
     <form onSubmit={submit} className="community-briefing-form">
       <label className="community-briefing-field" htmlFor="community-nationality">
-        <span>{isArabic ? "تغطية مجتمعات الكويت" : "Kuwait community briefing"}</span>
+        <span>{isArabic ? "تغطية الجاليات" : "Community briefing"}</span>
         <select
           id="community-nationality"
           name="nationality"

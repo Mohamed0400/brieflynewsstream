@@ -1,4 +1,5 @@
 .console-gate {
+  color-scheme: light;
   --gate-ink: #0b1422;
   --gate-paper: #f7f9fc;
   --gate-surface: #ffffff;

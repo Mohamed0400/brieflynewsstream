@@ -1,6 +1,6 @@
 # Market News API
 
-Next.js/TypeScript API for gold and financial-market readers. It collects live public feeds, removes off-topic stories, tags country/category, scores market impact, stores every article in **Arabic and English**, and keeps a daily Top 10–15 edition in SQLite.
+Next.js/TypeScript API for market and financial-news readers. It collects live public feeds, removes off-topic stories, tags country/category, scores market impact, stores every article in **Arabic and English**, and keeps a daily Top 10–15 edition.
 
 Operator docs:
 
@@ -9,7 +9,7 @@ Operator docs:
 
 ## Daily updates (stored in database)
 
-Each Kuwait calendar day gets one durable `DailyEdition` row plus ranked `DailyEditionItem` rows. That is the unit you will later keep or migrate into another database.
+Each calendar day in `APP_TIMEZONE` gets one durable `DailyEdition` row plus ranked `DailyEditionItem` rows. That is the unit you will later keep or migrate into another database.
 
 | Behavior | Detail |
 |----------|--------|
@@ -109,7 +109,7 @@ curl -H "X-API-Key: test-market-news-key" \
 
 # Filterable article stream
 curl -H "X-API-Key: test-market-news-key" \
-  "http://localhost:3001/api/v1/market-news?category=gold&country=US&limit=15"
+  "http://localhost:3001/api/v1/market-news?category=oil&country=US&limit=15"
 
 # Newest-first stream for one day
 curl -H "X-API-Key: test-market-news-key" \
@@ -159,6 +159,6 @@ Experimental adapters also read Reuters' public sitemap, Bloomberg's public late
 
 The collector stores titles, summaries, links and metadata and sends readers to the publisher. Review each publisher's terms before commercial deployment.
 
-When `GOOGLE_GROUNDED_SEARCH_ENABLED=true`, Gemini's Google Search grounding supplements direct feeds. It requests current market news plus fresh Kuwait expatriate-audience briefings with original publisher URLs, then keeps only a conservative domain allowlist before applying freshness, relevance and deduplication checks. Nationality options are editorial audience choices, not a claimed demographic ranking. `AFRICA` is exposed as a regional group rather than incorrectly being presented as a nationality.
+When `GOOGLE_GROUNDED_SEARCH_ENABLED=true`, Gemini's Google Search grounding supplements direct feeds. It requests current market news plus fresh community briefings with original publisher URLs, then keeps only a conservative domain allowlist before applying freshness, relevance and deduplication checks. Nationality options are editorial audience choices, not a claimed demographic ranking. `AFRICA` is exposed as a regional group rather than incorrectly being presented as a nationality.
 
 Keep `GOOGLE_API_KEY` in env only. Search grounding can incur Google API charges, and a key pasted into chat should be rotated before production use.

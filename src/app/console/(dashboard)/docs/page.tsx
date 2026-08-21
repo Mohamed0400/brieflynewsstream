@@ -49,11 +49,11 @@ const endpointGroups = {
 
 const filterRows = {
   en: [
-    ["Search", "`q=` with Arabic or English, including multi-word phrases like `سعر الذهب` or `gold price`."],
+    ["Search", "`q=` with Arabic or English, including multi-word phrases like `أسعار النفط` or `oil prices`."],
     ["Search area", "`searchIn=title|summary|both`."],
-    ["Country and region", "`country=KW`, `country=US`, `region=middle_east`, `region=america`, `region=global`."],
-    ["Category", "`category=gold`, `finance`, `economics`, `oil`, `me_economy`, `commodities`, `markets`."],
-    ["Nationality audience", "`nationality=KW` or any supported slug or ISO code."],
+    ["Country and region", "`country=AE`, `country=US`, `region=middle_east`, `region=america`, `region=global`."],
+    ["Category", "`category=finance`, `oil`, `commodities`, `markets`, and the other catalog codes."],
+    ["Nationality audience", "`nationality=IN` or any supported slug or ISO code."],
     ["Language filter", "`language=ar` or `language=en` filters by the article's stored source language."],
     ["Response language", "`lang=ar` (default) or `lang=en` chooses `title` and `summary`. `arabic` and `english` stay on every story."],
     ["Date filters", "`date=YYYY-MM-DD` or `from=YYYY-MM-DD&to=YYYY-MM-DD`."],
@@ -62,11 +62,11 @@ const filterRows = {
     ["Request limits", "API access is currently available without usage caps in this console."],
   ],
   ar: [
-    ["البحث", "`q=` بالعربية أو الإنجليزية، بما في ذلك عبارات مثل `سعر الذهب` أو `gold price`."],
+    ["البحث", "`q=` بالعربية أو الإنجليزية، بما في ذلك عبارات مثل `أسعار النفط` أو `oil prices`."],
     ["مجال البحث", "`searchIn=title|summary|both`."],
-    ["الدولة والمنطقة", "`country=KW`، `country=US`، `region=middle_east`، `region=america`، `region=global`."],
-    ["التصنيف", "`category=gold`، `finance`، `economics`، `oil`، `me_economy`، `commodities`، `markets`."],
-    ["جمهور الجالية", "`nationality=KW` أو أي رمز أو معرف مدعوم."],
+    ["الدولة والمنطقة", "`country=AE`، `country=US`، `region=middle_east`، `region=america`، `region=global`."],
+    ["التصنيف", "`category=finance`، `oil`، `commodities`، `markets`، وبقية رموز الكتالوج."],
+    ["جمهور الجالية", "`nationality=IN` أو أي رمز أو معرف مدعوم."],
     ["فلتر اللغة", "`language=ar` أو `language=en` يصفي حسب لغة المصدر المخزنة."],
     ["لغة الاستجابة", "`lang=ar` (الافتراضي) أو `lang=en` يختار `title` و`summary`. `arabic` و`english` يبقيان في كل خبر."],
     ["فلاتر التاريخ", "`date=YYYY-MM-DD` أو `from=YYYY-MM-DD&to=YYYY-MM-DD`."],

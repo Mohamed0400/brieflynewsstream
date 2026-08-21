@@ -5,15 +5,26 @@
   --console-header-h: calc(4rem + env(safe-area-inset-top, 0px));
   --console-tab-h: 3.5rem;
   --console-ink: #0b1422;
+  --console-text: #0b1422;
   --console-paper: #f7f9fc;
+  --console-bg: #f7f9fc;
   --console-surface: #ffffff;
-  --console-muted: #4b5c6e;
-  --console-line: rgb(11 20 34 / 12%);
+  --console-surface-strong: #e8eef4;
+  --console-muted: #3a4b5c;
+  --console-line: rgb(11 20 34 / 18%);
+  --console-border: rgb(11 20 34 / 18%);
   --console-cyan: #5ec8dc;
+  --console-accent: #5ec8dc;
+  --console-accent-strong: #0b1422;
+  --console-accent-soft: rgb(94 200 220 / 0.16);
+  --console-on-dark: #f7f9fc;
+  --console-on-dark-muted: rgb(247 249 252 / 84%);
+  --console-placeholder: #526274;
   --console-radius: 12px;
   --console-control: 8px;
   --console-z-bar: 20;
   --console-z-skip: 30;
+  color-scheme: light;
   flex: 1 1 auto;
   display: grid;
   grid-template-rows: var(--console-header-h) var(--console-tab-h) minmax(0, 1fr);
@@ -194,6 +205,7 @@
 .console-app-link:focus-visible,
 .console-app-brand:focus-visible,
 .console-app-logout:focus-visible,
+.console-app-upgrade:focus-visible,
 .console-app .console-lang-switch button:focus-visible {
   outline: 2px solid var(--console-cyan);
   outline-offset: 2px;
@@ -211,6 +223,43 @@
     clamp(1.25rem, 3vw, 2.25rem)
     max(1rem, var(--page-gutter), env(safe-area-inset-left), env(safe-area-inset-right))
     4.5rem;
+}
+
+.console-app-upgrade {
+  appearance: none;
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border: 1px solid var(--console-cyan);
+  border-radius: var(--console-control);
+  background: var(--console-cyan);
+  color: var(--console-ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1;
+  padding-inline: 0.9rem;
+  text-decoration: none;
+  white-space: nowrap;
+  touch-action: manipulation;
+}
+
+.console-app-upgrade:hover {
+  background: #7ad4e4;
+  border-color: #7ad4e4;
+  color: var(--console-ink);
+}
+
+.console-app-upgrade:active {
+  transform: scale(0.98);
+}
+
+.console-app-upgrade-mobile {
+  width: 100%;
+  margin-bottom: 1rem;
 }
 
 .console-app .console-lang-switch {
@@ -379,7 +428,7 @@
 
   .console-app-account-block {
     display: grid;
-    gap: 0.2rem;
+    gap: 0.35rem;
     margin: 0 0.65rem 1.35rem;
     min-width: 0;
   }
@@ -416,6 +465,11 @@
     color: var(--console-ink) !important;
   }
 
+  .console-app-account-block .console-app-upgrade {
+    width: 100%;
+    margin-top: 0.55rem;
+  }
+
   .console-app-links {
     display: grid;
     height: auto;
@@ -431,7 +485,8 @@
   }
 
   .console-app-link[data-active="true"] {
-    background: rgb(94 200 220 / 0.2);
+    background: rgb(94 200 220 / 0.32);
+    color: var(--console-ink);
     box-shadow: inset 3px 0 0 var(--console-cyan);
   }
 
@@ -465,6 +520,10 @@
     grid-row: 2;
     grid-column: 2;
     padding-inline: clamp(1.5rem, 3.5vw, 3rem);
+  }
+
+  .console-app-upgrade-mobile {
+    display: none;
   }
 }
 
@@ -567,8 +626,168 @@
 
 @media (prefers-reduced-motion: reduce) {
   .console-app-logout,
-  .console-app-logout:active {
+  .console-app-logout:active,
+  .console-app-upgrade,
+  .console-app-upgrade:active {
     transition: none;
     transform: none;
   }
+}
+
+/* Contrast lock. Cyan is accent only. Ink on paper, paper on navy. */
+.console-app input,
+.console-app select,
+.console-app textarea {
+  color-scheme: light;
+}
+
+.console-app .console-kicker,
+.console-app .console-page-header h1,
+.console-app .explorer-toolbar h1,
+.console-app .console-panel-heading h2,
+.console-app .console-key-reveal h2,
+.console-app .api-docs-heading h2,
+.console-app .explorer-results-header h2,
+.console-app .explorer-filter-heading h2,
+.console-app .billing-success h1 {
+  color: var(--console-ink);
+}
+
+.console-app .console-page-header p,
+.console-app .console-page-description,
+.console-app .explorer-toolbar p,
+.console-app .console-panel-heading p,
+.console-app .console-key-reveal p,
+.console-app .api-docs-heading p,
+.console-app .explorer-results-header p,
+.console-app .explorer-filter-heading p,
+.console-app .console-help,
+.console-app .console-muted {
+  color: var(--console-muted);
+}
+
+.console-app .console-metric,
+.console-app .console-metric-primary,
+.console-app .console-policy-note,
+.console-app .schedule-empty-note {
+  color: var(--console-ink);
+}
+
+.console-app .console-metric-primary {
+  background: color-mix(in srgb, var(--console-cyan) 14%, #ffffff);
+}
+
+.console-app .console-policy-note,
+.console-app .schedule-empty-note {
+  background: color-mix(in srgb, var(--console-cyan) 12%, #ffffff);
+}
+
+.console-app .console-metric span,
+.console-app .console-metric small,
+.console-app .console-policy-note p,
+.console-app .schedule-empty-note p {
+  color: var(--console-muted);
+}
+
+.console-app .console-metric strong,
+.console-app .console-policy-note strong,
+.console-app .schedule-empty-note strong {
+  color: var(--console-ink);
+}
+
+.console-app .console-secondary-button,
+.console-app .console-icon-button {
+  border-color: rgb(11 20 34 / 22%);
+  background: var(--console-surface);
+  color: var(--console-ink);
+}
+
+.console-app .console-secondary-button:visited {
+  color: var(--console-ink);
+}
+
+.console-app .console-primary-button {
+  background: var(--console-cyan);
+  border-color: var(--console-cyan);
+  color: var(--console-ink);
+}
+
+.console-app .console-input,
+.console-app .console-key-value,
+.console-app .explorer-field input,
+.console-app .explorer-field select {
+  background: var(--console-surface);
+  color: var(--console-ink);
+  border-color: rgb(11 20 34 / 22%);
+}
+
+.console-app .console-input::placeholder,
+.console-app .explorer-field input::placeholder {
+  color: var(--console-placeholder);
+  opacity: 1;
+}
+
+.console-app .console-label,
+.console-app .explorer-field > span,
+.console-app .explorer-date-group legend,
+.console-app .api-docs-path code,
+.console-app .api-docs-endpoint-link code,
+.console-app .console-doc-endpoint code {
+  color: var(--console-ink);
+}
+
+.console-app .api-docs-path span,
+.console-app .api-docs-endpoint-link span,
+.console-app .console-doc-endpoint span {
+  background: #0b1422;
+  color: #f7f9fc;
+}
+
+.console-app .api-docs-path span[data-method="POST"],
+.console-app .api-docs-endpoint-link span[data-method="POST"] {
+  background: var(--console-warning-soft);
+  color: var(--console-warning);
+}
+
+.console-app .explorer-request-bar > span {
+  background: #0b1422;
+  color: #f7f9fc;
+}
+
+.console-app .console-code-block,
+.console-app .explorer-json {
+  background: #0b1422;
+  color: var(--console-on-dark);
+}
+
+.console-app .api-docs-errors li {
+  background: var(--console-surface-strong);
+  color: var(--console-ink);
+}
+
+.console-app .api-docs-errors strong,
+.console-app .api-docs-params strong {
+  color: var(--console-ink);
+}
+
+.console-app .api-docs-errors p,
+.console-app .api-docs-params p {
+  color: var(--console-muted);
+}
+
+.console-app .console-app-link {
+  color: var(--console-muted);
+}
+
+.console-app .console-app-link:hover,
+.console-app .console-app-link[data-active="true"] {
+  color: var(--console-ink);
+}
+
+.console-app .console-app-extra a {
+  color: var(--console-muted);
+}
+
+.console-app .console-app-extra a:hover {
+  color: var(--console-ink);
 }

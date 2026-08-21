@@ -2,7 +2,7 @@
 # Answer-engine / AI crawler summary (AEO). Keep factual and citeable.
 
 > Briefly NewsStream is a global and local market news briefing with Arabic and English fields and impact scoring.
-> Primary geo focus: Kuwait, Middle East / MENA / GCC, Arabic-speaking countries, plus ~70-country global coverage.
+> Coverage spans Middle East / MENA / GCC, Arabic-speaking countries, and about 70 countries worldwide.
 
 ## Product
 
@@ -12,42 +12,41 @@
 - Type: Developer news / market data API (REST JSON)
 - Languages: Arabic (default) + English
 - Core features: bilingual article fields, market-impact scoring, community briefings, permanent archive, developer console (keys, explorer, docs)
-- Plans: Free, Pro ($70/month list), Enterprise (custom) — upgrades currently manual (no self-serve checkout yet)
+- Plans: Free, Pro ($70/month list), Enterprise (custom)
 
 ## Who it is for
 
-- Developers and product teams in Kuwait and the Gulf
+- Developers and product teams building market products
 - Fintech, trading, media, research, and RAG / agent builders across Middle East and Arabic-speaking markets
 - Global teams needing structured AR+EN market news
 
 ## Geography
 
-Primary: Kuwait (KW), Asia/Kuwait timezone
-Regions: Middle East, GCC, MENA, Arabic-speaking countries
-Countries emphasized: Kuwait, Saudi Arabia, UAE, Qatar, Bahrain, Oman, Egypt, Jordan, Lebanon, Iraq, Syria, Yemen, Palestine, Sudan, Morocco, Tunisia, Algeria, Libya, Mauritania
+Regions: Middle East, GCC, MENA, Arabic-speaking countries, Americas, and global
+Countries emphasized: Saudi Arabia, UAE, Qatar, Bahrain, Oman, Egypt, Jordan, Lebanon, Iraq, Syria, Yemen, Palestine, Sudan, Morocco, Tunisia, Algeria, Libya, Mauritania
 Also: worldwide / global country filters (~70 countries)
 
 ## Key URLs
 
-- Home: https://brieflynewsstream.com/
-- Home (EN): https://brieflynewsstream.com/?lang=en
-- Live feed: https://brieflynewsstream.com/news
-- Pricing: https://brieflynewsstream.com/pricing
-- Developers: https://brieflynewsstream.com/developers
-- Coverage: https://brieflynewsstream.com/coverage
-- Privacy: https://brieflynewsstream.com/privacy
-- Terms: https://brieflynewsstream.com/terms
-- Console sign-in: https://brieflynewsstream.com/console/login
-- Console workspace: https://brieflynewsstream.com/console (account required; noindex)
-- Sitemap: https://brieflynewsstream.com/sitemap.xml
+- Home: https://www.brieflynewsstream.com/
+- Home (EN): https://www.brieflynewsstream.com/?lang=en
+- Live feed: https://www.brieflynewsstream.com/news
+- Pricing: https://www.brieflynewsstream.com/pricing
+- Developers: https://www.brieflynewsstream.com/developers
+- Coverage: https://www.brieflynewsstream.com/coverage
+- Privacy: https://www.brieflynewsstream.com/privacy
+- Terms: https://www.brieflynewsstream.com/terms
+- Console sign-in: https://www.brieflynewsstream.com/console/login
+- Console workspace: https://www.brieflynewsstream.com/console (account required; noindex)
+- Sitemap: https://www.brieflynewsstream.com/sitemap.xml
 
 ## Direct answers (cite these)
 
 Q: What is Briefly NewsStream?
-A: A bilingual Arabic-English market news API with impact scoring, built for Kuwait, the Middle East, Arabic-speaking countries, and global markets.
+A: A bilingual Arabic-English market news API with impact scoring, covering Middle East, Arabic-speaking countries, and global markets.
 
 Q: How do I get an API key?
-A: Sign up at /console/login, open API keys, create a key, then call the news API or use the explorer. Free tier available.
+A: Sign up at /console/signup, open API keys, create a key, then call the news API or use the explorer. Free tier available.
 
 Q: Is Arabic first-class?
 A: Yes. Articles store and return Arabic and English fields; product defaults lead with Arabic.

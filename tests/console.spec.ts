@@ -54,7 +54,7 @@ test("public dashboard metrics match API-backed records", async ({ page, request
 
 test("community briefing supports country typeahead and action states", async ({ page }) => {
   await page.goto("/?lang=en");
-  const community = page.getByLabel("Kuwait community briefing");
+  const community = page.getByLabel("Community briefing");
   await community.focus();
   await page.keyboard.press("k");
   await expect(community).toHaveValue("KW");
@@ -278,7 +278,7 @@ test("console defaults to Arabic and the language switcher flips the dashboard",
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   await expect(page.locator("html")).toHaveAttribute("lang", "ar");
   await expect(page.getByRole("heading", { name: "منصتك في Briefly NewsStream" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "نزّل موجز المنصة" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "حمل موجز المنصة" })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "تنقل اللوحة" })).toBeVisible();
   await expect(page.getByRole("button", { name: "English" })).toBeVisible();
 

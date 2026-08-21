@@ -4,8 +4,8 @@ import { landingCopy } from "@/lib/landing-translation";
 export function HomepageHero({ lang }: { lang: string }) {
   const copy = landingCopy(lang);
   const alt = lang === "en"
-    ? "Gold bars and a gold globe in front of a rising market chart"
-    : "سبائك ذهب وكرة أرضية ذهبية أمام مخطط أسواق مالية";
+    ? "A globe in front of a rising market chart"
+    : "كرة أرضية أمام مخطط أسواق مالية";
 
   return (
     <section className="homepage-hero" aria-labelledby="homepage-hero-title">

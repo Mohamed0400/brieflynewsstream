@@ -1,25 +1,30 @@
--- CreateEnum
-CREATE TYPE "PlanSource" AS ENUM ('DEFAULT', 'ADMIN', 'SUBSCRIPTION', 'INVOICE');
+DO $$ BEGIN
+  CREATE TYPE "PlanSource" AS ENUM ('DEFAULT', 'ADMIN', 'SUBSCRIPTION', 'INVOICE');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
--- CreateEnum
-CREATE TYPE "InvoiceStatus" AS ENUM ('OPEN', 'PAID', 'VOID');
+DO $$ BEGIN
+  CREATE TYPE "InvoiceStatus" AS ENUM ('OPEN', 'PAID', 'VOID');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
--- CreateEnum
-CREATE TYPE "PaymentStatus" AS ENUM ('PENDING', 'SUCCEEDED', 'FAILED', 'REFUNDED');
+DO $$ BEGIN
+  CREATE TYPE "PaymentStatus" AS ENUM ('PENDING', 'SUCCEEDED', 'FAILED', 'REFUNDED');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
--- AlterTable
-ALTER TABLE "Account" ADD COLUMN "planSource" "PlanSource" NOT NULL DEFAULT 'DEFAULT';
+ALTER TABLE "Account" ADD COLUMN IF NOT EXISTS "planSource" "PlanSource" NOT NULL DEFAULT 'DEFAULT';
 
--- AlterTable
-ALTER TABLE "Subscription" ADD COLUMN "provider" TEXT NOT NULL DEFAULT 'manual';
-ALTER TABLE "Subscription" ADD COLUMN "planTier" "PlanTier" NOT NULL DEFAULT 'PRO';
-ALTER TABLE "Subscription" ADD COLUMN "cancelAtPeriodEnd" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "provider" TEXT NOT NULL DEFAULT 'manual';
+ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "planTier" "PlanTier" NOT NULL DEFAULT 'PRO';
+ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "cancelAtPeriodEnd" BOOLEAN NOT NULL DEFAULT false;
 
--- DropTable
 DROP TABLE IF EXISTS "InvoiceSnapshot" CASCADE;
 
--- CreateTable
-CREATE TABLE "Invoice" (
+CREATE TABLE IF NOT EXISTS "Invoice" (
     "id" TEXT NOT NULL,
     "accountId" TEXT NOT NULL,
     "number" TEXT NOT NULL,
@@ -48,8 +53,7 @@ CREATE TABLE "Invoice" (
     CONSTRAINT "Invoice_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "Payment" (
+CREATE TABLE IF NOT EXISTS "Payment" (
     "id" TEXT NOT NULL,
     "invoiceId" TEXT NOT NULL,
     "status" "PaymentStatus" NOT NULL DEFAULT 'PENDING',
@@ -65,26 +69,21 @@ CREATE TABLE "Payment" (
     CONSTRAINT "Payment_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
-CREATE UNIQUE INDEX "Invoice_number_key" ON "Invoice"("number");
+CREATE UNIQUE INDEX IF NOT EXISTS "Invoice_number_key" ON "Invoice"("number");
+CREATE UNIQUE INDEX IF NOT EXISTS "Invoice_providerRef_key" ON "Invoice"("providerRef");
+CREATE INDEX IF NOT EXISTS "Invoice_accountId_issuedAt_idx" ON "Invoice"("accountId", "issuedAt");
+CREATE INDEX IF NOT EXISTS "Invoice_status_issuedAt_idx" ON "Invoice"("status", "issuedAt");
+CREATE UNIQUE INDEX IF NOT EXISTS "Payment_providerRef_key" ON "Payment"("providerRef");
+CREATE INDEX IF NOT EXISTS "Payment_invoiceId_createdAt_idx" ON "Payment"("invoiceId", "createdAt");
 
--- CreateIndex
-CREATE UNIQUE INDEX "Invoice_providerRef_key" ON "Invoice"("providerRef");
+DO $$ BEGIN
+  ALTER TABLE "Invoice" ADD CONSTRAINT "Invoice_accountId_fkey" FOREIGN KEY ("accountId") REFERENCES "Account"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
--- CreateIndex
-CREATE INDEX "Invoice_accountId_issuedAt_idx" ON "Invoice"("accountId", "issuedAt");
-
--- CreateIndex
-CREATE INDEX "Invoice_status_issuedAt_idx" ON "Invoice"("status", "issuedAt");
-
--- CreateIndex
-CREATE UNIQUE INDEX "Payment_providerRef_key" ON "Payment"("providerRef");
-
--- CreateIndex
-CREATE INDEX "Payment_invoiceId_createdAt_idx" ON "Payment"("invoiceId", "createdAt");
-
--- AddForeignKey
-ALTER TABLE "Invoice" ADD CONSTRAINT "Invoice_accountId_fkey" FOREIGN KEY ("accountId") REFERENCES "Account"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Payment" ADD CONSTRAINT "Payment_invoiceId_fkey" FOREIGN KEY ("invoiceId") REFERENCES "Invoice"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "Payment" ADD CONSTRAINT "Payment_invoiceId_fkey" FOREIGN KEY ("invoiceId") REFERENCES "Invoice"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;

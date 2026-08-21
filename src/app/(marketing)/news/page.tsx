@@ -41,24 +41,22 @@ export async function generateMetadata({
       ? siteTitle("en", "Market data")
       : siteTitle("ar", "بيانات الأسواق"),
     description: isEn
-      ? "Bilingual market news briefing from Briefly NewsStream. Filter by country, category, and impact—Kuwait, Middle East, Arabic-speaking markets, and global coverage."
-      : "موجز أخبار الأسواق ثنائي اللغة من Briefly NewsStream. صفِّ حسب الدولة والفئة والأثر—للكويت والشرق الأوسط والدول الناطقة بالعربية والعالم.",
+      ? "Bilingual market news briefing from Briefly NewsStream. Filter by country, category, and impact across regional and global markets."
+      : "موجز أخبار الأسواق ثنائي اللغة من Briefly NewsStream. صفِّ حسب الدولة والفئة والأثر عبر الأسواق الإقليمية والعالمية.",
     path: "/news",
     pathEn: "/news?lang=en",
     keywords: [
       "market briefing",
-      "Kuwait market news",
       "Middle East market news",
       "Gulf market news",
       "Arabic market news",
-      "gold news",
       "financial news",
     ],
   });
 }
 
 const arabicCategoryLabels: Record<string, string> = {
-  gold: "الذهب والمعادن الثمينة",
+  gold: "المعادن الثمينة",
   finance: "الأسواق المالية",
   economics: "الاقتصاد والبنوك المركزية",
   oil: "النفط والطاقة",
@@ -137,6 +135,11 @@ export default async function Home({
   let fetchedArticles: Awaited<ReturnType<typeof listDedupedArticles>>["items"] = [];
   try {
     const feedQuery = parseQuery(feedParams, { searchVariants });
+    if (!country && !params.nationality) {
+      feedQuery.where = {
+        AND: [feedQuery.where, { country: { not: "KW" } }],
+      };
+    }
     freshnessHours = feedQuery.filters.freshnessHours ?? liveFreshnessHours;
     const listed = await listDedupedArticles(
       feedQuery.where,
@@ -146,8 +149,8 @@ export default async function Home({
     );
     matchedCount = listed.count;
     fetchedArticles = listed.items;
-  } catch {
-    console.error("news feed query unavailable");
+  } catch (error) {
+    console.error("news feed query unavailable", error);
   }
   const liveCountrySet = new Set(stats.liveCountries);
   const countries = supportedCountryCodes(stats.sourceCountries);

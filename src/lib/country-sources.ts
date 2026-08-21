@@ -1,18 +1,14 @@
 import { Category, Region } from "@prisma/client";
 import { COUNTRY_CATALOG } from "./countries";
 import { regionForCountry } from "./classify";
+import { CORE_SOURCE_LOCK } from "./sources/core-lock";
+import { COUNTRY_PUBLISHERS } from "./sources/country-publishers";
+import { GLOBAL_PUBLISHERS } from "./sources/global-publishers";
+import { INVESTING_SOURCES } from "./sources/investing-sources";
+import { countryRss, type CountrySourceSeed } from "./sources/types";
 
-export type CountrySourceSeed = {
-  code: string;
-  name: string;
-  url: string;
-  homepageUrl: string;
-  adapter: "rss";
-  country: string;
-  region: Region;
-  defaultCategory: Category;
-  qualityWeight: number;
-};
+export type { CountrySourceSeed } from "./sources/types";
+export { countryRss } from "./sources/types";
 
 /** Sources retired after feed URLs broke; kept so seed can disable stale rows. */
 export const RETIRED_COUNTRY_SOURCE_CODES = [
@@ -33,29 +29,6 @@ export const RETIRED_COUNTRY_SOURCE_CODES = [
   "BUSINESS_NEWS_TN",
   "TAP_TN",
 ] as const;
-
-function countryRss(
-  code: string,
-  name: string,
-  url: string,
-  homepageUrl: string,
-  country: string,
-  region: Region,
-  defaultCategory: Category,
-  qualityWeight: number,
-): CountrySourceSeed {
-  return {
-    code,
-    name,
-    url,
-    homepageUrl,
-    adapter: "rss",
-    country,
-    region,
-    defaultCategory,
-    qualityWeight,
-  };
-}
 
 /** Supplemental country coverage where a local publisher feed is unavailable. */
 const EXPANDED_COUNTRY_SOURCES: CountrySourceSeed[] = [
@@ -620,6 +593,9 @@ export const COUNTRY_SOURCES: CountrySourceSeed[] = [
     qualityWeight: 72,
   },
   ...EXPANDED_COUNTRY_SOURCES,
+  ...GLOBAL_PUBLISHERS,
+  ...INVESTING_SOURCES,
+  ...COUNTRY_PUBLISHERS,
 ];
 
 /** Core seed.ts countries that already have dedicated scrape adapters. */
@@ -630,7 +606,7 @@ const ARABIC_GOOGLE_NEWS_COUNTRIES = new Set([
   "SY", "SD", "MA", "TN", "DZ", "LY",
 ]);
 
-const MIN_SOURCES_PER_COUNTRY = 2;
+const MIN_SOURCES_PER_COUNTRY = 8;
 
 export function googleNewsRssUrl(query: string, locale: "en" | "ar" = "en") {
   const hl = locale === "ar" ? "ar" : "en-US";
@@ -645,9 +621,11 @@ function googleNewsSource(
   query: string,
   country: string,
   locale: "en" | "ar" = "en",
+  defaultCategory?: Category,
 ): CountrySourceSeed {
   const region = regionForCountry(country, Region.GLOBAL);
-  const defaultCategory = region === Region.MIDDLE_EAST ? Category.ME_ECONOMY : Category.ECONOMICS;
+  const category = defaultCategory
+    ?? (region === Region.MIDDLE_EAST ? Category.ME_ECONOMY : Category.ECONOMICS);
   return countryRss(
     code,
     name,
@@ -655,25 +633,57 @@ function googleNewsSource(
     "https://news.google.com/",
     country,
     region,
-    defaultCategory,
-    68,
+    category,
+    70,
   );
 }
+
+const EXTRA_COUNTRY_TOPICS: Array<[string, string, string, Category]> = [
+  ["OIL", "Oil", "(oil OR energy OR OPEC OR petroleum OR LNG)", Category.OIL],
+  ["FX", "Currency", "(currency OR forex OR \"exchange rate\" OR dollar)", Category.FINANCE],
+  ["TRADE", "Trade", "(trade OR exports OR imports OR tariff)", Category.ECONOMICS],
+  ["ENERGY", "Energy", "(energy OR electricity OR gas OR fuel)", Category.COMMODITIES],
+];
+
+const FILL_COUNTRY_TOPICS: Array<[string, string, string, Category]> = [
+  ["STOCKS", "Equities", "(stock market OR equities OR IPO OR shares)", Category.FINANCE],
+  ["INFLATION", "Inflation", "(inflation OR CPI OR \"interest rates\" OR prices)", Category.ECONOMICS],
+  ["BUDGET", "Fiscal", "(budget OR fiscal OR tax OR \"government spending\")", Category.ECONOMICS],
+  ["BANKING", "Banking", "(banking OR credit OR loans OR \"commercial bank\")", Category.FINANCE],
+  ["GOLD", "Gold", "(gold OR bullion OR \"precious metals\")", Category.GOLD],
+];
 
 /**
  * Backup coverage for every catalog country so a thin market is not left empty.
  * Existing GNEWS_* rows in COUNTRY_SOURCES are skipped.
+ * Oil/currency/trade/energy queries are filler after real publishers.
  */
 export function generatedCountrySources(): CountrySourceSeed[] {
-  const usedCodes = new Set(COUNTRY_SOURCES.map((source) => source.code));
-  const usedUrls = new Set(COUNTRY_SOURCES.map((source) => source.url));
+  const usedCodes = new Set([
+    ...CORE_SOURCE_LOCK.map((item) => item.code),
+    ...COUNTRY_SOURCES.map((source) => source.code),
+  ]);
+  const usedUrls = new Set([
+    ...CORE_SOURCE_LOCK.map((item) => item.url),
+    ...COUNTRY_SOURCES.map((source) => source.url),
+  ]);
   const extra: CountrySourceSeed[] = [];
+  const retired = new Set<string>(RETIRED_COUNTRY_SOURCE_CODES);
+  const counts = new Map<string, number>();
+
+  for (const source of COUNTRY_SOURCES) {
+    if (retired.has(source.code)) continue;
+    counts.set(source.country, (counts.get(source.country) ?? 0) + 1);
+  }
 
   const push = (source: CountrySourceSeed) => {
     if (usedCodes.has(source.code) || usedUrls.has(source.url)) return;
     usedCodes.add(source.code);
     usedUrls.add(source.url);
     extra.push(source);
+    if (!retired.has(source.code)) {
+      counts.set(source.country, (counts.get(source.country) ?? 0) + 1);
+    }
   };
 
   for (const item of COUNTRY_CATALOG) {
@@ -698,6 +708,27 @@ export function generatedCountrySources(): CountrySourceSeed[] {
         "ar",
       ));
     }
+    for (const [suffix, label, query, category] of EXTRA_COUNTRY_TOPICS) {
+      push(googleNewsSource(
+        `GNEWS_${item.code}_${suffix}`,
+        `${item.country} ${label}`,
+        `${item.country} ${query}`,
+        item.code,
+        "en",
+        category,
+      ));
+    }
+    for (const [suffix, label, query, category] of FILL_COUNTRY_TOPICS) {
+      if ((counts.get(item.code) ?? 0) >= MIN_SOURCES_PER_COUNTRY) break;
+      push(googleNewsSource(
+        `GNEWS_${item.code}_${suffix}`,
+        `${item.country} ${label}`,
+        `${item.country} ${query}`,
+        item.code,
+        "en",
+        category,
+      ));
+    }
   }
 
   push(googleNewsSource(
@@ -712,6 +743,36 @@ export function generatedCountrySources(): CountrySourceSeed[] {
     "(\"European Central Bank\" OR ECB) (rates OR inflation OR euro)",
     "EU",
   ));
+  push(googleNewsSource(
+    "GNEWS_EU_OIL",
+    "Eurozone Energy",
+    "Eurozone (oil OR energy OR gas OR LNG)",
+    "EU",
+    "en",
+    Category.OIL,
+  ));
+  push(googleNewsSource(
+    "GNEWS_GLOBAL_ECON",
+    "Global Economy",
+    "global (economy OR markets OR inflation OR \"central banks\")",
+    "GLOBAL",
+  ));
+  push(googleNewsSource(
+    "GNEWS_GLOBAL_OIL",
+    "Global Oil",
+    "global (oil OR crude OR OPEC OR petroleum)",
+    "GLOBAL",
+    "en",
+    Category.OIL,
+  ));
+  push(googleNewsSource(
+    "GNEWS_GLOBAL_GOLD",
+    "Global Gold",
+    "global (gold OR bullion OR \"precious metals\")",
+    "GLOBAL",
+    "en",
+    Category.GOLD,
+  ));
 
   return extra;
 }
@@ -719,6 +780,13 @@ export function generatedCountrySources(): CountrySourceSeed[] {
 export function allLiveCountrySources() {
   const retired = new Set<string>(RETIRED_COUNTRY_SOURCE_CODES);
   return [...COUNTRY_SOURCES, ...generatedCountrySources()].filter((source) => !retired.has(source.code));
+}
+
+export function allSeedSources() {
+  const live = allLiveCountrySources();
+  const codes = [...CORE_SOURCE_LOCK.map((item) => item.code), ...live.map((source) => source.code)];
+  const urls = [...CORE_SOURCE_LOCK.map((item) => item.url), ...live.map((source) => source.url)];
+  return { live, codes, urls };
 }
 
 export function countriesNeedingArticles(

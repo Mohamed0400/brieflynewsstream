@@ -264,6 +264,7 @@ const sources = [
 ] as const;
 
 const allSources = [...sources, ...COUNTRY_SOURCES, ...generatedCountrySources()];
+export { sources as CORE_SEED_SOURCES, allSources };
 
 function shouldSeedBilingualFixtures() {
   const databaseUrl = process.env.DATABASE_URL || "";
@@ -280,27 +281,27 @@ async function seedBilingualFixtures() {
   const publishedAt = new Date();
   const fixtures = [
     {
-      url: "https://example.test/e2e/kuwait-gold-bilingual",
-      title: "E2EBILINGUAL Kuwait gold prices hold as the dollar eases",
-      summary: "Bullion traded steadily in Kuwait after a softer U.S. dollar and calmer Treasury yields.",
-      titleAr: "فحص ثنائي اللغة أسعار الذهب في الكويت مستقرة مع تراجع الدولار",
-      summaryAr: "تداول المعدن بثبات في الكويت بعد ضعف الدولار الأمريكي وهدوء عوائد سندات الخزانة.",
-      category: Category.GOLD,
-      country: "KW",
-      region: Region.MIDDLE_EAST,
-      section: "gold",
+      url: "https://example.test/e2e/markets-bilingual",
+      title: "E2EBILINGUAL Central banks hold rates as oil stays in focus",
+      summary: "Desks watch policy signals before the next move in energy and rates.",
+      titleAr: "فحص ثنائي اللغة البنوك المركزية تثبّت الفائدة مع استمرار التركيز على النفط",
+      summaryAr: "تابع المتعاملون إشارات السياسة قبل الخطوة التالية في الطاقة والفائدة.",
+      category: Category.MARKETS,
+      country: "US",
+      region: Region.GLOBAL,
+      section: "markets",
       scores: {
         relevance: 90,
         freshness: 95,
         sourceQuality: 86,
-        goldImpact: 88,
+        goldImpact: 20,
         usdImpact: 70,
-        ratesImpact: 55,
-        oilImpact: 20,
-        middleEastImpact: 80,
-        marketImpact: 75,
+        ratesImpact: 88,
+        oilImpact: 82,
+        middleEastImpact: 40,
+        marketImpact: 85,
         finalScore: 100,
-        explanation: "E2E bilingual gold fixture.",
+        explanation: "E2E bilingual markets fixture.",
       },
     },
     {
@@ -434,9 +435,12 @@ async function main() {
   console.log(`Seeded ${allSources.length} sources (${sources.length} core + ${COUNTRY_SOURCES.length} country-local).`);
 }
 
-main()
-  .catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
-  })
-  .finally(() => prisma.$disconnect());
+const ranDirectly = process.argv[1]?.replaceAll("\\", "/").endsWith("prisma/seed.ts");
+if (ranDirectly) {
+  main()
+    .catch((error) => {
+      console.error(error);
+      process.exitCode = 1;
+    })
+    .finally(() => prisma.$disconnect());
+}

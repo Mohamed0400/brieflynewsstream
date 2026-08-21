@@ -49,6 +49,12 @@ export function ConsoleShell({
     accountPlan === "PRO" ? "Pro"
     : accountPlan === "ENTERPRISE" ? "Enterprise"
     : copy.workspacePlan;
+  const isFree = accountPlan !== "PRO" && accountPlan !== "ENTERPRISE";
+  const upgradeLink = (
+    <Link href="/console/billing" className="console-app-upgrade">
+      {copy.switchToPro}
+    </Link>
+  );
 
   return (
     <div className="console-shell console-app" lang={copy.lang} dir={copy.dir}>
@@ -78,6 +84,7 @@ export function ConsoleShell({
           <strong title={accountEmail}>{accountEmail}</strong>
           <span>{planLabel}</span>
           <span className="console-session-live">{copy.sessionActive}</span>
+          {isFree ? upgradeLink : null}
         </div>
         <nav className="console-app-links" aria-label={copy.navAria}>
           {customerNav.map((item) => {
@@ -104,6 +111,11 @@ export function ConsoleShell({
       </aside>
 
       <main id="console-main" className="console-app-main">
+        {isFree ? (
+          <Link href="/console/billing" className="console-app-upgrade console-app-upgrade-mobile">
+            {copy.switchToPro}
+          </Link>
+        ) : null}
         {children}
       </main>
     </div>

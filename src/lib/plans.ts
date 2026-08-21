@@ -20,13 +20,13 @@ export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
     maxKeys: 2,
     commercialUse: false,
     communityBriefings: true,
-    archiveAccess: "limited",
+    archiveAccess: "full",
   },
   PRO: {
     tier: "PRO",
     label: "Pro",
     listPriceMonthlyUsd: 70,
-    dailyRequests: 20_000,
+    dailyRequests: 500,
     maxKeys: 10,
     commercialUse: true,
     communityBriefings: true,
@@ -36,13 +36,17 @@ export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
     tier: "ENTERPRISE",
     label: "Enterprise",
     listPriceMonthlyUsd: null,
-    dailyRequests: 200_000,
+    dailyRequests: 20_000,
     maxKeys: 100,
     commercialUse: true,
     communityBriefings: true,
     archiveAccess: "full",
   },
 };
+
+export function formatPlanCount(value: number) {
+  return value.toLocaleString("en-US");
+}
 
 export function resolvePlanLimits(input: {
   plan: PlanTier;

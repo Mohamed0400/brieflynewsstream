@@ -8,7 +8,7 @@ Timezone is `APP_TIMEZONE` (default `Asia/Kuwait`). Collect runs **three times d
 
 | Host | Mechanism | What to configure |
 |------|-----------|-------------------|
-| **Vercel** | `vercel.json` → `GET /api/cron/collect` | Set `CRON_SECRET` in the Vercel project. Vercel sends `Authorization: Bearer $CRON_SECRET`. Hobby may only allow one run per day; GitHub Actions still covers all three. |
+| **Vercel** | `vercel.json` → `GET /api/cron/collect` | Hobby allows **one** daily cron (`0 3 * * *`, 06:00 Kuwait). Set `CRON_SECRET`. GitHub Actions still covers 06:00, 14:00, and 22:00. |
 | **DigitalOcean / other VPS** | In-process `node-cron` via `src/instrumentation.ts` | `npm start` or `npm run worker:live` on a process that stays up. Do **not** set `VERCEL`. |
 | **Any host (recommended)** | GitHub Actions `.github/workflows/collect.yml` | Secrets `DATABASE_URL` + `DIRECT_URL` (preferred) or `CRON_SECRET`/`ADMIN_API_KEY` + `SITE_URL` to HTTP-call `/api/cron/collect`. |
 

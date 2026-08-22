@@ -8,13 +8,14 @@ async function main() {
   let totalTranslated = 0;
   let runs = 0;
 
+  const maxRuns = allPending ? 50 : 1;
   do {
     const result = await translatePendingArticles(allPending ? { limit: 0 } : undefined);
     runs += 1;
     totalTranslated += result.translated;
     console.log(JSON.stringify({ run: runs, ...result, totalTranslated }, null, 2));
-    if (!allPending || result.translated === 0) break;
-  } while (allPending);
+    if (!allPending || result.translated === 0 || result.pending === 0) break;
+  } while (allPending && runs < maxRuns);
 
   const freshnessCutoff = new Date(
     Date.now() - Math.max(1, limits.newsMaxAgeHours) * 60 * 60 * 1000,

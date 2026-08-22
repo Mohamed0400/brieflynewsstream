@@ -29,7 +29,7 @@ async function main() {
 
   for (let attempt = 1; attempt <= 4; attempt += 1) {
     ({ response, health } = await fetchHealth(baseUrl));
-    if (health.checks?.scheduler === "online" || attempt === 4) break;
+    if (health.checks?.scheduler !== "offline" || attempt === 4) break;
     await new Promise((resolve) => setTimeout(resolve, 2000));
   }
 
@@ -51,7 +51,9 @@ async function main() {
     problems.push(`cron jobs missing, found: ${keys.join(", ") || "none"}`);
   }
   if (jobs.some((job) => !job.enabled)) problems.push("one or more cron jobs are disabled");
-  if (health.checks?.scheduler !== "online") problems.push("scheduler is offline");
+  if (!["online", "external"].includes(health.checks?.scheduler ?? "")) {
+    problems.push("scheduler is offline");
+  }
   if (!fresh || fresh.scanned === 0) {
     problems.push("no fresh articles in the live window");
   } else if (!fresh.ok) {

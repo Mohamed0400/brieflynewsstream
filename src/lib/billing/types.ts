@@ -56,5 +56,18 @@ export function formatUsd(cents: number) {
 }
 
 export function billingProviderReady() {
-  return BILLING_PROVIDER() !== "manual";
+  const provider = BILLING_PROVIDER();
+  if (provider === "manual" || !provider) return false;
+  if (provider === "lemonsqueezy") {
+    return Boolean(
+      process.env.LEMONSQUEEZY_API_KEY?.trim() &&
+        process.env.LEMONSQUEEZY_STORE_ID?.trim() &&
+        process.env.LEMONSQUEEZY_VARIANT_ID?.trim(),
+    );
+  }
+  // Stripe (or other) keys can be wired later; non-manual alone is not enough.
+  if (provider === "stripe") {
+    return Boolean(process.env.STRIPE_SECRET_KEY?.trim());
+  }
+  return false;
 }

@@ -13,8 +13,8 @@ Each calendar day in `APP_TIMEZONE` gets one durable `DailyEdition` row plus ran
 
 | Behavior | Detail |
 |----------|--------|
-| Collect | every 30 minutes, configurable in the console Schedule page |
-| Translate | every 15 minutes, fills missing `titleAr`/`titleEn` pairs |
+| Collect | 06:00, 14:00, and 22:00 Asia/Kuwait via GitHub Actions; configurable for long-lived hosts |
+| Translate | collect drains fresh pending pairs; Vercel runs a daily backup and long-lived hosts default to every 15 minutes |
 | Today’s edition | refreshed as new stories arrive, or on demand from Schedule |
 | Morning publish | 06:00 Asia/Kuwait by default, configurable in Schedule |
 | Language pairs | every stored article has `en` and `ar` title/summary fields |

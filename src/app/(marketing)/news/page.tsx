@@ -146,6 +146,7 @@ export default async function Home({
       articleListOrderBy(feedQuery.sort),
       feedQuery.limit,
       feedQuery.offset,
+      { lang },
     );
     matchedCount = listed.count;
     fetchedArticles = listed.items;

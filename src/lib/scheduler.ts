@@ -2,7 +2,7 @@ import cron from "node-cron";
 import { prisma } from "./prisma";
 import { describeQueryFailure } from "./api";
 import { kuwaitDate } from "./market";
-import { buildDailyEdition, runPipeline } from "./pipeline";
+import { buildDailyEdition, MAX_TRANSLATION_PASSES, runPipeline } from "./pipeline";
 
 export const JOB_COLLECT = "collect";
 export const JOB_PUBLISH = "publish-daily";
@@ -10,7 +10,8 @@ export const JOB_TRANSLATE = "translate";
 
 const HEARTBEAT_ID = "default";
 const HEARTBEAT_MS = 30_000;
-const LOCK_MS = 25 * 60 * 1000;
+/** Matches the GitHub Actions collect timeout so a long run is never double-claimed. */
+const LOCK_MS = 45 * 60 * 1000;
 const ONLINE_MS = 90_000;
 
 /** 06:00, 14:00, 22:00 in APP_TIMEZONE (Asia/Kuwait). */
@@ -101,21 +102,47 @@ function summarizePipeline(result: {
   ].filter(Boolean).join(", ");
 }
 
+/** Clear jobs left in `running` after a crash, timeout, or SIGKILL. */
+export async function clearStaleJobLocks() {
+  const staleBefore = new Date(Date.now() - LOCK_MS);
+  await prisma.scheduledJob.updateMany({
+    where: {
+      lastStatus: "running",
+      OR: [
+        { lockedUntil: { lt: new Date() } },
+        { lockedUntil: null, lastRunAt: { lt: staleBefore } },
+        { lastRunAt: { lt: staleBefore } },
+      ],
+    },
+    data: {
+      lockedUntil: null,
+      lastStatus: "error",
+      lastError: "Previous run was interrupted before completion.",
+    },
+  });
+}
+
+export async function releaseJobLock(key: string) {
+  await prisma.scheduledJob.updateMany({
+    where: { key, lastStatus: "running" },
+    data: {
+      lockedUntil: null,
+      lastStatus: "error",
+      lastError: "Run was interrupted before completion.",
+    },
+  });
+}
+
 export async function ensureDefaultJobs() {
   const timezone = appTimezone();
   await Promise.all(DEFAULT_SCHEDULED_JOBS.map((job) => (
     prisma.scheduledJob.upsert({
       where: { key: job.key },
       create: { ...job, timezone, enabled: true },
-      update: {
-        name: job.name,
-        description: job.description,
-        cron: job.cron,
-        timezone,
-        enabled: true,
-      },
+      update: {},
     })
   )));
+  await clearStaleJobLocks();
 }
 
 async function writeHeartbeat(processName: string) {
@@ -134,10 +161,22 @@ async function executeJob(key: string) {
   }
   if (key === JOB_TRANSLATE) {
     const { translatePendingArticles } = await import("./article-translation");
-    const result = await translatePendingArticles();
-    return `${result.translated} articles translated`;
+    let translated = 0;
+    let pending = 0;
+    for (let pass = 0; pass < MAX_TRANSLATION_PASSES; pass += 1) {
+      const result = await translatePendingArticles();
+      translated += result.translated;
+      pending = result.pending;
+      if (result.pending === 0 || result.translated === 0) break;
+    }
+    return pending
+      ? `${translated} articles translated, ${pending} still pending`
+      : `${translated} articles translated`;
   }
-  return summarizePipeline(await runPipeline({ forceEdition: true }));
+  return summarizePipeline(await runPipeline({
+    forceEdition: true,
+    skipTranslation: process.env.CRON_COLLECT_ONLY === "true",
+  }));
 }
 
 export async function runScheduledJob(key: string) {

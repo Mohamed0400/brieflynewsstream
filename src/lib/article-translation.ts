@@ -334,6 +334,12 @@ async function translateDirection(
   return translated;
 }
 
+export function hasArabicDisplay(
+  article: Parameters<typeof articleLocalizedText>[0],
+) {
+  return Boolean(articleLocalizedText(article, "ar").title.trim());
+}
+
 export function articleLocalizedText(
   article: {
     language: string;
@@ -354,13 +360,11 @@ export function articleLocalizedText(
       title: (isArabicText(article.titleAr) ? article.titleAr : null)
         || (isArabicText(article.title) ? article.title : null)
         || (isArabicText(article.displayTitle) ? article.displayTitle : null)
-        || article.displayTitle
-        || article.title,
+        || "",
       summary: (isArabicText(article.summaryAr) ? article.summaryAr : null)
         || (isArabicText(summary) ? summary : null)
         || (isArabicText(article.displaySummary) ? article.displaySummary : null)
-        || article.displaySummary
-        || summary,
+        || "",
     };
   }
   return {
@@ -425,9 +429,9 @@ export async function translatePendingArticles(options: { limit?: number } = {})
   const pool = await prisma.article.findMany({
     where: { publishedAt: { gte: freshnessCutoff } },
     orderBy: { publishedAt: "desc" },
-    ...(take ? { take: Math.max(take * 3, take) } : {}),
   });
-  const pending = pool.filter((article) => !isBilingualComplete(article)).slice(0, take || pool.length);
+  const allPending = pool.filter((article) => !isBilingualComplete(article));
+  const pending = allPending.slice(0, take || allPending.length);
   if (!pending.length) return { translated: 0, pending: 0 };
 
   const needsArabic: TranslationInput[] = [];
@@ -476,7 +480,8 @@ export async function translatePendingArticles(options: { limit?: number } = {})
       || (translatedAr && isArabicText(translatedAr.summary) ? translatedAr.summary : null);
 
     if (!titleEn && !titleAr) return [];
-    translated += 1;
+    const complete = isBilingualComplete({ titleEn, summaryEn, titleAr, summaryAr });
+    if (complete) translated += 1;
     return [prisma.article.update({
       where: { id: article.id },
       data: {
@@ -485,12 +490,12 @@ export async function translatePendingArticles(options: { limit?: number } = {})
         ...(summaryEn ? { summaryEn } : {}),
         ...(titleAr ? { titleAr } : {}),
         ...(summaryAr ? { summaryAr } : {}),
-        ...(isEnglishText(titleEn) && isArabicText(titleAr) ? { translatedAt: new Date() } : {}),
+        ...(complete ? { translatedAt: new Date() } : {}),
       },
     })];
   });
   if (updates.length) await prisma.$transaction(updates);
-  return { translated, pending: pending.length };
+  return { translated, pending: allPending.length - translated };
 }
 
 export async function localizeFetchedArticles<T extends BilingualArticle>(

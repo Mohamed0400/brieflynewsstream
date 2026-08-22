@@ -119,6 +119,10 @@ export function BillingPanel({
         setMessage(t.cancelledOpen);
         return;
       }
+      if (typeof payload.checkoutUrl === "string" && payload.checkoutUrl) {
+        window.location.assign(payload.checkoutUrl);
+        return;
+      }
       router.push(`/console/billing/success?invoice=${invoiceId}`);
       router.refresh();
     } catch {

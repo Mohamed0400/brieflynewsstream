@@ -39,6 +39,7 @@ export async function GET(request: Request) {
       orderBy,
       query.limit,
       query.offset,
+      { lang: query.filters.lang },
     );
     const displaySeconds = articles.length
       ? Math.min(20, Math.max(8, Math.floor(120 / articles.length)))

@@ -1,6 +1,11 @@
 import type { InvoiceStatus, PlanTier } from "@prisma/client";
 import {
+  createProCheckout,
+  LEMONSQUEEZY_PROVIDER,
+} from "@/lib/billing/lemonsqueezy";
+import {
   applyInvoiceAction,
+  BILLING_PROVIDER,
   billingProviderReady,
   type InvoiceAction,
   type InvoiceLineItem,
@@ -93,7 +98,11 @@ export async function createPlanInvoice(input: {
       paidAt: input.paidAt,
       voidedAt: input.voidedAt,
       voidReason: input.voidReason,
-      provider: input.example ? "example" : "manual",
+      provider: input.example
+        ? "example"
+        : billingProviderReady()
+          ? BILLING_PROVIDER()
+          : "manual",
       example: Boolean(input.example),
       lineItems: [item],
       payments:
@@ -194,20 +203,26 @@ export async function markInvoicePaid(input: {
   planTier: PlanTier;
   totalCents: number;
   method?: string;
+  provider?: string;
+  providerRef?: string;
 }) {
   const now = new Date();
+  const provider = input.provider ?? "manual";
   const updated = await prisma.invoice.update({
     where: { id: input.id },
     data: {
       status: "PAID",
       paidAt: now,
       amountPaidCents: input.totalCents,
+      provider,
+      providerRef: input.providerRef,
       payments: {
         create: {
           status: "SUCCEEDED",
           amountCents: input.totalCents,
-          method: input.method ?? "manual",
-          provider: "manual",
+          method: input.method ?? provider,
+          provider,
+          providerRef: input.providerRef,
           paidAt: now,
         },
       },
@@ -236,12 +251,62 @@ export async function payCustomerInvoice(accountId: string, invoiceId: string) {
   if (invoice.status === "PAID") return { invoice };
   if (invoice.status !== "OPEN") return { error: "not_open" as const };
 
+  const provider = BILLING_PROVIDER();
+  if (provider === LEMONSQUEEZY_PROVIDER) {
+    const account = await prisma.account.findUnique({
+      where: { id: accountId },
+      select: { email: true },
+    });
+    try {
+      const checkout = await createProCheckout({
+        invoiceId: invoice.id,
+        accountId,
+        email: account?.email,
+        invoiceNumber: invoice.number,
+      });
+      await prisma.invoice.update({
+        where: { id: invoice.id },
+        data: {
+          provider: LEMONSQUEEZY_PROVIDER,
+          providerRef: checkout.checkoutId,
+        },
+      });
+      return {
+        invoice,
+        checkoutUrl: checkout.url,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "checkout_failed";
+      return { error: "checkout_failed" as const, message };
+    }
+  }
+
+  return { error: "billing_not_live" as const };
+}
+
+export async function markInvoicePaidFromProvider(input: {
+  invoiceId: string;
+  provider: string;
+  providerRef?: string;
+  method?: string;
+}) {
+  const invoice = await prisma.invoice.findUnique({
+    where: { id: input.invoiceId },
+  });
+  if (!invoice || invoice.example) return { error: "not_found" as const };
+  if (invoice.status === "PAID") {
+    return { invoice: await getAccountInvoice(invoice.accountId, invoice.id) };
+  }
+  if (invoice.status !== "OPEN") return { error: "not_open" as const };
+
   const paid = await markInvoicePaid({
     id: invoice.id,
     accountId: invoice.accountId,
     planTier: invoice.planTier,
     totalCents: invoice.totalCents,
-    method: "console",
+    method: input.method ?? input.provider,
+    provider: input.provider,
+    providerRef: input.providerRef,
   });
   return { invoice: paid };
 }

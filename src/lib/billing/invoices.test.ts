@@ -34,12 +34,23 @@ test("receipts are available only after payment", () => {
 
 test("customer self-pay is off while billing stays manual", () => {
   const previous = process.env.BILLING_PROVIDER;
+  const prevKey = process.env.STRIPE_SECRET_KEY;
   process.env.BILLING_PROVIDER = "manual";
   assert.equal(billingProviderReady(), false);
   process.env.BILLING_PROVIDER = "stripe";
+  delete process.env.STRIPE_SECRET_KEY;
+  assert.equal(billingProviderReady(), false);
+  process.env.STRIPE_SECRET_KEY = "sk_test_placeholder";
   assert.equal(billingProviderReady(), true);
+  process.env.BILLING_PROVIDER = "lemonsqueezy";
+  delete process.env.LEMONSQUEEZY_API_KEY;
+  delete process.env.LEMONSQUEEZY_STORE_ID;
+  delete process.env.LEMONSQUEEZY_VARIANT_ID;
+  assert.equal(billingProviderReady(), false);
   if (previous === undefined) delete process.env.BILLING_PROVIDER;
   else process.env.BILLING_PROVIDER = previous;
+  if (prevKey === undefined) delete process.env.STRIPE_SECRET_KEY;
+  else process.env.STRIPE_SECRET_KEY = prevKey;
 });
 
 test("receipt PDF is a valid paid receipt", () => {

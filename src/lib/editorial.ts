@@ -12,6 +12,9 @@ type EditorialInput = {
   source: { name: string };
   displayTitle: string | null;
   displaySummary: string | null;
+  titleAr?: string | null;
+  summaryAr?: string | null;
+  translatedAt?: Date | null;
 };
 
 const editorialResponseSchema = z.object({
@@ -143,6 +146,18 @@ export async function editorializeArticles(articles: EditorialInput[]) {
       const sourceIsArabic = isArabicText(article.title);
       const englishTitle = isEnglishText(displayTitle) ? displayTitle : null;
       const englishSummary = isEnglishText(displaySummary) ? displaySummary : null;
+      const existingArabicTitle = isArabicText(article.titleAr) ? article.titleAr : null;
+      const existingArabicSummary = isArabicText(article.summaryAr) ? article.summaryAr : null;
+      const arabicTitle = sourceIsArabic ? article.title : existingArabicTitle;
+      const arabicSummary = sourceIsArabic
+        ? (article.summary || article.title)
+        : existingArabicSummary;
+      const bilingualReady = Boolean(
+        englishTitle
+        && englishSummary
+        && (arabicTitle || sourceIsArabic)
+        && (arabicSummary || sourceIsArabic),
+      );
       return prisma.article.update({
         where: { id: article.id },
         data: {
@@ -150,9 +165,9 @@ export async function editorializeArticles(articles: EditorialInput[]) {
           displaySummary,
           ...(englishTitle ? { titleEn: englishTitle } : {}),
           ...(englishSummary ? { summaryEn: englishSummary } : {}),
-          titleAr: sourceIsArabic ? article.title : null,
-          summaryAr: sourceIsArabic ? (article.summary || article.title) : null,
-          translatedAt: null,
+          ...(arabicTitle ? { titleAr: arabicTitle } : {}),
+          ...(arabicSummary ? { summaryAr: arabicSummary } : {}),
+          translatedAt: bilingualReady ? (article.translatedAt ?? new Date()) : null,
           editorializedAt: new Date(),
         },
       });

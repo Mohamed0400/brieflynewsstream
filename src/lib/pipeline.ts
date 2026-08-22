@@ -15,9 +15,9 @@ import {
   allLiveCountrySources,
   countriesNeedingArticles,
   googleNewsRssUrl,
-  RETIRED_COUNTRY_SOURCE_CODES,
 } from "./country-sources";
 import { catalogCountryCodes } from "./countries";
+import { syncLiveCountrySources } from "./source-sync";
 import {
   dedupeArticles,
   storyDuplicateWindow,
@@ -38,6 +38,9 @@ export type PipelineResult = {
   errors: Array<{ source: string; error: string }>;
 };
 
+/** Safety cap on repeated translate batches per run; each pass covers TRANSLATE_BATCH_SIZE articles. */
+export const MAX_TRANSLATION_PASSES = 10;
+
 function contentHash(title: string) {
   const normalized = title.toLowerCase().replace(/[^a-z0-9\u0600-\u06ff]+/g, " ").trim();
   return createHash("sha256").update(normalized).digest("hex");
@@ -56,30 +59,7 @@ async function mapPool<T>(items: T[], concurrency: number, worker: (item: T) => 
 }
 
 export async function ensureLiveSources() {
-  const live = allLiveCountrySources();
-  for (const source of live) {
-    await prisma.source.upsert({
-      where: { code: source.code },
-      create: source,
-      update: {
-        name: source.name,
-        url: source.url,
-        homepageUrl: source.homepageUrl,
-        adapter: source.adapter,
-        country: source.country,
-        region: source.region,
-        defaultCategory: source.defaultCategory,
-        qualityWeight: source.qualityWeight,
-        enabled: true,
-      },
-    });
-  }
-  if (RETIRED_COUNTRY_SOURCE_CODES.length) {
-    await prisma.source.updateMany({
-      where: { code: { in: [...RETIRED_COUNTRY_SOURCE_CODES] } },
-      data: { enabled: false },
-    });
-  }
+  await syncLiveCountrySources(allLiveCountrySources());
 }
 
 async function storeCollectedItems(source: Source, items: Awaited<ReturnType<typeof collectSource>>) {
@@ -551,7 +531,11 @@ export async function buildDailyEdition(
   return edition.itemCount;
 }
 
-export async function runPipeline(options: { forceEdition?: boolean; forceCollect?: boolean } = {}): Promise<PipelineResult> {
+export async function runPipeline(options: {
+  forceEdition?: boolean;
+  forceCollect?: boolean;
+  skipTranslation?: boolean;
+} = {}): Promise<PipelineResult> {
   const result: PipelineResult = {
     sourcesOk: 0,
     sourcesFailed: 0,
@@ -570,7 +554,12 @@ export async function runPipeline(options: { forceEdition?: boolean; forceCollec
   await fillMissingStoryKeys();
   await refreshExistingScores();
   result.editionItems = await buildDailyEdition(kuwaitDate(), { force: options.forceEdition });
-  const translation = await translatePendingArticles();
-  result.translated = translation.translated;
+  if (!options.skipTranslation) {
+    for (let pass = 0; pass < MAX_TRANSLATION_PASSES; pass += 1) {
+      const translation = await translatePendingArticles();
+      result.translated += translation.translated;
+      if (translation.pending === 0 || translation.translated === 0) break;
+    }
+  }
   return result;
 }

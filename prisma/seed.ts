@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { Category, PrismaClient, Region } from "@prisma/client";
-import { COUNTRY_SOURCES, generatedCountrySources, RETIRED_COUNTRY_SOURCE_CODES } from "../src/lib/country-sources";
+import { COUNTRY_SOURCES, generatedCountrySources } from "../src/lib/country-sources";
+import { disableRetiredCountrySources, upsertSourcesInBatches } from "../src/lib/source-sync";
 import { storyKey } from "../src/lib/dedupe";
 import { kuwaitDate } from "../src/lib/market";
 import { audienceValue } from "../src/lib/nationalities";
@@ -418,19 +419,8 @@ async function seedBilingualFixtures() {
 }
 
 async function main() {
-  for (const source of allSources) {
-    await prisma.source.upsert({
-      where: { code: source.code },
-      update: source,
-      create: source,
-    });
-  }
-  for (const code of RETIRED_COUNTRY_SOURCE_CODES) {
-    await prisma.source.updateMany({
-      where: { code },
-      data: { enabled: false },
-    });
-  }
+  await upsertSourcesInBatches(allSources);
+  await disableRetiredCountrySources();
   await seedBilingualFixtures();
   console.log(`Seeded ${allSources.length} sources (${sources.length} core + ${COUNTRY_SOURCES.length} country-local).`);
 }

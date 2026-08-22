@@ -3,6 +3,7 @@ import { limits } from "@/lib/limits";
 import { getBilingualCoverage } from "@/lib/article-translation";
 import {
   DEFAULT_SCHEDULED_JOBS,
+  embeddedSchedulerEnabled,
   getScheduleSnapshot,
 } from "@/lib/scheduler";
 import { API_TIMEZONE, DEFAULT_API_LANG, apiMeta, jsonApi } from "@/lib/api-response";
@@ -37,7 +38,8 @@ export async function GET(request: Request) {
     const disabledJobs = jobs.filter((job) => requiredKeySet.has(job.key) && !job.enabled).map((job) => job.key);
     const jobsOk = missingJobs.length === 0 && disabledJobs.length === 0;
     const bilingualOk = todayCoverage.ok && freshCoverage.ok;
-    const schedulerOk = snapshot.scheduler.online;
+    const embeddedSchedulerRequired = embeddedSchedulerEnabled();
+    const schedulerOk = snapshot.scheduler.online || !embeddedSchedulerRequired;
     const ready = jobsOk && bilingualOk && schedulerOk;
     const healthy = jobsOk && bilingualOk;
 
@@ -50,7 +52,11 @@ export async function GET(request: Request) {
       date: today,
       checks: {
         database: "ok",
-        scheduler: schedulerOk ? "online" : "offline",
+        scheduler: snapshot.scheduler.online
+          ? "online"
+          : embeddedSchedulerRequired
+            ? "offline"
+            : "external",
         jobs: jobsOk ? "ok" : "error",
         bilingual: bilingualOk ? "ok" : "error",
       },

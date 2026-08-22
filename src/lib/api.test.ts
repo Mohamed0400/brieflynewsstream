@@ -183,7 +183,7 @@ test("Arabic display language prefers stored Arabic titles", () => {
     ...article,
     titleAr: "Gold prices rise in Kuwait",
   }, "ar");
-  assert.equal(englishPoisoned.title, "Gold prices rise in Kuwait");
+  assert.equal(englishPoisoned.title, "");
 });
 
 test("source language seeds only that side of the bilingual pair", () => {

@@ -16,14 +16,14 @@ jobs:
   collect:
     name: Collect all countries
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     env:
       APP_TIMEZONE: Asia/Kuwait
       NEXT_PUBLIC_APP_ENV: live
       GOOGLE_GROUNDED_SEARCH_ENABLED: "false"
       GOOGLE_EDITORIAL_ENABLED: "false"
       MIN_COUNTRY_ARTICLES: "3"
-      COLLECT_CONCURRENCY: "4"
+      COLLECT_CONCURRENCY: "12"
       TRANSLATE_BATCH_SIZE: "80"
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       DIRECT_URL: ${{ secrets.DIRECT_URL }}
@@ -33,6 +33,19 @@ jobs:
       SITE_URL: ${{ secrets.SITE_URL }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Check secrets
+        run: |
+          if [ -z "$DATABASE_URL" ] && [ -z "$CRON_SECRET" ] && [ -z "$ADMIN_API_KEY" ]; then
+            echo "::error::No collect credentials. Add secrets DATABASE_URL + DIRECT_URL (preferred), or CRON_SECRET/ADMIN_API_KEY with SITE_URL for HTTP collect."
+            exit 1
+          fi
+          if [ -n "$DATABASE_URL" ] && [ -z "$DIRECT_URL" ]; then
+            echo "::warning::DIRECT_URL is not set; Prisma will use DATABASE_URL for direct connections."
+          fi
+          if [ -n "$DATABASE_URL" ] && [ -z "$GOOGLE_API_KEY" ]; then
+            echo "::warning::GOOGLE_API_KEY is not set; collected articles will not be translated this run."
+          fi
 
       - uses: actions/setup-node@v4
         with:
@@ -51,26 +64,85 @@ jobs:
       - name: Collect via database pipeline
         id: pipeline
         run: |
+          set -o pipefail
           if [ -z "$DATABASE_URL" ]; then
             echo "No DATABASE_URL secret; will try HTTP collect."
             echo "used_http=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          npx tsx src/worker/run-once.ts
+          npx tsx src/worker/run-once.ts --collect-only | tee pipeline-result.json
           echo "used_http=false" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Collect pipeline result"
+            echo '```json'
+            cat pipeline-result.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Collect via cron HTTP
         if: steps.pipeline.outputs.used_http == 'true'
-        env:
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           token="${CRON_SECRET:-$ADMIN_API_KEY}"
-          if [ -z "$token" ]; then
-            echo "Add GitHub Actions secrets DATABASE_URL and DIRECT_URL, or CRON_SECRET/ADMIN_API_KEY and SITE_URL."
-            exit 1
-          fi
           base="${SITE_URL:-https://www.brieflynewsstream.com}"
-          curl -fsS -X POST "$base/api/cron/collect" \
+          if ! response=$(curl -fsS -X POST "$base/api/cron/collect" \
             -H "Authorization: Bearer $token" \
             -H "Content-Type: application/json" \
-            --max-time 300
+            --max-time 300); then
+            echo "::error::HTTP collect against $base/api/cron/collect failed."
+            exit 1
+          fi
+          echo "$response"
+          {
+            echo "## Collect HTTP result"
+            echo '```json'
+            echo "$response"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  translate:
+    name: Translate fresh articles
+    needs: collect
+    if: ${{ always() && needs.collect.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      APP_TIMEZONE: Asia/Kuwait
+      TRANSLATE_BATCH_SIZE: "80"
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/ci?schema=public
+          DIRECT_URL: postgresql://postgres:postgres@127.0.0.1:5432/ci?schema=public
+        run: npx prisma generate
+
+      - name: Translate all pending fresh articles
+        if: env.DATABASE_URL != ''
+        run: |
+          set -o pipefail
+          npx tsx src/worker/translate-once.ts --all | tee translate-result.json
+          {
+            echo "## Translate result"
+            echo '```json'
+            cat translate-result.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Smoke-check production health
+        env:
+          BASE_URL: ${{ secrets.SITE_URL || 'https://www.brieflynewsstream.com' }}
+        run: |
+          npx tsx scripts/smoke-bilingual.ts \
+            || echo "::warning::Production smoke check reported problems; see the step log."

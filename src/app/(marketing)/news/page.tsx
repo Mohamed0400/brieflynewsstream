@@ -82,7 +82,7 @@ function feedHref(params: {
   if (params.category) query.set("category", params.category);
   if (params.country) query.set("country", params.country);
   if (params.nationality) query.set("nationality", params.nationality);
-  if (params.sort && params.sort !== "score") query.set("sort", params.sort);
+  if (params.sort && params.sort !== "date") query.set("sort", params.sort);
   if (params.from) query.set("from", params.from);
   if (params.to) query.set("to", params.to);
   if (params.page && params.page > 1) query.set("page", String(params.page));
@@ -110,7 +110,7 @@ export default async function Home({
   const copy = landingCopy(lang);
   const q = params.q?.trim().replace(/\s+/g, " ").slice(0, 200) || "";
   const country = params.country?.toUpperCase();
-  const sort = params.sort === "date" ? "date" : "score";
+  const sort = params.sort === "score" ? "score" : "date";
   const from = params.from && /^\d{4}-\d{2}-\d{2}$/.test(params.from) ? params.from : "";
   const to = params.to && /^\d{4}-\d{2}-\d{2}$/.test(params.to) ? params.to : "";
   const pageSize = Math.max(1, limits.dashboard);

@@ -35,12 +35,48 @@ export function PricingPlans({
     { q: copy.faqArchiveQ, a: copy.faqArchiveA },
   ];
   const included = [
-    { title: copy.included1Title, body: copy.included1Body },
-    { title: copy.included2Title, body: copy.included2Body },
-    { title: copy.included3Title, body: copy.included3Body },
-    { title: copy.included4Title, body: copy.included4Body },
-    { title: copy.included5Title, body: copy.included5Body },
-    { title: copy.included6Title, body: copy.included6Body },
+    {
+      titleEm: copy.included1TitleEm,
+      titleRest: copy.included1TitleRest,
+      body: copy.included1Body,
+      bodyEm: copy.included1BodyEm,
+      bodyTail: copy.included1BodyTail,
+    },
+    {
+      titleEm: copy.included2TitleEm,
+      titleRest: copy.included2TitleRest,
+      body: copy.included2Body,
+      bodyEm: copy.included2BodyEm,
+      bodyTail: copy.included2BodyTail,
+    },
+    {
+      titleEm: copy.included3TitleEm,
+      titleRest: copy.included3TitleRest,
+      body: copy.included3Body,
+      bodyEm: copy.included3BodyEm,
+      bodyTail: copy.included3BodyTail,
+    },
+    {
+      titleEm: copy.included4TitleEm,
+      titleRest: copy.included4TitleRest,
+      body: copy.included4Body,
+      bodyEm: copy.included4BodyEm,
+      bodyTail: copy.included4BodyTail,
+    },
+    {
+      titleEm: copy.included5TitleEm,
+      titleRest: copy.included5TitleRest,
+      body: copy.included5Body,
+      bodyEm: copy.included5BodyEm,
+      bodyTail: copy.included5BodyTail,
+    },
+    {
+      titleEm: copy.included6TitleEm,
+      titleRest: copy.included6TitleRest,
+      body: copy.included6Body,
+      bodyEm: copy.included6BodyEm,
+      bodyTail: copy.included6BodyTail,
+    },
   ];
   const startSteps = [copy.startStep1, copy.startStep2, copy.startStep3];
   const freeFeatures = [copy.featureFree1, copy.featureFree2, copy.featureFree3, copy.featureFree4];
@@ -163,9 +199,20 @@ export function PricingPlans({
             </div>
             <ul className="mkt-included-grid">
               {included.map((item) => (
-                <li key={item.title}>
-                  <h3>{item.title}</h3>
-                  <p>{item.body}</p>
+                <li key={item.titleEm}>
+                  <h3>
+                    <span className="mkt-included-em">{item.titleEm}</span>
+                    {item.titleRest ? (
+                      <span className="mkt-included-rest">{item.titleRest}</span>
+                    ) : null}
+                  </h3>
+                  <p>
+                    {item.body}
+                    {item.bodyEm ? (
+                      <span className="mkt-included-body-em">{item.bodyEm}</span>
+                    ) : null}
+                    {item.bodyTail}
+                  </p>
                 </li>
               ))}
             </ul>

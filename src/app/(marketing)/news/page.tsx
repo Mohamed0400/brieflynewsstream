@@ -352,8 +352,8 @@ export default async function Home({
             <label className="homepage-filter-field" htmlFor="home-sort">
               <span>{copy.sort}</span>
               <select id="home-sort" name="sort" defaultValue={sort}>
-                <option value="score">{copy.sortScore}</option>
                 <option value="date">{copy.sortDate}</option>
+                <option value="score">{copy.sortScore}</option>
               </select>
             </label>
             <label className="homepage-filter-field" htmlFor="home-from">

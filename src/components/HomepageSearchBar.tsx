@@ -24,7 +24,7 @@ function buildHref(query: string, params: SearchParams) {
   if (params.category) search.set("category", params.category);
   if (params.country) search.set("country", params.country);
   if (params.nationality) search.set("nationality", params.nationality);
-  if (params.sort && params.sort !== "score") search.set("sort", params.sort);
+  if (params.sort && params.sort !== "date") search.set("sort", params.sort);
   if (params.from) search.set("from", params.from);
   if (params.to) search.set("to", params.to);
 

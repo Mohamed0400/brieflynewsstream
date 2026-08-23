@@ -61,7 +61,7 @@ export function CommunityBriefingFilter({
     if (q) params.set("q", q);
     if (category) params.set("category", category);
     if (country) params.set("country", country);
-    if (sort && sort !== "score") params.set("sort", sort);
+    if (sort && sort !== "date") params.set("sort", sort);
     if (from) params.set("from", from);
     if (to) params.set("to", to);
     if (nationality) params.set("nationality", nationality);
@@ -74,7 +74,7 @@ export function CommunityBriefingFilter({
   if (q) clearParams.set("q", q);
   if (category) clearParams.set("category", category);
   if (country) clearParams.set("country", country);
-  if (sort && sort !== "score") clearParams.set("sort", sort);
+  if (sort && sort !== "date") clearParams.set("sort", sort);
   if (from) clearParams.set("from", from);
   if (to) clearParams.set("to", to);
   const clearHref = clearParams.toString() ? `/news?${clearParams}` : "/news";

@@ -13,7 +13,7 @@ import {
   softwareApplicationJsonLd,
 } from "@/lib/seo";
 
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   searchParams,
@@ -28,8 +28,8 @@ export async function generateMetadata({
       ? siteTitle("en", "Pricing")
       : siteTitle("ar", "الأسعار"),
     description: isEn
-      ? `Start free at ${PLAN_DEFINITIONS.FREE.dailyRequests} API requests a day. Pro is $${PLAN_DEFINITIONS.PRO.listPriceMonthlyUsd} per month with ${PLAN_DEFINITIONS.PRO.dailyRequests} requests. Enterprise is custom, with ${PLAN_DEFINITIONS.ENTERPRISE.dailyRequests} requests a day by default. No checkout yet.`
-      : `ابدأ مجاناً بـ ${PLAN_DEFINITIONS.FREE.dailyRequests} طلبات API يومياً. Pro بسعر ${PLAN_DEFINITIONS.PRO.listPriceMonthlyUsd} دولاراً شهرياً و${PLAN_DEFINITIONS.PRO.dailyRequests} طلب. Enterprise تسعير مخصص بحد ${PLAN_DEFINITIONS.ENTERPRISE.dailyRequests} طلب يومياً افتراضياً. لا دفع إلكتروني بعد.`,
+      ? `Start free at ${PLAN_DEFINITIONS.FREE.dailyRequests} API requests a day. Pro is $${PLAN_DEFINITIONS.PRO.listPriceMonthlyUsd} per month with ${PLAN_DEFINITIONS.PRO.dailyRequests} requests. Enterprise is custom, with ${PLAN_DEFINITIONS.ENTERPRISE.dailyRequests} requests a day by default.`
+      : `ابدأ مجاناً بـ ${PLAN_DEFINITIONS.FREE.dailyRequests} طلبات API يومياً. Pro بسعر ${PLAN_DEFINITIONS.PRO.listPriceMonthlyUsd} دولاراً شهرياً و${PLAN_DEFINITIONS.PRO.dailyRequests} طلب. Enterprise تسعير مخصص بحد ${PLAN_DEFINITIONS.ENTERPRISE.dailyRequests} طلب يومياً افتراضياً.`,
     path: "/pricing",
     pathEn: "/pricing?lang=en",
     keywords: [

@@ -3,6 +3,9 @@ import { PLAN_DEFINITIONS, formatPlanCount } from "@/lib/plans";
 
 const en = {
   pageTitle: "Market news API plans",
+  planFree: "Free",
+  planPro: "Pro",
+  planEnterprise: "Enterprise",
   pageLede:
     "Start free to try the API. Choose Pro for commercial use, or contact us for a custom Enterprise plan.",
   forFree: "Try the news API, create an API key, and stay within the daily limit.",
@@ -67,7 +70,7 @@ const en = {
     "Free is for evaluation. Commercial use starts on Pro. The endpoints are the same. The license and usage limits change.",
   faqPayQ: "How do I upgrade to Pro?",
   faqPayA:
-    "Create an account, start on Free, then request Pro from Billing. Payment is not live in the console yet.",
+    "Create an account, start on Free, then request Pro from Billing and pay by card checkout.",
   faqSlaQ: "Do the plans include a service level agreement (SLA)?",
   faqSlaA: "Not on Free or Pro. Enterprise can include an SLA set to your needs.",
   faqArchiveQ: "Does Free include archive access?",
@@ -81,6 +84,9 @@ const en = {
 
 const ar = {
   pageTitle: "خطط واجهة برمجة أخبار الأسواق",
+  planFree: "مجاني",
+  planPro: "Pro",
+  planEnterprise: "Enterprise",
   pageLede:
     "ابدأ مجاناً لاختبار الواجهة. اختر Pro للاستخدام التجاري، أو تواصل معنا للحصول على خطة Enterprise مخصصة.",
   forFree: "اختبر واجهة الأخبار، أنشئ مفتاح API، وابق ضمن الحد اليومي.",
@@ -145,7 +151,7 @@ const ar = {
     "الخطة المجانية للاختبار. الاستخدام التجاري يبدأ من Pro. نقاط النهاية واحدة. الترخيص وحدود الاستخدام يتغيران.",
   faqPayQ: "كيف يمكنني الترقية إلى Pro؟",
   faqPayA:
-    "أنشئ حساباً وابدأ بالخطة المجانية، ثم اطلب Pro من الفوترة. الدفع غير مفعّل في اللوحة بعد.",
+    "أنشئ حساباً وابدأ بالخطة المجانية، ثم اطلب Pro من الفوترة وادفع عبر صفحة الدفع بالبطاقة.",
   faqSlaQ: "هل تتضمن الخطط اتفاقية مستوى خدمة (SLA)؟",
   faqSlaA: "لا على المجاني أو Pro. يمكن لـ Enterprise أن يشمل اتفاقية مستوى خدمة تُحدَّد حسب احتياجاتك.",
   faqArchiveQ: "هل يتضمن الاشتراك المجاني الوصول إلى الأرشيف؟",

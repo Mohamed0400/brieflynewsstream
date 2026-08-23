@@ -62,7 +62,7 @@ export function PricingPlans({
     <div className={`mkt-plans ${variant === "full" ? "mkt-plans-full" : "mkt-plans-compact"}`}>
       <div className="mkt-plan-pair">
         <article className="mkt-plan">
-          <PlanHeading>{free.label}</PlanHeading>
+          <PlanHeading>{copy.planFree}</PlanHeading>
           <p className="mkt-plan-for">{copy.forFree}</p>
           <p className="mkt-price-amount">
             ${free.listPriceMonthlyUsd}
@@ -89,7 +89,7 @@ export function PricingPlans({
         </article>
 
         <article className="mkt-plan mkt-plan-featured">
-          <PlanHeading className="mkt-plan-name">{pro.label}</PlanHeading>
+          <PlanHeading className="mkt-plan-name">{copy.planPro}</PlanHeading>
           <p className="mkt-plan-for">{copy.forPro}</p>
           <p className="mkt-price-amount">
             ${pro.listPriceMonthlyUsd}
@@ -122,7 +122,7 @@ export function PricingPlans({
         </article>
 
         <article className="mkt-plan">
-          <PlanHeading>{enterprise.label}</PlanHeading>
+          <PlanHeading>{copy.planEnterprise}</PlanHeading>
           <p className="mkt-plan-for">{copy.forEnterprise}</p>
           <p className="mkt-price-amount">{copy.customPrice}</p>
           <div className="mkt-plan-cta">

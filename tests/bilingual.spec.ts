@@ -116,6 +116,26 @@ test("landing market-intelligence copy is native in Arabic and English", async (
   await expect(page.locator(".mkt-demo-url code")).toHaveText("/api/v1/market-news?category=oil&region=global&sort=score");
 });
 
+test("pricing and developers pages switch language with ?lang=en", async ({ page }) => {
+  await page.goto("/pricing");
+  await expect(page.getByRole("heading", { level: 1, name: "خطط واجهة برمجة أخبار الأسواق" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "مجاني" })).toBeVisible();
+
+  await page.goto("/pricing?lang=en");
+  await expect(page.getByRole("heading", { level: 1, name: "Market news API plans" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Free" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "English" })).toHaveAttribute("aria-current", "true");
+
+  await page.goto("/developers");
+  await expect(page.getByRole("heading", { level: 1, name: "واجهة API لأخبار الأسواق" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "ابدأ خلال 3 خطوات" })).toBeVisible();
+
+  await page.goto("/developers?lang=en");
+  await expect(page.getByRole("heading", { level: 1, name: "Market news API" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Start in 3 steps" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "English" })).toHaveAttribute("aria-current", "true");
+});
+
 test("homepage is Arabic-first and shows stored Arabic headlines", async ({ page }) => {
   await page.goto(`/news?q=${fixtureQuery}`);
   await expect(page.getByRole("heading", { name: "موجز الأسواق" })).toBeVisible();

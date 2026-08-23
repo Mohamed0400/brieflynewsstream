@@ -35,7 +35,9 @@ function country(
 }
 
 /**
- * Market-news country catalog (~70 ISO codes).
+ * Market-news country catalog (global & regional coverage, ISO 3166-1 alpha-2).
+ * Spans the full Middle East / North Africa, major African, European, Americas,
+ * and Asia-Pacific markets so the briefing reads as global — not a single market.
  * `community` marks nationality briefings; every row is a filterable article country.
  */
 export const COUNTRY_CATALOG: CountryRecord[] = [
@@ -67,6 +69,10 @@ export const COUNTRY_CATALOG: CountryRecord[] = [
   country("MA", "moroccan", "Morocco", "Moroccan", "🇲🇦", "المغرب", "مغربي", ["morocco", "rabat", "casablanca"], true),
   country("TN", "tunisian", "Tunisia", "Tunisian", "🇹🇳", "تونس", "تونسي", ["tunisia"], true),
   country("DZ", "algerian", "Algeria", "Algerian", "🇩🇿", "الجزائر", "جزائري", ["algeria", "algiers"], true),
+  country("MR", "mauritanian", "Mauritania", "Mauritanian", "🇲🇷", "موريتانيا", "موريتاني", ["mauritania", "nouakchott"]),
+  country("DJ", "djiboutian", "Djibouti", "Djiboutian", "🇩🇯", "جيبوتي", "جيبوتي", ["djibouti city"]),
+  country("SO", "somali", "Somalia", "Somali", "🇸🇴", "الصومال", "صومالي", ["somalia", "mogadishu"]),
+  country("KM", "comorian", "Comoros", "Comorian", "🇰🇲", "جزر القمر", "قمري", ["comoros", "moroni"]),
   country("PY", "paraguayan", "Paraguay", "Paraguayan", "🇵🇾", "باراغواي", "باراغواياني", ["paraguay", "asuncion"], true),
   country("ID", "indonesian", "Indonesia", "Indonesian", "🇮🇩", "إندونيسيا", "إندونيسي", ["indonesia", "indonisia", "jakarta"], true),
   country("AE", "emirati", "United Arab Emirates", "Emirati", "🇦🇪", "الإمارات", "إماراتي", ["uae", "emirates", "dubai", "abu dhabi"], true),
@@ -106,6 +112,10 @@ export const COUNTRY_CATALOG: CountryRecord[] = [
   country("NZ", "new-zealander", "New Zealand", "New Zealander", "🇳🇿", "نيوزيلندا", "نيوزيلندي", ["wellington", "rbnz", "auckland"]),
   country("ZA", "south-african", "South Africa", "South African", "🇿🇦", "جنوب أفريقيا", "جنوب أفريقي", ["johannesburg", "pretoria", "sarb"]),
   country("GH", "ghanaian", "Ghana", "Ghanaian", "🇬🇭", "غانا", "غاني", ["accra"]),
+  country("AO", "angolan", "Angola", "Angolan", "🇦🇴", "أنغولا", "أنغولي", ["luanda", "kwanza"]),
+  country("CI", "ivorian", "Côte d'Ivoire", "Ivorian", "🇨🇮", "ساحل العاج", "إيفواري", ["cote d'ivoire", "ivory coast", "abidjan", "brvm"]),
+  country("TZ", "tanzanian", "Tanzania", "Tanzanian", "🇹🇿", "تنزانيا", "تنزاني", ["dar es salaam", "dodoma"]),
+  country("UG", "ugandan", "Uganda", "Ugandan", "🇺🇬", "أوغندا", "أوغندي", ["kampala"]),
   country("PT", "portuguese", "Portugal", "Portuguese", "🇵🇹", "البرتغال", "برتغالي", ["lisbon"]),
   country("IE", "irish", "Ireland", "Irish", "🇮🇪", "أيرلندا", "أيرلندي", ["dublin"]),
   country("KZ", "kazakh", "Kazakhstan", "Kazakh", "🇰🇿", "كازاخستان", "كازاخستاني", ["astana", "almaty"]),

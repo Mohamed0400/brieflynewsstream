@@ -1,5 +1,5 @@
 import { Category } from "@prisma/client";
-import { type CountrySourceSeed, rowsToSources } from "./types";
+import { type CountrySourceSeed, type PublisherRow, rowsToSources } from "./types";
 
 /**
  * Investing.com webmaster RSS (section IDs from their public RSS tools).
@@ -44,4 +44,70 @@ const INVESTING_ROWS = [
   ["INVESTING_PH", "Investing.com Philippines", "https://ph.investing.com/rss/news.rss", "https://ph.investing.com/", "PH", Category.FINANCE, 86],
 ] as const;
 
-export const INVESTING_SOURCES: CountrySourceSeed[] = rowsToSources([...INVESTING_ROWS]);
+const REGIONAL_INVESTING_HOSTS = [
+  ["KW", "Kuwait", "kw"],
+  ["QA", "Qatar", "qa"],
+  ["BH", "Bahrain", "bh"],
+  ["OM", "Oman", "om"],
+  ["EG", "Egypt", "eg"],
+  ["JO", "Jordan", "jo"],
+  ["IQ", "Iraq", "iq"],
+  ["LB", "Lebanon", "lb"],
+  ["MA", "Morocco", "ma"],
+  ["TN", "Tunisia", "tn"],
+  ["DZ", "Algeria", "dz"],
+  ["LY", "Libya", "ly"],
+  ["IL", "Israel", "il"],
+  ["PK", "Pakistan", "pk"],
+  ["BD", "Bangladesh", "bd"],
+  ["LK", "Sri Lanka", "lk"],
+  ["NP", "Nepal", "np"],
+  ["SG", "Singapore", "sg"],
+  ["NZ", "New Zealand", "nz"],
+  ["GH", "Ghana", "gh"],
+  ["KE", "Kenya", "ke"],
+  ["NG", "Nigeria", "ng"],
+  ["PT", "Portugal", "pt"],
+  ["IE", "Ireland", "ie"],
+  ["KZ", "Kazakhstan", "kz"],
+  ["AR", "Argentina", "ar"],
+  ["CL", "Chile", "cl"],
+  ["BE", "Belgium", "be"],
+  ["AT", "Austria", "at"],
+  ["SE", "Sweden", "se"],
+  ["NO", "Norway", "no"],
+  ["DK", "Denmark", "dk"],
+  ["UA", "Ukraine", "ua"],
+  ["TW", "Taiwan", "tw"],
+] as const;
+
+const REGIONAL_INVESTING_TOPICS = [
+  ["NEWS", "News", "news.rss", Category.MARKETS, 84],
+  ["STOCKS", "Stocks", "news_1.rss", Category.FINANCE, 84],
+  ["ECONOMY", "Economy", "news_14.rss", Category.ECONOMICS, 86],
+  ["FOREX", "Forex", "news_25.rss", Category.FINANCE, 84],
+] as const;
+
+const EXISTING_REGIONAL_NEWS = new Set<string>(INVESTING_ROWS.map(([code]) => code));
+
+const REGIONAL_INVESTING_ROWS: PublisherRow[] = REGIONAL_INVESTING_HOSTS.flatMap(
+  ([country, label, host]) =>
+    REGIONAL_INVESTING_TOPICS.flatMap(([topic, topicLabel, rssFile, category, weight]) => {
+      const code = topic === "NEWS" ? `INVESTING_${country}` : `INVESTING_${country}_${topic}`;
+      if (EXISTING_REGIONAL_NEWS.has(code)) return [];
+      return [[
+        code,
+        `Investing.com ${label} ${topicLabel}`,
+        `https://${host}.investing.com/rss/${rssFile}`,
+        `https://${host}.investing.com/`,
+        country,
+        category,
+        weight,
+      ]];
+    }),
+);
+
+export const INVESTING_SOURCES: CountrySourceSeed[] = rowsToSources([
+  ...INVESTING_ROWS,
+  ...REGIONAL_INVESTING_ROWS,
+]);

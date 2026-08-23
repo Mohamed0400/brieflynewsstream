@@ -5,6 +5,7 @@ import { CORE_SOURCE_LOCK } from "./sources/core-lock";
 import { COUNTRY_PUBLISHERS } from "./sources/country-publishers";
 import { GLOBAL_PUBLISHERS } from "./sources/global-publishers";
 import { INVESTING_SOURCES } from "./sources/investing-sources";
+import { MENA_PUBLISHERS } from "./sources/mena-publishers";
 import { countryRss, type CountrySourceSeed } from "./sources/types";
 
 export type { CountrySourceSeed } from "./sources/types";
@@ -595,6 +596,7 @@ export const COUNTRY_SOURCES: CountrySourceSeed[] = [
   ...EXPANDED_COUNTRY_SOURCES,
   ...GLOBAL_PUBLISHERS,
   ...INVESTING_SOURCES,
+  ...MENA_PUBLISHERS,
   ...COUNTRY_PUBLISHERS,
 ];
 
@@ -603,7 +605,7 @@ export const CORE_SCRAPE_COUNTRIES = ["KW", "US", "GB"] as const;
 
 const ARABIC_GOOGLE_NEWS_COUNTRIES = new Set([
   "KW", "SA", "AE", "QA", "BH", "OM", "EG", "JO", "IQ", "YE", "PS", "LB",
-  "SY", "SD", "MA", "TN", "DZ", "LY",
+  "SY", "SD", "MA", "TN", "DZ", "LY", "MR", "DJ", "SO", "KM",
 ]);
 
 const MIN_SOURCES_PER_COUNTRY = 8;

@@ -38,7 +38,7 @@ const en = {
   paramCountry: "ISO country code. Comma-separated. Example: US,AE.",
   paramRegion: "Market region. middle_east, america, or global.",
   paramCategory:
-    "finance, economics, oil, me_economy, commodities, markets, or the precious-metals catalog code.",
+    "Catalog code such as finance, economics, oil, me_economy, commodities, banking, real_estate, tech, energy, trade, fx, crypto, shipping, insurance, policy, markets, or the precious-metals code. See /api/v1/meta/categories.",
   paramNationality: "Audience code. Required on /market-news/nationality. Example: IN.",
   paramLang: "Response language for title and summary. ar or en. Default ar.",
   paramLanguage: "Filter by the story's stored source language. ar or en.",
@@ -158,7 +158,7 @@ const ar = {
   paramCountry: "رمز الدولة ISO. يمكن فصله بفاصلة. مثال: US,AE.",
   paramRegion: "منطقة السوق. middle_east أو america أو global.",
   paramCategory:
-    "finance أو economics أو oil أو me_economy أو commodities أو markets أو رمز المعادن الثمينة في الكتالوج.",
+    "رمز من الكتالوج مثل finance أو economics أو oil أو me_economy أو commodities أو banking أو real_estate أو tech أو energy أو trade أو fx أو crypto أو shipping أو insurance أو policy أو markets أو رمز المعادن الثمينة. راجع /api/v1/meta/categories.",
   paramNationality: "رمز الجمهور. مطلوب في /market-news/nationality. مثال: IN.",
   paramLang: "لغة العنوان والملخص في الاستجابة. ar أو en. الافتراضي ar.",
   paramLanguage: "فلتر حسب لغة المصدر المخزّنة للقصة. ar أو en.",

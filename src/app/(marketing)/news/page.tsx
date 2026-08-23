@@ -10,7 +10,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { landingCopy } from "@/lib/landing-translation";
 import { expandSearchQuery } from "@/lib/search";
 import {
-  localizedCountryLabel,
+  groupCountryCodesByRegion,
   supportedCountryCodes,
 } from "@/lib/supported-countries";
 import { getNewsFeedStats } from "@/lib/feed-stats";
@@ -59,9 +59,19 @@ const arabicCategoryLabels: Record<string, string> = {
   gold: "المعادن الثمينة",
   finance: "الأسواق المالية",
   economics: "الاقتصاد والبنوك المركزية",
-  oil: "النفط والطاقة",
+  oil: "النفط والغاز",
   me_economy: "اقتصاد الشرق الأوسط",
   commodities: "السلع",
+  banking: "البنوك والمصارف",
+  real_estate: "العقارات",
+  tech: "التكنولوجيا",
+  energy: "الطاقة والمرافق",
+  trade: "التجارة العالمية",
+  fx: "العملات والصرف",
+  crypto: "الأصول الرقمية والمشفرة",
+  shipping: "الشحن والخدمات اللوجستية",
+  insurance: "التأمين",
+  policy: "السياسات والتنظيم",
   markets: "أخبار السوق المؤثرة",
 };
 
@@ -155,6 +165,7 @@ export default async function Home({
   }
   const liveCountrySet = new Set(stats.liveCountries);
   const countries = supportedCountryCodes(stats.sourceCountries);
+  const countryGroups = groupCountryCodesByRegion(countries, lang);
   const totalPages = Math.max(1, Math.ceil(matchedCount / pageSize));
   const page = Math.min(requestedPage, totalPages);
   const articles = fetchedArticles;
@@ -264,19 +275,27 @@ export default async function Home({
           title={copy.supportedCountries}
           liveLabel={copy.liveInFeed}
           catalogLabel={copy.supportedCountries}
+          searchPlaceholder={copy.countrySearchPlaceholder}
+          searchLabel={copy.countrySearchLabel}
+          emptyLabel={copy.countrySearchEmpty}
           dir={copy.dir}
           lang={lang}
-          countries={countries.map((code) => {
-            const live = liveCountrySet.has(code);
-            const active = country === code;
-            return {
-              code,
-              label: localizedCountryLabel(code, lang),
-              href: feedHref({ ...filterState, country: active ? undefined : code, page: 1 }),
-              live,
-              active,
-            };
-          })}
+          groups={countryGroups.map((group) => ({
+            key: group.key,
+            label: group.label,
+            items: group.items.map((item) => {
+              const live = liveCountrySet.has(item.code);
+              const active = country === item.code;
+              return {
+                code: item.code,
+                name: item.name,
+                label: item.label,
+                href: feedHref({ ...filterState, country: active ? undefined : item.code, page: 1 }),
+                live,
+                active,
+              };
+            }),
+          }))}
         />
 
         <section className="mkt-news-filters" aria-labelledby="filters-title">
@@ -342,10 +361,14 @@ export default async function Home({
               <span>{lang === "ar" ? "الدولة" : "Country"}</span>
               <select id="home-country" name="country" defaultValue={country || ""}>
                 <option value="">{lang === "ar" ? "كل الدول" : "All countries"}</option>
-                {countries.map((item) => (
-                  <option key={item} value={item}>
-                    {localizedCountryLabel(item, lang)}
-                  </option>
+                {countryGroups.map((group) => (
+                  <optgroup key={group.key} label={group.label}>
+                    {group.items.map((item) => (
+                      <option key={item.code} value={item.code}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
             </label>

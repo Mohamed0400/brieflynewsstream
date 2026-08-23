@@ -16,6 +16,16 @@ enum Category {
   ME_ECONOMY
   COMMODITIES
   MARKETS
+  BANKING
+  REAL_ESTATE
+  TECH
+  ENERGY
+  TRADE
+  FX
+  CRYPTO
+  SHIPPING
+  INSURANCE
+  POLICY
 }
 
 enum Region {

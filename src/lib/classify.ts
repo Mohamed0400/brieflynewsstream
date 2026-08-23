@@ -3,19 +3,28 @@ import { COUNTRY_CATALOG } from "./countries";
 
 const TERMS: Record<Category, string[]> = {
   GOLD: ["gold", "silver", "bullion", "precious metal", "xau", "jewellery", "jewelry", "central bank buying"],
-  FINANCE: ["stock", "share", "bond", "yield", "dollar", "currency", "forex", "exchange rate", "equity", "bank", "investor", "fund", "wall street", "market"],
-  ECONOMICS: ["inflation", "interest rate", "central bank", "federal reserve", "fed", "ecb", "monetary", "gdp", "economy", "economic", "jobs", "employment", "tariff", "recession", "cpi"],
+  FINANCE: ["stock", "share", "bond", "yield", "dollar", "currency", "equity", "investor", "fund", "wall street", "market", "ipo", "dividend", "earnings"],
+  ECONOMICS: ["inflation", "interest rate", "central bank", "federal reserve", "fed", "ecb", "monetary", "gdp", "economy", "economic", "jobs", "employment", "recession", "cpi"],
   OIL: ["oil", "crude", "brent", "opec", "energy price", "petroleum", "lng"],
-  ME_ECONOMY: ["kuwait economy", "gcc", "gulf economy", "kuwait finance", "saudi economy", "uae economy", "kuwait stock", "boursa kuwait"],
+  ME_ECONOMY: ["kuwait economy", "gcc", "gulf economy", "gulf markets", "middle east economy", "mena", "kuwait finance", "saudi economy", "uae economy", "kuwait stock", "boursa kuwait", "tadawul", "sovereign wealth fund"],
   COMMODITIES: ["commodity", "copper", "platinum", "palladium", "wheat", "natural gas", "mining"],
-  MARKETS: ["trade", "business", "price", "fiscal", "debt", "investment", "growth"],
+  BANKING: ["banking sector", "lender", "lending", "deposits", "loan", "credit growth", "islamic banking", "bank earnings", "capital ratio", "non-performing loans", "retail banking"],
+  REAL_ESTATE: ["real estate", "property market", "property prices", "housing", "mortgage", "rents", "residential", "commercial property", "reit", "construction sector"],
+  TECH: ["technology", "tech", "artificial intelligence", "ai", "semiconductor", "chipmaker", "software", "startup", "fintech", "e-commerce", "data center", "cloud computing", "cybersecurity"],
+  ENERGY: ["electricity", "power grid", "renewable", "solar", "wind power", "nuclear", "utilities", "hydrogen", "power plant", "energy transition"],
+  TRADE: ["trade", "exports", "imports", "tariff", "supply chain", "trade deal", "trade deficit", "wto", "customs", "free trade"],
+  FX: ["forex", "exchange rate", "devaluation", "currency peg", "dollar index", "dinar", "riyal", "dirham", "euro", "yen", "yuan"],
+  CRYPTO: ["crypto", "cryptocurrency", "bitcoin", "ethereum", "stablecoin", "blockchain", "digital asset", "token sale", "defi", "crypto exchange"],
+  SHIPPING: ["shipping", "freight", "tanker", "container", "port authority", "logistics", "suez", "red sea shipping", "vessel", "maritime"],
+  INSURANCE: ["insurance", "insurer", "reinsurance", "takaful", "premiums", "underwriting", "insurance claims"],
+  POLICY: ["regulation", "regulator", "sanctions", "fiscal policy", "budget", "stimulus", "subsidy", "tax reform", "legislation", "economic reform", "privatisation", "privatization"],
+  MARKETS: ["business", "price", "fiscal", "debt", "investment", "growth"],
 };
 
 const OFF_TOPIC = [
   "football", "soccer", "cricket", "celebrity", "movie", "film review",
   "fashion", "recipe", "murder", "crime", "gaming", "travel guide",
-  "brand ambassador", "real estate development", "luxury property",
-  "vodka", "head of research",
+  "brand ambassador", "vodka", "head of research",
 ];
 
 const SPECIAL_COUNTRY_TERMS: Record<string, string[]> = {

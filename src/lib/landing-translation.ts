@@ -48,6 +48,9 @@ const pageCopy = {
     countriesCoveredHint:
       "Countries with at least one story in the last 72 hours, of all countries we cover.",
     supportedCountries: "Supported countries",
+    countrySearchPlaceholder: "Search a country or region",
+    countrySearchLabel: "Search supported countries",
+    countrySearchEmpty: "No countries match your search.",
     liveInFeed: "In this briefing",
     overviewTitle: "Data overview",
     overviewWindowTitle: "Live briefing window",
@@ -108,6 +111,9 @@ const pageCopy = {
     countriesCoveredHint:
       "دول لديها خبر واحد على الأقل خلال آخر 72 ساعة، من أصل الدول التي نغطيها.",
     supportedCountries: "الدول المدعومة",
+    countrySearchPlaceholder: "ابحث عن دولة أو منطقة",
+    countrySearchLabel: "ابحث في الدول المدعومة",
+    countrySearchEmpty: "لا توجد دول مطابقة لبحثك.",
     liveInFeed: "موجودة في هذا الموجز",
     overviewTitle: "نظرة على البيانات",
     overviewWindowTitle: "نافذة الموجز المباشر",

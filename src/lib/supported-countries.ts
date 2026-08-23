@@ -48,3 +48,106 @@ export function localizedCountryLabel(code: string, lang: "ar" | "en") {
 export function countryFlag(code: string) {
   return countryRecord(code)?.flag || EXTRA_FLAGS[code] || null;
 }
+
+/**
+ * UI-only region grouping for the country picker so the list stays browseable as
+ * it scales. Independent of the Prisma `Region` enum (which only has three values)
+ * — this maps every catalog code plus the EU/GLOBAL extras to a browse bucket.
+ */
+export type CountryRegionKey =
+  | "middle_east"
+  | "africa"
+  | "europe"
+  | "americas"
+  | "asia_pacific"
+  | "global";
+
+export const REGION_GROUP_META: ReadonlyArray<{
+  key: CountryRegionKey;
+  label: string;
+  labelAr: string;
+}> = [
+  { key: "middle_east", label: "Middle East", labelAr: "الشرق الأوسط" },
+  { key: "africa", label: "Africa", labelAr: "أفريقيا" },
+  { key: "europe", label: "Europe", labelAr: "أوروبا" },
+  { key: "americas", label: "Americas", labelAr: "الأمريكتان" },
+  { key: "asia_pacific", label: "Asia-Pacific", labelAr: "آسيا والمحيط الهادئ" },
+  { key: "global", label: "Global & other", labelAr: "عالمي وأخرى" },
+];
+
+const REGION_MEMBERS: Record<CountryRegionKey, string[]> = {
+  middle_east: [
+    "KW", "SA", "AE", "QA", "BH", "OM", "YE", "IQ", "IR", "JO", "LB", "SY",
+    "PS", "IL", "TR", "EG",
+  ],
+  africa: [
+    "MA", "TN", "DZ", "LY", "SD", "MR", "DJ", "SO", "KM", "NG", "KE", "ET",
+    "GH", "ZA", "AO", "CI", "TZ", "UG",
+  ],
+  europe: [
+    "GB", "DE", "FR", "IT", "ES", "NL", "CH", "BE", "AT", "SE", "NO", "DK",
+    "PL", "UA", "RU", "PT", "IE", "EU",
+  ],
+  americas: ["US", "CA", "MX", "BR", "AR", "CL", "PY"],
+  asia_pacific: [
+    "IN", "BD", "PH", "LK", "PK", "NP", "ID", "AF", "KZ", "CN", "JP", "KR",
+    "HK", "TW", "MY", "SG", "TH", "VN", "AU", "NZ",
+  ],
+  global: ["GLOBAL"],
+};
+
+const REGION_BY_CODE = new Map<string, CountryRegionKey>();
+for (const meta of REGION_GROUP_META) {
+  for (const code of REGION_MEMBERS[meta.key]) REGION_BY_CODE.set(code, meta.key);
+}
+
+export function regionGroupForCode(code: string): CountryRegionKey {
+  return REGION_BY_CODE.get(code.trim().toUpperCase()) ?? "global";
+}
+
+export function regionGroupLabel(key: CountryRegionKey, lang: "ar" | "en") {
+  const meta = REGION_GROUP_META.find((item) => item.key === key);
+  if (!meta) return key;
+  return lang === "ar" ? meta.labelAr : meta.label;
+}
+
+export type CountryPickerItem = {
+  code: string;
+  name: string;
+  label: string;
+};
+
+export type CountryRegionGroup = {
+  key: CountryRegionKey;
+  label: string;
+  items: CountryPickerItem[];
+};
+
+/**
+ * Groups supported country codes into browse buckets, each sorted by the
+ * localized country name. Empty regions are dropped so the picker only shows
+ * groups that actually have coverage.
+ */
+export function groupCountryCodesByRegion(
+  codes: string[],
+  lang: "ar" | "en",
+): CountryRegionGroup[] {
+  const buckets = new Map<CountryRegionKey, CountryPickerItem[]>();
+  for (const code of codes) {
+    const key = regionGroupForCode(code);
+    const item: CountryPickerItem = {
+      code,
+      name: countryDisplayName(code, lang),
+      label: localizedCountryLabel(code, lang),
+    };
+    const bucket = buckets.get(key);
+    if (bucket) bucket.push(item);
+    else buckets.set(key, [item]);
+  }
+  return REGION_GROUP_META.flatMap((meta) => {
+    const items = buckets.get(meta.key);
+    if (!items || items.length === 0) return [];
+    items.sort((a, b) => a.name.localeCompare(b.name, lang === "ar" ? "ar" : "en"));
+    return [{ key: meta.key, label: regionGroupLabel(meta.key, lang), items }];
+  });
+}

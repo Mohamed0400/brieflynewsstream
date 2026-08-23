@@ -1339,6 +1339,23 @@
   list-style: none;
 }
 
+.mkt-coverage-region {
+  margin-top: 2rem;
+}
+
+.mkt-coverage-region-title {
+  margin: 0 0 0.9rem;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
+.mkt-coverage-region-title span {
+  opacity: 0.6;
+  font-weight: 500;
+}
+
 .mkt-metrics {
   display: grid;
   gap: 0.85rem;

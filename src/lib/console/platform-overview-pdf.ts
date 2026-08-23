@@ -75,7 +75,7 @@ const FACTS = [
   },
   {
     title: `${CATEGORY_META.length} market categories`,
-    body: "Finance, economics, oil, Middle East economy, commodities, markets, and precious metals.",
+    body: "Precious metals, finance, economics, oil & gas, Middle East economy, commodities, banking, real estate, technology, energy & utilities, global trade, currencies, crypto, shipping, insurance, policy, and markets.",
   },
   {
     title: `${REGION_META.length} coverage regions`,

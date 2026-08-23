@@ -47,17 +47,17 @@ test("generated country source codes are unique", () => {
   assert.ok(generated.length >= COUNTRY_CATALOG.length * 2);
 });
 
-test("seed catalog has unique codes and urls and is at least 900 sources", () => {
+test("seed catalog has unique codes and urls and is at least 1500 sources", () => {
   const { codes, urls, live } = allSeedSources();
   assert.equal(new Set(codes).size, codes.length, "duplicate source codes");
   assert.equal(new Set(urls).size, urls.length, "duplicate source urls");
-  assert.ok(live.length >= 850, `live country sources ${live.length} < 850`);
-  assert.ok(codes.length >= 900, `total unique sources ${codes.length} < 900`);
+  assert.ok(live.length >= 1500, `live country sources ${live.length} < 1500`);
+  assert.ok(codes.length >= 1500, `total unique sources ${codes.length} < 1500`);
 });
 
-test("catalog includes at least eight Investing.com RSS sources", () => {
+test("catalog includes at least one hundred Investing.com RSS sources", () => {
   const investing = allSeedSources().urls.filter((url) => url.includes("investing.com"));
-  assert.ok(investing.length >= 8, `investing.com sources ${investing.length} < 8`);
+  assert.ok(investing.length >= 100, `investing.com sources ${investing.length} < 100`);
 });
 
 test("retired source codes stay out of the live list", () => {

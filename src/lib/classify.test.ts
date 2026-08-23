@@ -39,6 +39,40 @@ test("does not mistake Goldman or an Au brand for gold", () => {
   assert.equal(vodka.accepted, false);
 });
 
+test("classifies expanded market topics", () => {
+  const crypto = classifyArticle(
+    "Bitcoin climbs as stablecoin rules advance",
+    "Crypto exchange volumes rose after the announcement.",
+    Category.MARKETS,
+  );
+  assert.equal(crypto.category, Category.CRYPTO);
+  assert.equal(crypto.accepted, true);
+
+  const realEstate = classifyArticle(
+    "Gulf real estate deals accelerate as property prices firm",
+    "Mortgage demand and residential rents climbed across the region.",
+    Category.MARKETS,
+  );
+  assert.equal(realEstate.category, Category.REAL_ESTATE);
+  assert.equal(realEstate.accepted, true);
+
+  const shipping = classifyArticle(
+    "Container freight rates jump on Red Sea shipping disruption",
+    "Tanker and vessel traffic shifted to longer maritime routes.",
+    Category.MARKETS,
+  );
+  assert.equal(shipping.category, Category.SHIPPING);
+  assert.equal(shipping.accepted, true);
+
+  const fx = classifyArticle(
+    "Dinar steady as forex reserves rise",
+    "The exchange rate held firm against the euro and yen.",
+    Category.MARKETS,
+  );
+  assert.equal(fx.category, Category.FX);
+  assert.equal(fx.accepted, true);
+});
+
 test("rejects clearly off-topic content", () => {
   const result = classifyArticle(
     "Football star signs record contract",
@@ -71,10 +105,10 @@ test("resolves nationality codes, aliases, and the Africa group", () => {
   assert.equal(detectCountry("New measures announced in Syria", "GLOBAL"), "SY");
 });
 
-test("country catalog covers about 70 ISO markets", () => {
+test("country catalog covers the global & regional market set", () => {
   const codes = COUNTRY_CATALOG.map((item) => item.code);
-  assert.equal(COUNTRY_CATALOG.length, 70);
-  assert.equal(new Set(codes).size, 70);
+  assert.ok(COUNTRY_CATALOG.length >= 78, `catalog shrank to ${COUNTRY_CATALOG.length}`);
+  assert.equal(new Set(codes).size, COUNTRY_CATALOG.length);
   assert.ok(COUNTRY_CATALOG.every((item) => item.code.length === 2));
   assert.ok(COUNTRY_CATALOG.some((item) => item.code === "DE" && !item.community));
   assert.ok(COUNTRY_CATALOG.some((item) => item.code === "AE" && item.community));
@@ -82,7 +116,7 @@ test("country catalog covers about 70 ISO markets", () => {
   assert.ok(supported.includes("DE"));
   assert.ok(supported.includes("QA"));
   assert.ok(supported.includes("EU"));
-  assert.ok(supported.length >= 72);
+  assert.ok(supported.length >= 80);
 });
 
 test("every catalog country has at least two scrape sources", () => {

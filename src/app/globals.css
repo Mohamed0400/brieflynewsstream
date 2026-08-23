@@ -270,16 +270,24 @@ body {
 
 .homepage-overview-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: clamp(0.75rem, 2vw, 1.25rem);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(0.65rem, 2vw, 1.25rem);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+.homepage-overview-grid > :last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
 @container (min-width: 42rem) {
   .homepage-overview-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .homepage-overview-grid > :last-child:nth-child(odd) {
+    grid-column: auto;
   }
 }
 
@@ -288,8 +296,8 @@ body {
   align-content: start;
   justify-items: center;
   gap: 0.5rem;
-  min-height: 11.5rem;
-  padding: clamp(1.5rem, 4cqi, 2rem) 1.5rem 1.75rem;
+  min-height: 0;
+  padding: clamp(1.1rem, 3.5cqi, 2rem) clamp(0.95rem, 3cqi, 1.5rem) 1.25rem;
   border: 1px solid rgb(28 25 22 / 0.1);
   border-radius: 1rem;
   background: #fffdf8;

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { MagnifyingGlass, X } from "@phosphor-icons/react";
 import { useEffect, useState, type ReactNode } from "react";
 import { BrandLogo } from "@/components/media/BrandLogo";
@@ -14,16 +14,19 @@ import {
 
 function useMarketingLocation() {
   const routePath = usePathname() || "/";
-  const [pathname, setPathname] = useState("/");
-  const [search, setSearch] = useState("");
-  const [lang, setLang] = useState<MarketingLang>("ar");
+  const searchParams = useSearchParams();
+  const urlSearch = searchParams.toString();
+  const urlLang: MarketingLang = searchParams.get("lang") === "en" ? "en" : "ar";
+
+  const [pathname, setPathname] = useState(routePath);
+  const [search, setSearch] = useState(urlSearch);
+  const [lang, setLang] = useState<MarketingLang>(urlLang);
 
   useEffect(() => {
-    const nextSearch = window.location.search.replace(/^\?/, "");
     setPathname(routePath);
-    setSearch(nextSearch);
-    setLang(new URLSearchParams(nextSearch).get("lang") === "en" ? "en" : "ar");
-  }, [routePath]);
+    setSearch(urlSearch);
+    setLang(urlLang);
+  }, [routePath, urlSearch, urlLang]);
 
   return { pathname, search, lang, setLang, setSearch };
 }
@@ -66,14 +69,6 @@ function MarketingNav({
   const [open, setOpen] = useState(false);
   const loginHref = withLang("/console/login");
   const signupHref = withLang("/console/signup");
-
-  useEffect(() => {
-    const root = document.querySelector(".mkt");
-    if (root instanceof HTMLElement) {
-      root.lang = lang;
-      root.dir = copy.dir;
-    }
-  }, [lang, copy.dir]);
 
   useEffect(() => {
     setOpen(false);
@@ -347,29 +342,31 @@ function MarketingFooter({ lang }: { lang: MarketingLang }) {
             {copy.ctaKey}
           </Link>
         </div>
-        <nav aria-label={copy.footerProduct}>
-          <h2>{copy.footerProduct}</h2>
-          <Link href={withLang("/")}>{copy.footerHome}</Link>
-          <Link href={withLang("/news")}>{copy.footerNews}</Link>
-          <Link href={withLang("/pricing")}>{copy.navPricing}</Link>
-        </nav>
-        <nav aria-label={copy.footerResources}>
-          <h2>{copy.footerResources}</h2>
-          <Link href={withLang("/developers")}>{copy.footerDocs}</Link>
-          <Link href="/llms.txt">{copy.footerLlms}</Link>
-          <Link href={withLang("/console/login")}>{copy.footerConsole}</Link>
-        </nav>
-        <nav aria-label={copy.footerCompany}>
-          <h2>{copy.footerCompany}</h2>
-          <Link href={withLang("/developers")}>{copy.footerDevelopers}</Link>
-          <Link href={withLang("/console/login")}>{copy.navLogin}</Link>
-          <a href="mailto:hello@brieflynewsstream.com">{copy.footerContact}</a>
-        </nav>
-        <nav aria-label={copy.footerLegal}>
-          <h2>{copy.footerLegal}</h2>
-          <Link href={withLang("/privacy")}>{copy.footerPrivacy}</Link>
-          <Link href={withLang("/terms")}>{copy.footerTerms}</Link>
-        </nav>
+        <div className="mkt-footer-links">
+          <nav aria-label={copy.footerProduct}>
+            <h2>{copy.footerProduct}</h2>
+            <Link href={withLang("/")}>{copy.footerHome}</Link>
+            <Link href={withLang("/news")}>{copy.footerNews}</Link>
+            <Link href={withLang("/pricing")}>{copy.navPricing}</Link>
+          </nav>
+          <nav aria-label={copy.footerResources}>
+            <h2>{copy.footerResources}</h2>
+            <Link href={withLang("/developers")}>{copy.footerDocs}</Link>
+            <Link href="/llms.txt">{copy.footerLlms}</Link>
+            <Link href={withLang("/console/login")}>{copy.footerConsole}</Link>
+          </nav>
+          <nav aria-label={copy.footerCompany}>
+            <h2>{copy.footerCompany}</h2>
+            <Link href={withLang("/developers")}>{copy.footerDevelopers}</Link>
+            <Link href={withLang("/console/login")}>{copy.navLogin}</Link>
+            <a href="mailto:hello@brieflynewsstream.com">{copy.footerContact}</a>
+          </nav>
+          <nav aria-label={copy.footerLegal}>
+            <h2>{copy.footerLegal}</h2>
+            <Link href={withLang("/privacy")}>{copy.footerPrivacy}</Link>
+            <Link href={withLang("/terms")}>{copy.footerTerms}</Link>
+          </nav>
+        </div>
       </div>
       <div className="mkt-footer-meta">
         <p>{copy.footerCopyright}</p>
@@ -386,13 +383,14 @@ function MarketingFooter({ lang }: { lang: MarketingLang }) {
 
 export function MarketingShell({ children }: { children: ReactNode }) {
   const location = useMarketingLocation();
+  const copy = marketingCopy(location.lang);
   useMarketingWaitCursor(location.pathname, location.search);
   return (
-    <>
+    <div className="mkt" lang={location.lang} dir={copy.dir}>
       <MarketingNav {...location} />
       {children}
       <MarketingFooter lang={location.lang} />
-    </>
+    </div>
   );
 }
 

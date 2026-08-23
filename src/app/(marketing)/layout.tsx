@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { MarketingShell } from "@/components/marketing/MarketingChrome";
 import "../marketing.css";
 
@@ -7,12 +8,20 @@ export default function MarketingLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="mkt" lang="ar" dir="rtl">
+    <Suspense
+      fallback={
+        <div className="mkt">
+          <main id="mkt-main" className="mkt-main">
+            {children}
+          </main>
+        </div>
+      }
+    >
       <MarketingShell>
         <main id="mkt-main" className="mkt-main">
           {children}
         </main>
       </MarketingShell>
-    </div>
+    </Suspense>
   );
 }

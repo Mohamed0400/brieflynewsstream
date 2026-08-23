@@ -9,10 +9,10 @@ Timezone is `APP_TIMEZONE` (default `Asia/Kuwait`). Collect runs **three times d
 | Host | Mechanism | What to configure |
 |------|-----------|-------------------|
 | **Vercel** | `vercel.json` → collect and translate HTTP routes | Daily backups: collect at 07:00 Kuwait (`0 4 * * *` UTC), translate at 23:00 Kuwait (`0 20 * * *` UTC). Set `CRON_SECRET`. |
-| **DigitalOcean / other VPS** | In-process `node-cron` via `src/instrumentation.ts` | `npm start` or `npm run worker:live` on a process that stays up. Do **not** set `VERCEL`. |
+| **DigitalOcean / other VPS** | pg-boss durable worker via `npm run worker:live` | Set `DATABASE_URL` or preferably `DIRECT_URL`, then keep one worker process running. |
 | **Any host (recommended)** | GitHub Actions `.github/workflows/collect.yml` | Secrets `DATABASE_URL` + `DIRECT_URL` (preferred) or `CRON_SECRET`/`ADMIN_API_KEY` + `SITE_URL` to HTTP-call `/api/cron/collect`. |
 
-GitHub Actions is the primary 3× daily runner. The workflow splits **collect** (ingest + edition, up to 90 min) and **translate** (drain all pending ar/en pairs, up to 90 min) so neither step hits the old 45-minute ceiling. Vercel Cron and node-cron are backups. The DB job lock (45 minutes, matching each Actions step budget) prevents duplicate work if two runners overlap.
+GitHub Actions is the primary 3× daily runner. The workflow splits **collect** (ingest + edition, up to 90 min) and **translate** (drain all pending ar/en pairs, up to 90 min) so neither step hits the old 45-minute ceiling. Vercel Cron and the pg-boss worker are backups/additional runners. The DB job lock (45 minutes, matching each Actions step budget) prevents duplicate work if two runners overlap.
 
 Vercel currently allows up to 100 cron jobs per project on Hobby and Pro. Hobby restricts each job to once daily with hour-level timing; Pro supports once-per-minute schedules with minute-level timing. The two daily backup jobs above work on Hobby. See [Vercel Cron usage and pricing](https://vercel.com/docs/cron-jobs/usage-and-pricing).
 
@@ -36,11 +36,47 @@ curl -X GET "https://www.brieflynewsstream.com/api/cron/collect" \
 
 | Key | Default cron | Used by |
 |-----|--------------|---------|
-| `collect` | `0 6,14,22 * * *` | Vercel Cron, GitHub Actions, node-cron on VPS |
-| `translate` | `*/15 * * * *` | Vercel daily backup and node-cron on VPS; collect also drains pending translations |
-| `publish-daily` | `0 6 * * *` | node-cron on VPS; collect also refreshes today's edition |
+| `collect` | `0 6,14,22 * * *` | Vercel Cron, GitHub Actions, pg-boss worker |
+| `translate` | `*/15 * * * *` | pg-boss worker; Vercel daily backup; collect also drains pending translations |
+| `publish-daily` | `0 6 * * *` | pg-boss worker; collect also refreshes today's edition |
 
 On Vercel, `node-cron` does **not** start (`VERCEL=1`). Set `ENABLE_EMBEDDED_SCHEDULER=true` only if you are sure the Node process never sleeps.
+
+## Celery-like (Node)
+
+The long-lived Node worker uses **pg-boss**. This was chosen over Redis-backed queues because it gives Celery-like durable jobs, retries, and cron schedules while using the existing Supabase Postgres database. No Redis service is required.
+
+pg-boss stores its own queue tables in the `pgboss` schema by default and schedules these queues in `APP_TIMEZONE` (default `Asia/Kuwait`):
+
+| Queue | Schedule |
+|-------|----------|
+| `brieflynewsstream.collect` | `0 6,14,22 * * *` |
+| `brieflynewsstream.translate` | `*/15 * * * *` |
+| `brieflynewsstream.publish-daily` | `0 6 * * *` |
+
+Run it on a long-lived host:
+
+```bash
+npm run worker:live
+```
+
+For a host without `.env.live`, set env directly and run:
+
+```bash
+APP_TIMEZONE=Asia/Kuwait \
+PG_BOSS_DATABASE_URL="$DIRECT_URL" \
+npm run worker:boss
+```
+
+`PG_BOSS_DATABASE_URL` is optional; the worker falls back to `DIRECT_URL`, then `DATABASE_URL`. Prefer a direct Supabase Postgres URL because pg-boss creates/migrates its own schema and benefits from normal Postgres sessions. Override the schema with `PG_BOSS_SCHEMA` only if you need a non-default schema.
+
+The pg-boss worker does **not** bypass existing app locks. Every queued job calls `runScheduledJob(key)`, so the `ScheduledJob.lockedUntil` semantics still prevent duplicate collect/translate/publish work when GitHub Actions, Vercel Cron, HTTP calls, and the worker overlap.
+
+Legacy in-process `node-cron` is still available for local/VPS debugging:
+
+```bash
+npm run worker:cron:live
+```
 
 Set `CRON_SECRET` in the Vercel project env. Vercel Cron sends `Authorization: Bearer $CRON_SECRET` to the configured routes. Without that secret scheduled runs return 401.
 

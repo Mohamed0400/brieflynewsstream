@@ -145,7 +145,7 @@ export async function ensureDefaultJobs() {
   await clearStaleJobLocks();
 }
 
-async function writeHeartbeat(processName: string) {
+export async function writeSchedulerHeartbeat(processName: string) {
   await prisma.schedulerHeartbeat.upsert({
     where: { id: HEARTBEAT_ID },
     create: { id: HEARTBEAT_ID, processName, lastTickAt: new Date() },
@@ -313,7 +313,7 @@ export async function getScheduleSnapshot() {
 
 async function syncScheduledTasks(processName: string) {
   await ensureDefaultJobs();
-  await writeHeartbeat(processName);
+  await writeSchedulerHeartbeat(processName);
   const jobs = await prisma.scheduledJob.findMany();
   const snapshot = JSON.stringify(jobs.map((job) => ({
     key: job.key,

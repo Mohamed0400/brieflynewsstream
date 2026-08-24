@@ -2,10 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { X } from "@phosphor-icons/react";
-import { FormEvent, useEffect, useRef, useState, useTransition } from "react";
+import { FocusEvent, FormEvent, useEffect, useRef, useState, useTransition } from "react";
 import { BrandLoader } from "@/components/media/BrandLoader";
 
-const SEARCH_DEBOUNCE_MS = 400;
 const SCROLL_FLAG = "homepage-search-scroll";
 
 type SearchParams = {
@@ -82,7 +81,7 @@ export function HomepageSearchBar({
 }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const committedQueryRef = useRef(initialQuery);
   const pendingQueryRef = useRef<string | null>(null);
   const [query, setQuery] = useState(initialQuery);
   const [searching, setSearching] = useState(false);
@@ -92,11 +91,8 @@ export function HomepageSearchBar({
   useEffect(() => {
     if (inputRef.current && document.activeElement === inputRef.current) return;
     setQuery(initialQuery);
+    committedQueryRef.current = initialQuery;
   }, [initialQuery]);
-
-  useEffect(() => () => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-  }, []);
 
   useEffect(() => {
     document.documentElement.toggleAttribute("data-home-search", loading);
@@ -127,14 +123,17 @@ export function HomepageSearchBar({
 
   function navigate(nextQuery: string) {
     const href = buildHref(nextQuery, params);
+    const normalized = normalizedQuery(nextQuery);
     if (href === currentPath()) {
       pendingQueryRef.current = null;
       sessionStorage.removeItem(SCROLL_FLAG);
       setSearching(false);
+      committedQueryRef.current = normalized;
       return;
     }
 
-    pendingQueryRef.current = normalizedQuery(nextQuery);
+    pendingQueryRef.current = normalized;
+    committedQueryRef.current = normalized;
     sessionStorage.setItem(SCROLL_FLAG, "1");
     setSearching(true);
     inputRef.current?.blur();
@@ -143,14 +142,15 @@ export function HomepageSearchBar({
     });
   }
 
-  function scheduleNavigate(nextQuery: string) {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => navigate(nextQuery), SEARCH_DEBOUNCE_MS);
-  }
-
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (debounceRef.current) clearTimeout(debounceRef.current);
+    navigate(query);
+  }
+
+  function handleBlur(event: FocusEvent<HTMLInputElement>) {
+    const next = event.relatedTarget;
+    if (next instanceof HTMLElement && event.currentTarget.form?.contains(next)) return;
+    if (normalizedQuery(query) === normalizedQuery(committedQueryRef.current)) return;
     navigate(query);
   }
 
@@ -169,14 +169,8 @@ export function HomepageSearchBar({
           type="search"
           name="q"
           value={query}
-          onChange={(event) => {
-            const nextQuery = event.target.value;
-            setQuery(nextQuery);
-            pendingQueryRef.current = null;
-            sessionStorage.removeItem(SCROLL_FLAG);
-            setSearching(false);
-            scheduleNavigate(nextQuery);
-          }}
+          onChange={(event) => setQuery(event.target.value)}
+          onBlur={handleBlur}
           placeholder={searchPlaceholder}
           aria-label="Search articles"
           autoComplete="off"
@@ -190,10 +184,7 @@ export function HomepageSearchBar({
             aria-label={searchClearLabel}
             onClick={() => {
               setQuery("");
-              pendingQueryRef.current = null;
-              sessionStorage.removeItem(SCROLL_FLAG);
-              setSearching(false);
-              scheduleNavigate("");
+              navigate("");
               inputRef.current?.focus();
             }}
           >

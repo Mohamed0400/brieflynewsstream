@@ -17,6 +17,7 @@
   --mkt-ease: cubic-bezier(0.16, 1, 0.3, 1);
   --mkt-nav-z: 40;
   --mkt-overlay-z: 30;
+  --mkt-nav-height: calc(56px + env(safe-area-inset-top));
   min-height: 100dvh;
   min-width: 0;
   overflow-x: clip;
@@ -256,6 +257,9 @@
 }
 
 .mkt-nav-drawer-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 44px;
   min-width: 44px;
   padding: 0 0.55rem;
@@ -266,6 +270,45 @@
   font: inherit;
   font-size: 0.8125rem;
   cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    background 180ms var(--mkt-ease),
+    color 180ms var(--mkt-ease),
+    border-color 180ms var(--mkt-ease);
+}
+
+.mkt-nav-drawer-icon {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 1.125rem;
+  height: 0.875rem;
+}
+
+.mkt-nav-drawer-icon span {
+  display: block;
+  height: 2px;
+  width: 100%;
+  border-radius: 999px;
+  background: currentColor;
+  transform-origin: center;
+  transition:
+    transform 240ms var(--mkt-ease),
+    opacity 180ms var(--mkt-ease);
+}
+
+.mkt-nav-drawer-btn[aria-expanded="true"] .mkt-nav-drawer-icon span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.mkt-nav-drawer-btn[aria-expanded="true"] .mkt-nav-drawer-icon span:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0);
+}
+
+.mkt-nav-drawer-btn[aria-expanded="true"] .mkt-nav-drawer-icon span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
 }
 
 .mkt-nav-drawer-btn[aria-expanded="true"] {
@@ -299,6 +342,70 @@
   border: 1px solid var(--mkt-line);
   border-radius: var(--mkt-radius);
   box-shadow: var(--mkt-shadow);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-0.45rem) scale(0.98);
+  transform-origin: top center;
+  transition:
+    opacity 220ms var(--mkt-ease),
+    transform 220ms var(--mkt-ease),
+    visibility 220ms var(--mkt-ease);
+}
+
+.mkt[dir="rtl"] .mkt-nav-drawer-panel {
+  transform-origin: top center;
+}
+
+.mkt-nav-drawer-panel.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+}
+
+.mkt-nav-drawer-panel.is-open > * {
+  animation: mkt-drawer-item-in 320ms var(--mkt-ease) both;
+}
+
+.mkt-nav-drawer-panel.is-open > :nth-child(1) {
+  animation-delay: 40ms;
+}
+
+.mkt-nav-drawer-panel.is-open > :nth-child(2) {
+  animation-delay: 70ms;
+}
+
+.mkt-nav-drawer-panel.is-open > :nth-child(3) {
+  animation-delay: 100ms;
+}
+
+.mkt-nav-drawer-panel.is-open > :nth-child(4) {
+  animation-delay: 130ms;
+}
+
+.mkt-nav-drawer-panel.is-open > :nth-child(5) {
+  animation-delay: 160ms;
+}
+
+.mkt-nav-drawer-panel.is-open > :nth-child(6) {
+  animation-delay: 190ms;
+}
+
+.mkt-nav-drawer-panel.is-open > :nth-child(7) {
+  animation-delay: 220ms;
+}
+
+@keyframes mkt-drawer-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.35rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .mkt-nav-drawer-panel a {
@@ -309,6 +416,13 @@
   color: var(--mkt-ink);
   text-decoration: none;
   border-radius: var(--mkt-control);
+  transition:
+    background 160ms var(--mkt-ease),
+    transform 160ms var(--mkt-ease);
+}
+
+.mkt-nav-drawer-panel a:not(.mkt-btn):active {
+  transform: scale(0.98);
 }
 
 .mkt-nav-drawer-panel a:not(.mkt-btn):hover,
@@ -3432,6 +3546,10 @@ html[data-home-search] .mkt-news-page .homepage-feed-searching {
 }
 
 @media (min-width: 640px) {
+  .mkt {
+    --mkt-nav-height: calc(64px + env(safe-area-inset-top));
+  }
+
   .mkt-nav-inner {
     gap: 0.75rem;
     min-height: 64px;
@@ -3700,6 +3818,19 @@ html[data-home-search] .mkt-news-page .homepage-feed-searching {
   }
 }
 
+@media (max-width: 1023px) {
+  .mkt-nav {
+    position: fixed;
+    inset-inline: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  .mkt-main {
+    padding-top: var(--mkt-nav-height);
+  }
+}
+
 @media (min-width: 1024px) {
   .mkt-nav-links,
   .mkt-nav-actions,
@@ -3797,11 +3928,20 @@ html[data-home-search] .mkt-news-page .homepage-feed-searching {
   .mkt-nav-links a,
   .mkt-lang a,
   .mkt-region-card,
-  .mkt-lang-thumb {
+  .mkt-lang-thumb,
+  .mkt-nav-drawer-btn,
+  .mkt-nav-drawer-icon span,
+  .mkt-nav-drawer-panel,
+  .mkt-nav-drawer-panel a {
     transition: none !important;
   }
 
-  .mkt-btn:active {
+  .mkt-nav-drawer-panel.is-open > * {
+    animation: none !important;
+  }
+
+  .mkt-btn:active,
+  .mkt-nav-drawer-panel a:not(.mkt-btn):active {
     transform: none !important;
   }
 }

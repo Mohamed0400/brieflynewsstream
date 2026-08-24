@@ -173,38 +173,47 @@ function MarketingNav({
               aria-controls="mkt-nav-menu"
               onClick={() => setOpen((value) => !value)}
             >
-              {open ? copy.menuClose : copy.menuOpen}
+              <span className="mkt-nav-drawer-icon" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </span>
+              <span className="mkt-sr">{open ? copy.menuClose : copy.menuOpen}</span>
             </button>
-            {open ? (
-              <nav id="mkt-nav-menu" className="mkt-nav-drawer-panel" aria-label={copy.navAria}>
-                <MarketingSearch
-                  id="mkt-nav-q-menu"
-                  lang={lang}
-                  search={search}
-                  onSubmit={() => setOpen(false)}
-                />
-                {navItems.map((item) => {
-                  const active = marketingPathActive(pathname, item.match);
-                  return (
-                    <Link
-                      key={`m-${item.label}`}
-                      href={item.href}
-                      className={active ? "is-active" : undefined}
-                      aria-current={active ? "page" : undefined}
-                      onClick={() => setOpen(false)}
-                    >
-                      {item.label}
-                    </Link>
-                  );
-                })}
-                <Link href={loginHref} className="mkt-btn mkt-btn-ghost" onClick={() => setOpen(false)}>
-                  {copy.navLogin}
-                </Link>
-                <Link href={signupHref} className="mkt-btn mkt-btn-primary" onClick={() => setOpen(false)}>
-                  {copy.ctaKey}
-                </Link>
-              </nav>
-            ) : null}
+            <nav
+              id="mkt-nav-menu"
+              className={`mkt-nav-drawer-panel${open ? " is-open" : ""}`}
+              aria-label={copy.navAria}
+              aria-hidden={!open}
+              inert={open ? undefined : true}
+            >
+              <MarketingSearch
+                id="mkt-nav-q-menu"
+                lang={lang}
+                search={search}
+                onSubmit={() => setOpen(false)}
+              />
+              {navItems.map((item) => {
+                const active = marketingPathActive(pathname, item.match);
+                return (
+                  <Link
+                    key={`m-${item.label}`}
+                    href={item.href}
+                    className={active ? "is-active" : undefined}
+                    aria-current={active ? "page" : undefined}
+                    onClick={() => setOpen(false)}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+              <Link href={loginHref} className="mkt-btn mkt-btn-ghost" onClick={() => setOpen(false)}>
+                {copy.navLogin}
+              </Link>
+              <Link href={signupHref} className="mkt-btn mkt-btn-primary" onClick={() => setOpen(false)}>
+                {copy.ctaKey}
+              </Link>
+            </nav>
           </div>
         </div>
       </header>

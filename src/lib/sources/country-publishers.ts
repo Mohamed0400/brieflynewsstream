@@ -399,6 +399,144 @@ const COUNTRY_ROWS = [
   ["TOLO_AF", "TOLOnews", "https://tolonews.com/rss.xml", "https://tolonews.com/", "AF", Category.MARKETS, 74],
   ["PAJHWOK_AF", "Pajhwok Afghan News", "https://pajhwok.com/feed/", "https://pajhwok.com/", "AF", Category.MARKETS, 74],
   ["ARIEN_AF", "Ariana News", "https://www.ariananews.af/feed/", "https://www.ariananews.af/", "AF", Category.MARKETS, 72],
+
+  // Colombia
+  ["PORTAFOLIO_CO", "Portafolio", "https://www.portafolio.co/rss", "https://www.portafolio.co/", "CO", Category.FINANCE, 84],
+  ["ELTIEMPO_CO", "El Tiempo Economia", "https://www.eltiempo.com/rss/economia.xml", "https://www.eltiempo.com/economia", "CO", Category.ECONOMICS, 82],
+  ["SEMANA_CO", "Semana Economia", "https://www.semana.com/rss/economia.xml", "https://www.semana.com/economia", "CO", Category.ECONOMICS, 80],
+  ["LA_REPUBLICA_CO", "La Republica", "https://www.larepublica.co/rss", "https://www.larepublica.co/", "CO", Category.FINANCE, 80],
+
+  // Peru
+  ["GESTION_PE", "Gestion", "https://gestion.pe/arc/outboundfeeds/rss/?outputType=xml", "https://gestion.pe/", "PE", Category.FINANCE, 84],
+  ["EL_COMERCIO_PE", "El Comercio Economia", "https://elcomercio.pe/arc/outboundfeeds/rss/category/economia/?outputType=xml", "https://elcomercio.pe/economia/", "PE", Category.ECONOMICS, 82],
+  ["RPP_PE", "RPP Economia", "https://rpp.pe/economia/rss", "https://rpp.pe/economia", "PE", Category.ECONOMICS, 78],
+  ["ANDINA_PE", "Andina Economia", "https://andina.pe/rss/economia.xml", "https://andina.pe/", "PE", Category.ECONOMICS, 80],
+
+  // Uruguay
+  ["EL_PAIS_UY", "El Pais Uruguay", "https://www.elpais.com.uy/rss/economia", "https://www.elpais.com.uy/", "UY", Category.ECONOMICS, 80],
+  ["MONTEVIDEO_PORTAL_UY", "Montevideo Portal", "https://www.montevideo.com.uy/rss/economia", "https://www.montevideo.com.uy/", "UY", Category.ECONOMICS, 76],
+  ["LA_DIARIA_UY", "La Diaria Economia", "https://ladiaria.com.uy/rss/economia/", "https://ladiaria.com.uy/", "UY", Category.ECONOMICS, 74],
+  ["SUBRAYADO_UY", "Subrayado", "https://www.subrayado.com.uy/rss", "https://www.subrayado.com.uy/", "UY", Category.MARKETS, 74],
+
+  // Ecuador
+  ["EL_UNIVERSO_EC", "El Universo Economia", "https://www.eluniverso.com/arc/outboundfeeds/rss/category/economia/?outputType=xml", "https://www.eluniverso.com/economia/", "EC", Category.ECONOMICS, 82],
+  ["EL_COMERCIO_EC", "El Comercio Ecuador", "https://www.elcomercio.com/arc/outboundfeeds/rss/category/economia/?outputType=xml", "https://www.elcomercio.com/economia/", "EC", Category.ECONOMICS, 80],
+  ["PRIMICIAS_EC", "Primicias", "https://www.primicias.ec/feed/", "https://www.primicias.ec/", "EC", Category.ECONOMICS, 78],
+  ["EXPRESO_EC", "El Universo Expreso", "https://www.eluniverso.com/arc/outboundfeeds/rss/category/negocios/?outputType=xml", "https://www.eluniverso.com/negocios/", "EC", Category.FINANCE, 78],
+
+  // Venezuela
+  ["EL_NACIONAL_VE", "El Nacional", "https://www.elnacional.com/feed/", "https://www.elnacional.com/", "VE", Category.ECONOMICS, 76],
+  ["EL_PITAZO_VE", "El Pitazo Economia", "https://elpitazo.net/category/economia/feed/", "https://elpitazo.net/", "VE", Category.ECONOMICS, 74],
+  ["CRONICA_UNO_VE", "Cronica Uno", "https://cronica.uno/feed/", "https://cronica.uno/", "VE", Category.MARKETS, 72],
+  ["EFECTO_COCUYO_VE", "Efecto Cocuyo", "https://efectococuyo.com/feed/", "https://efectococuyo.com/", "VE", Category.MARKETS, 74],
+
+  // Bolivia
+  ["LOS_TIEMPOS_BO", "Los Tiempos", "https://www.lostiempos.com/rss/economia.xml", "https://www.lostiempos.com/", "BO", Category.ECONOMICS, 78],
+  ["EL_DIARIO_BO", "El Diario", "https://www.eldiario.net/portal/feed/", "https://www.eldiario.net/", "BO", Category.ECONOMICS, 74],
+  ["OPINION_BO", "Opinion Economia", "https://www.opinion.com.bo/rss/economia", "https://www.opinion.com.bo/", "BO", Category.ECONOMICS, 76],
+  ["LA_RAZON_BO", "La Razon Bolivia", "https://www.la-razon.com/rss/economia", "https://www.la-razon.com/", "BO", Category.ECONOMICS, 76],
+
+  // Costa Rica
+  ["LA_NACION_CR", "La Nacion Costa Rica", "https://www.nacion.com/rss/economia.xml", "https://www.nacion.com/economia/", "CR", Category.ECONOMICS, 80],
+  ["CRHOY_CR", "CRHoy Economia", "https://www.crhoy.com/economia/feed/", "https://www.crhoy.com/economia/", "CR", Category.ECONOMICS, 76],
+  ["AMELIA_RUEDA_CR", "Amelia Rueda", "https://www.ameliarueda.com/feed/", "https://www.ameliarueda.com/", "CR", Category.MARKETS, 74],
+  ["DIARIO_EXTRA_CR", "Diario Extra", "https://www.diarioextra.com/feed/", "https://www.diarioextra.com/", "CR", Category.MARKETS, 72],
+
+  // Panama
+  ["LA_PRENSA_PA", "La Prensa Panama", "https://www.prensa.com/rss/economia/", "https://www.prensa.com/economia/", "PA", Category.ECONOMICS, 80],
+  ["PANAMA_AMERICA_PA", "Panama America", "https://www.panamaamerica.com.pa/rss/economia", "https://www.panamaamerica.com.pa/", "PA", Category.ECONOMICS, 78],
+  ["CRITICA_PA", "Critica Economia", "https://www.critica.com.pa/rss/economia", "https://www.critica.com.pa/", "PA", Category.ECONOMICS, 76],
+  ["MI_DIARIO_PA", "Mi Diario", "https://www.midiario.com/rss/economia", "https://www.midiario.com/", "PA", Category.ECONOMICS, 74],
+
+  // Finland
+  ["YLE_FI", "Yle News", "https://feeds.yle.fi/uutiset/v1/majorHeadlines.rss", "https://yle.fi/", "FI", Category.MARKETS, 84],
+  ["HS_FI", "Helsingin Sanomat", "https://www.hs.fi/rss/talous.xml", "https://www.hs.fi/talous/", "FI", Category.FINANCE, 84],
+  ["YLE_ECON_FI", "Yle Economy", "https://feeds.yle.fi/uutiset/v1/recent.rss?publisherIds=YLE_UUTISET", "https://yle.fi/uutiset", "FI", Category.ECONOMICS, 82],
+  ["BOF_FI", "Bank of Finland", "https://www.bof.fi/en/rss/", "https://www.bof.fi/en/", "FI", Category.ECONOMICS, 96],
+
+  // Greece
+  ["EKATHIMERINI_GR", "Ekathimerini", "https://www.ekathimerini.com/rss", "https://www.ekathimerini.com/", "GR", Category.ECONOMICS, 82],
+  ["NAFTEMPORIKI_GR", "Naftemporiki", "https://www.naftemporiki.gr/rss", "https://www.naftemporiki.gr/", "GR", Category.FINANCE, 84],
+  ["KATHIMERINI_GR", "Kathimerini English", "https://www.ekathimerini.com/rss/business", "https://www.ekathimerini.com/business", "GR", Category.FINANCE, 82],
+  ["AMNA_GR", "AMNA Economy", "https://www.amna.gr/en/rss/economy", "https://www.amna.gr/en", "GR", Category.ECONOMICS, 80],
+
+  // Czech Republic
+  ["HN_CZ", "Hospodarske Noviny", "https://hn.cz/rss", "https://hn.cz/", "CZ", Category.FINANCE, 84],
+  ["CTK_CZ", "CTK Business", "https://www.ceskenoviny.cz/rss.php", "https://www.ceskenoviny.cz/", "CZ", Category.ECONOMICS, 82],
+  ["RADIO_PRAGUE_CZ", "Radio Prague", "https://english.radio.cz/rss", "https://english.radio.cz/", "CZ", Category.MARKETS, 78],
+  ["CNB_CZ", "Czech National Bank", "https://www.cnb.cz/en/rss/", "https://www.cnb.cz/en/", "CZ", Category.ECONOMICS, 96],
+
+  // Romania
+  ["ROMANIA_INSIDER_RO", "Romania Insider", "https://www.romania-insider.com/rss", "https://www.romania-insider.com/", "RO", Category.ECONOMICS, 78],
+  ["HOTNEWS_RO", "HotNews", "https://www.hotnews.ro/rss", "https://www.hotnews.ro/", "RO", Category.MARKETS, 76],
+  ["ZF_RO", "Ziarul Financiar", "https://www.zf.ro/rss", "https://www.zf.ro/", "RO", Category.FINANCE, 82],
+  ["AGERPRES_RO", "Agerpres Economy", "https://www.agerpres.ro/english/rss/economy", "https://www.agerpres.ro/english", "RO", Category.ECONOMICS, 80],
+
+  // Hungary
+  ["BBJ_HU", "Budapest Business Journal", "https://bbj.hu/feed/", "https://bbj.hu/", "HU", Category.FINANCE, 82],
+  ["PORTFOLIO_HU", "Portfolio.hu", "https://www.portfolio.hu/rss/all.xml", "https://www.portfolio.hu/", "HU", Category.FINANCE, 84],
+  ["TELEX_HU", "Telex", "https://telex.hu/rss", "https://telex.hu/", "HU", Category.MARKETS, 78],
+  ["MNB_HU", "Magyar Nemzeti Bank", "https://www.mnb.hu/en/rss", "https://www.mnb.hu/en", "HU", Category.ECONOMICS, 96],
+
+  // Slovakia
+  ["SPECTATOR_SK", "The Slovak Spectator", "https://spectator.sme.sk/rss", "https://spectator.sme.sk/", "SK", Category.ECONOMICS, 78],
+  ["TA3_SK", "TA3", "https://www.ta3.com/rss", "https://www.ta3.com/", "SK", Category.MARKETS, 74],
+  ["SME_SK", "SME Ekonomika", "https://www.sme.sk/rss/ekonomika", "https://www.sme.sk/ekonomika", "SK", Category.ECONOMICS, 80],
+  ["NBS_SK", "National Bank of Slovakia", "https://www.nbs.sk/en/rss/", "https://www.nbs.sk/en/", "SK", Category.ECONOMICS, 96],
+
+  // Croatia
+  ["TOTAL_CROATIA_HR", "Total Croatia News", "https://www.total-croatia-news.com/feed", "https://www.total-croatia-news.com/", "HR", Category.MARKETS, 76],
+  ["JUTARNJI_HR", "Jutarnji Ekonomija", "https://www.jutarnji.hr/rss/ekonomija", "https://www.jutarnji.hr/", "HR", Category.ECONOMICS, 80],
+  ["HINA_HR", "HINA", "https://www.hina.hr/rss", "https://www.hina.hr/", "HR", Category.MARKETS, 78],
+  ["POSLOVNI_HR", "Poslovni Dnevnik", "https://www.poslovni.hr/rss", "https://www.poslovni.hr/", "HR", Category.FINANCE, 80],
+
+  // Serbia
+  ["B92_RS", "B92", "https://www.b92.net/rss", "https://www.b92.net/", "RS", Category.MARKETS, 78],
+  ["N1_RS", "N1 Serbia", "https://rs.n1info.com/feed/", "https://rs.n1info.com/", "RS", Category.MARKETS, 76],
+  ["DANAS_RS", "Danas", "https://www.danas.rs/feed/", "https://www.danas.rs/", "RS", Category.ECONOMICS, 76],
+  ["BIZLIFE_RS", "BizLife", "https://bizlife.rs/feed/", "https://bizlife.rs/", "RS", Category.FINANCE, 78],
+
+  // Bulgaria
+  ["SOFIA_GLOBE_BG", "Sofia Globe", "https://sofiaglobe.com/feed/", "https://sofiaglobe.com/", "BG", Category.MARKETS, 76],
+  ["CAPITAL_BG", "Capital.bg", "https://www.capital.bg/rss", "https://www.capital.bg/", "BG", Category.FINANCE, 82],
+  ["NOVINITE_BG", "Novinite", "https://www.novinite.com/rss", "https://www.novinite.com/", "BG", Category.MARKETS, 76],
+  ["BNB_BG", "Bulgarian National Bank", "https://www.bnb.bg/English/RSS/index.htm", "https://www.bnb.bg/", "BG", Category.ECONOMICS, 96],
+
+  // Iceland
+  ["ICELAND_REVIEW_IS", "Iceland Review", "https://www.icelandreview.com/feed/", "https://www.icelandreview.com/", "IS", Category.MARKETS, 76],
+  ["RU_IS", "RUV English", "https://www.ruv.is/rss/english", "https://www.ruv.is/english", "IS", Category.MARKETS, 80],
+  ["MBL_IS", "Morgunbladid", "https://www.mbl.is/feeds/fp/", "https://www.mbl.is/", "IS", Category.ECONOMICS, 78],
+  ["CBI_IS", "Central Bank of Iceland", "https://www.cb.is/rss/", "https://www.cb.is/", "IS", Category.ECONOMICS, 96],
+
+  // Senegal
+  ["SENEWEB_SN", "Seneweb", "https://www.seneweb.com/rss.xml", "https://www.seneweb.com/", "SN", Category.MARKETS, 74],
+  ["DAKARACTU_SN", "Dakaractu", "https://www.dakaractu.com/rss.xml", "https://www.dakaractu.com/", "SN", Category.MARKETS, 74],
+  ["APS_SN", "APS Senegal", "https://www.aps.sn/rss", "https://www.aps.sn/", "SN", Category.ECONOMICS, 78],
+  ["LEQUOTIDIEN_SN", "Le Quotidien", "https://www.lequotidien.sn/feed/", "https://www.lequotidien.sn/", "SN", Category.ECONOMICS, 74],
+
+  // Cameroon
+  ["CAMEROON_TRIBUNE_CM", "Cameroon Tribune", "https://www.cameroon-tribune.cm/rss", "https://www.cameroon-tribune.cm/", "CM", Category.ECONOMICS, 76],
+  ["JOURNALDU_CAMEROUN_CM", "Journal du Cameroun", "https://www.journalducameroun.com/feed/", "https://www.journalducameroun.com/", "CM", Category.MARKETS, 74],
+  ["CAMEROON_INFO_CM", "Cameroon Info", "https://www.cameroon-info.net/feed", "https://www.cameroon-info.net/", "CM", Category.MARKETS, 72],
+  ["INVESTIR_AU_CAMEROUN_CM", "Investir au Cameroun", "https://www.investiraucameroun.com/feed/", "https://www.investiraucameroun.com/", "CM", Category.FINANCE, 76],
+
+  // Rwanda
+  ["NEW_TIMES_RW", "The New Times Rwanda", "https://www.newtimes.co.rw/rss", "https://www.newtimes.co.rw/", "RW", Category.ECONOMICS, 78],
+  ["KT_PRESS_RW", "KT Press", "https://www.ktpress.rw/feed/", "https://www.ktpress.rw/", "RW", Category.MARKETS, 74],
+  ["IGIHE_RW", "Igihe", "https://en.igihe.com/rss", "https://en.igihe.com/", "RW", Category.MARKETS, 74],
+  ["RBA_RW", "Rwanda Broadcasting Agency", "https://www.rba.co.rw/rss", "https://www.rba.co.rw/", "RW", Category.MARKETS, 76],
+
+  // Zambia
+  ["LUSAKA_TIMES_ZM", "Lusaka Times", "https://www.lusakatimes.com/feed/", "https://www.lusakatimes.com/", "ZM", Category.MARKETS, 74],
+  ["ZNBC_ZM", "ZNBC News", "https://www.znbc.co.zm/feed/", "https://www.znbc.co.zm/", "ZM", Category.MARKETS, 72],
+  ["DAILY_MAIL_ZM", "Daily Mail Zambia", "https://www.daily-mail.co.zm/feed/", "https://www.daily-mail.co.zm/", "ZM", Category.ECONOMICS, 74],
+  ["TIMES_ZM", "Times of Zambia", "https://www.times.co.zm/feed/", "https://www.times.co.zm/", "ZM", Category.ECONOMICS, 74],
+
+  // Mauritius
+  ["DEFI_MU", "Defi Media", "https://defimedia.info/rss", "https://defimedia.info/", "MU", Category.FINANCE, 78],
+  ["ION_NEWS_MU", "ION News", "https://ionnews.mu/feed/", "https://ionnews.mu/", "MU", Category.MARKETS, 74],
+  ["LE_MAURICIEN_MU", "Le Mauricien", "https://www.lemauricien.com/feed/", "https://www.lemauricien.com/", "MU", Category.ECONOMICS, 76],
+  ["MAURITIUS_TIMES_MU", "Mauritius Times", "https://www.mauritiustimes.com/feed/", "https://www.mauritiustimes.com/", "MU", Category.ECONOMICS, 74],
 ] as const;
 
 export const COUNTRY_PUBLISHERS: CountrySourceSeed[] = rowsToSources([...COUNTRY_ROWS]);

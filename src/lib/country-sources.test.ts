@@ -51,8 +51,8 @@ test("seed catalog has unique codes and urls and is at least 1500 sources", () =
   const { codes, urls, live } = allSeedSources();
   assert.equal(new Set(codes).size, codes.length, "duplicate source codes");
   assert.equal(new Set(urls).size, urls.length, "duplicate source urls");
-  assert.ok(live.length >= 1500, `live country sources ${live.length} < 1500`);
-  assert.ok(codes.length >= 1500, `total unique sources ${codes.length} < 1500`);
+  assert.ok(live.length >= 2000, `live country sources ${live.length} < 2000`);
+  assert.ok(codes.length >= 2000, `total unique sources ${codes.length} < 2000`);
 });
 
 test("catalog includes at least one hundred Investing.com RSS sources", () => {

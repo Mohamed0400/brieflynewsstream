@@ -48,7 +48,7 @@ test("public dashboard metrics match API-backed records", async ({ page, request
   })).toBeVisible();
   await expect(page.locator(".homepage-country-chip")).toHaveCount(countries.supportedCount);
   await expect(page.getByRole("heading", { name: "Data overview" })).toBeVisible();
-  await expect(page.locator(".homepage-overview-card").filter({ hasText: "Countries covered" })).toContainText("70+");
+  await expect(page.locator(".homepage-overview-card").filter({ hasText: "Countries covered" })).toContainText("100+");
   await expect(page.locator(".homepage-overview-card").filter({ hasText: "Languages supported" })).toContainText("AR + EN");
 });
 

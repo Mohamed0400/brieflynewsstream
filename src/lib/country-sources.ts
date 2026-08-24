@@ -655,6 +655,15 @@ const FILL_COUNTRY_TOPICS: Array<[string, string, string, Category]> = [
   ["GOLD", "Gold", "(gold OR bullion OR \"precious metals\")", Category.GOLD],
 ];
 
+/** Broad market topics for every catalog country (adds ~500 supplemental feeds). */
+const WIDE_COUNTRY_TOPICS: Array<[string, string, string, Category]> = [
+  ["PROPERTY", "Property", "(real estate OR property OR housing OR mortgage)", Category.FINANCE],
+  ["TECH", "Tech", "(technology OR fintech OR startups OR \"digital economy\")", Category.MARKETS],
+  ["MINING", "Mining", "(mining OR metals OR commodities OR copper)", Category.COMMODITIES],
+  ["DEBT", "Debt", "(bonds OR debt OR treasury OR \"sovereign debt\")", Category.FINANCE],
+  ["LABOR", "Labor", "(employment OR jobs OR wages OR unemployment)", Category.ECONOMICS],
+];
+
 /**
  * Backup coverage for every catalog country so a thin market is not left empty.
  * Existing GNEWS_* rows in COUNTRY_SOURCES are skipped.
@@ -722,6 +731,16 @@ export function generatedCountrySources(): CountrySourceSeed[] {
     }
     for (const [suffix, label, query, category] of FILL_COUNTRY_TOPICS) {
       if ((counts.get(item.code) ?? 0) >= MIN_SOURCES_PER_COUNTRY) break;
+      push(googleNewsSource(
+        `GNEWS_${item.code}_${suffix}`,
+        `${item.country} ${label}`,
+        `${item.country} ${query}`,
+        item.code,
+        "en",
+        category,
+      ));
+    }
+    for (const [suffix, label, query, category] of WIDE_COUNTRY_TOPICS) {
       push(googleNewsSource(
         `GNEWS_${item.code}_${suffix}`,
         `${item.country} ${label}`,

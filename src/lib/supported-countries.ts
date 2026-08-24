@@ -82,13 +82,14 @@ const REGION_MEMBERS: Record<CountryRegionKey, string[]> = {
   ],
   africa: [
     "MA", "TN", "DZ", "LY", "SD", "MR", "DJ", "SO", "KM", "NG", "KE", "ET",
-    "GH", "ZA", "AO", "CI", "TZ", "UG",
+    "GH", "ZA", "AO", "CI", "TZ", "UG", "SN", "CM", "RW", "ZM", "MU",
   ],
   europe: [
     "GB", "DE", "FR", "IT", "ES", "NL", "CH", "BE", "AT", "SE", "NO", "DK",
-    "PL", "UA", "RU", "PT", "IE", "EU",
+    "PL", "UA", "RU", "PT", "IE", "FI", "GR", "CZ", "RO", "HU", "SK", "HR",
+    "RS", "BG", "IS", "EU",
   ],
-  americas: ["US", "CA", "MX", "BR", "AR", "CL", "PY"],
+  americas: ["US", "CA", "MX", "BR", "AR", "CL", "PY", "CO", "PE", "UY", "EC", "VE", "BO", "CR", "PA"],
   asia_pacific: [
     "IN", "BD", "PH", "LK", "PK", "NP", "ID", "AF", "KZ", "CN", "JP", "KR",
     "HK", "TW", "MY", "SG", "TH", "VN", "AU", "NZ",

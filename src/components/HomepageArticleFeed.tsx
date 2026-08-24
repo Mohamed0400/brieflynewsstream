@@ -165,9 +165,9 @@ export function HomepageArticleFeed({
                 <span>{article.country} | {regionToCode(article.region)}</span>
               </div>
               <h2>
-                <a href={article.url} target="_blank" rel="noopener noreferrer">
+                <Link href={lang === "en" ? `/news/${article.id}?lang=en` : `/news/${article.id}`}>
                   {localized.title}
-                </a>
+                </Link>
               </h2>
               {localized.summary && (
                 <p className="mkt-news-article-summary">
@@ -175,7 +175,9 @@ export function HomepageArticleFeed({
                 </p>
               )}
               <p className="mkt-news-article-source">
-                {publicSourceName(article.publisher || article.source.name)}
+                <a href={article.url} target="_blank" rel="noopener noreferrer">
+                  {publicSourceName(article.publisher || article.source.name)}
+                </a>
                 {" | "}{timeFormat.format(article.publishedAt)}
               </p>
             </div>

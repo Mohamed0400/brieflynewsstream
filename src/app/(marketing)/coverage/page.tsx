@@ -106,9 +106,41 @@ export default async function CoveragePage({
             </ul>
           </section>
         ))}
+        <section className="mkt-coverage-region" aria-label={isEn ? "Regional hubs" : "مراكز إقليمية"}>
+          <h2 className="mkt-coverage-region-title">
+            {isEn ? "Regional hubs" : "مراكز إقليمية"}
+          </h2>
+          <ul className="mkt-chip-list">
+            {(
+              [
+                ["mena", isEn ? "MENA" : "الشرق الأوسط وشمال أفريقيا"],
+                ["gcc", isEn ? "GCC" : "الخليج"],
+                ["europe", isEn ? "Europe" : "أوروبا"],
+                ["saudi-arabia", isEn ? "Saudi Arabia" : "السعودية"],
+                ["uae", isEn ? "UAE" : "الإمارات"],
+                ["egypt", isEn ? "Egypt" : "مصر"],
+                ["united-kingdom", isEn ? "United Kingdom" : "المملكة المتحدة"],
+                ["germany", isEn ? "Germany" : "ألمانيا"],
+                ["france", isEn ? "France" : "فرنسا"],
+              ] as const
+            ).map(([slug, label]) => (
+              <li key={slug}>
+                <Link
+                  className="mkt-chip"
+                  href={isEn ? `/markets/${slug}?lang=en` : `/markets/${slug}`}
+                >
+                  {label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
         <div className="mkt-cta-row" style={{ marginTop: "2rem" }}>
           <Link href={news} className="mkt-btn mkt-btn-primary">
             {isEn ? "Open briefing" : "افتح الموجز"}
+          </Link>
+          <Link href={isEn ? "/guides?lang=en" : "/guides"} className="mkt-btn mkt-btn-ghost">
+            {isEn ? "Guides" : "أدلة"}
           </Link>
         </div>
       </div>

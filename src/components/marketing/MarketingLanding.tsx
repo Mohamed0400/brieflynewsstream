@@ -10,6 +10,7 @@ import {
   Stack,
   Translate,
 } from "@phosphor-icons/react/ssr";
+import { MarketingReveal } from "@/components/marketing/MarketingReveal";
 import { PricingPlans } from "@/components/marketing/PricingPlans";
 import { COUNTRY_CATALOG } from "@/lib/countries";
 import { marketingCopy, type MarketingLang } from "@/lib/marketing-copy";
@@ -95,12 +96,17 @@ export function MarketingLanding({
   ];
 
   const capabilities = [
-    { n: "01", icon: <Globe {...icon} />, title: copy.intelCap1Title, body: copy.intelCap1Body },
-    { n: "02", icon: <ChartLineUp {...icon} />, title: copy.intelCap2Title, body: copy.intelCap2Body },
+    { n: "01", icon: <ChartLineUp {...icon} />, title: copy.intelCap1Title, body: copy.intelCap1Body },
+    { n: "02", icon: <Globe {...icon} />, title: copy.intelCap2Title, body: copy.intelCap2Body },
     { n: "03", icon: <Code {...icon} />, title: copy.intelCap3Title, body: copy.intelCap3Body },
     { n: "04", icon: <Translate {...icon} />, title: copy.intelCap4Title, body: copy.intelCap4Body },
     { n: "05", icon: <Archive {...icon} />, title: copy.intelCap5Title, body: copy.intelCap5Body },
     { n: "06", icon: <PlugsConnected {...icon} />, title: copy.intelCap6Title, body: copy.intelCap6Body },
+  ];
+
+  const roadmapItems = [
+    { title: copy.roadmapEventTitle, body: copy.roadmapEventBody },
+    { title: copy.roadmapAssetTitle, body: copy.roadmapAssetBody },
   ];
 
   const flowSteps = [
@@ -192,6 +198,29 @@ export function MarketingLanding({
         </div>
       </section>
 
+      <MarketingReveal as="section" className="mkt-manifesto" aria-labelledby="mkt-manifesto-title">
+        <h2 id="mkt-manifesto-title">{copy.manifestoTitle}</h2>
+        <p className="mkt-manifesto-lede">{copy.manifestoLede}</p>
+        <p className="mkt-definition" data-aeo-answer>
+          {copy.definitionAnswer}
+        </p>
+      </MarketingReveal>
+
+      <section className="mkt-contrast" aria-labelledby="mkt-contrast-title">
+        <h2 id="mkt-contrast-title" className="mkt-visually-hidden">
+          {lang === "en" ? "How Briefly differs" : "كيف تختلف Briefly"}
+        </h2>
+        <MarketingReveal as="p" className="mkt-contrast-other">
+          {copy.contrastOther}
+        </MarketingReveal>
+        <MarketingReveal as="p" className="mkt-contrast-briefly" delayMs={80}>
+          <em>{copy.contrastBrand}</em>
+          {copy.contrastBrieflyBefore}
+          <span>{copy.contrastBrieflyEm}</span>
+          {copy.contrastBrieflyAfter}
+        </MarketingReveal>
+      </section>
+
       <section className="mkt-section mkt-signal">
         <div className="mkt-split-block">
           <div className="mkt-split-copy">
@@ -232,6 +261,18 @@ export function MarketingLanding({
             </li>
           ))}
         </ul>
+        <aside className="mkt-roadmap" aria-labelledby="mkt-roadmap-title">
+          <h3 id="mkt-roadmap-title">{copy.roadmapTitle}</h3>
+          <p>{copy.roadmapLede}</p>
+          <ul>
+            {roadmapItems.map((item) => (
+              <li key={item.title}>
+                <strong>{item.title}</strong>
+                <span>{item.body}</span>
+              </li>
+            ))}
+          </ul>
+        </aside>
       </section>
 
       <section className="mkt-section mkt-flow" aria-labelledby="mkt-flow-title">
@@ -267,12 +308,16 @@ export function MarketingLanding({
             <p>{copy.coverageLede}</p>
             <ul className="mkt-coverage-stats">
               <li>
-                <strong>{copy.scaleCountries}</strong>
+                <strong>{countryCount}+</strong>
                 <span>{copy.scaleCountriesHint}</span>
               </li>
               <li>
                 <strong>{copy.scaleCats}</strong>
                 <span>{copy.scaleCatsHint}</span>
+              </li>
+              <li>
+                <strong>{copy.scaleLangs}</strong>
+                <span>{copy.scaleLangsHint}</span>
               </li>
             </ul>
             <Link href={briefingHref} className="mkt-btn mkt-btn-primary">

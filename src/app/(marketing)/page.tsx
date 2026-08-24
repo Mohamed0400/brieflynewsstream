@@ -35,12 +35,13 @@ export async function generateMetadata({
     pathEn: "/?lang=en",
     keywords: [
       "Briefly NewsStream",
+      "market intelligence API",
       "market news API",
       "Arabic news API",
       "bilingual news API",
-      "Arabic English news API",
-      "global market news API",
-      "regional market news API",
+      "MENA news API",
+      "Gulf news API",
+      "Europe news API",
       "impact scoring news",
     ],
   });

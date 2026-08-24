@@ -8,6 +8,9 @@ const PUBLIC_ALLOW = [
   "/pricing",
   "/developers",
   "/coverage",
+  "/markets/",
+  "/guides",
+  "/guides/",
   "/privacy",
   "/terms",
   "/console/login",
@@ -23,6 +26,7 @@ const PUBLIC_ALLOW = [
   "/brand/",
   "/llms.txt",
   "/sitemap.xml",
+  "/news-sitemap.xml",
 ] as const;
 
 const PUBLIC_DISALLOW = [
@@ -69,7 +73,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: [...PUBLIC_DISALLOW],
       })),
     ],
-    sitemap: `${origin}/sitemap.xml`,
+    sitemap: [`${origin}/sitemap.xml`, `${origin}/news-sitemap.xml`],
     host: origin.replace(/^https?:\/\//, ""),
   };
 }

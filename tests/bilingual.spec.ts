@@ -105,14 +105,23 @@ test("homepage icon tags use stable favicon URLs", async ({ request }) => {
 
 test("landing market-intelligence copy is native in Arabic and English", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "ذكاء السوق، بصيغة جاهزة للاستخدام" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "من الخبر إلى بيانات يمكنك البناء عليها" })).toBeVisible();
-  await expect(page.getByText("واجهة API واحدة. ذكاء سوقي منظم. مصمم لما هو قادم.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "اعرف أي خبر يهم الأسواق" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      name: "واجهة ذكاء أسواق للمنتجات التي تحتاج أن تفهم أي خبر يهم الأسواق.",
+    }),
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "مصمّم لذكاء الأسواق" })).toBeVisible();
 
   await page.goto("/?lang=en");
-  await expect(page.getByRole("heading", { name: "Built for Market Intelligence" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "From News to Actionable Data" })).toBeVisible();
-  await expect(page.getByText("One API. Structured market intelligence. Built for what comes next.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Know what news matters to markets" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      name: "Market intelligence API for products that need to understand what news matters to markets.",
+    }),
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Built for market intelligence" })).toBeVisible();
+  await expect(page.getByText("Other news API providers = more news.")).toBeVisible();
   await expect(page.locator(".mkt-demo-url code")).toHaveText("/api/v1/market-news?category=oil&region=global&sort=score");
 });
 

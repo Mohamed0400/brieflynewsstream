@@ -7,8 +7,8 @@ export type SeoLang = "ar" | "en";
 
 export const SITE_NAME = "Briefly NewsStream";
 export const SITE_NAME_AR = "Briefly NewsStream";
-export const PRODUCT_LINE_AR = "موجز أخبار الأسواق العالمية و المحلية";
-export const PRODUCT_LINE_EN = "Global and local market news briefing";
+export const PRODUCT_LINE_AR = "واجهة ذكاء أسواق";
+export const PRODUCT_LINE_EN = "Market Intelligence API";
 
 export function siteTitle(lang: SeoLang, page?: string) {
   const line = lang === "en" ? PRODUCT_LINE_EN : PRODUCT_LINE_AR;
@@ -26,13 +26,13 @@ export const OG_IMAGE_PATH = mediaUrl("ogShare", {
 export const OG_IMAGE_WIDTH = 1200;
 export const OG_IMAGE_HEIGHT = 630;
 export const OG_SHARE_TAGLINE =
-  "Global and local market news briefing. Scored, bilingual, and ready for products.";
+  "Market intelligence API with impact scores and bilingual fields, ready for products.";
 export const OG_SHARE_TAGLINE_AR =
-  "موجز أخبار الأسواق العالمية و المحلية. منظّم، ثنائي اللغة، وجاهز للمنتجات.";
+  "واجهة ذكاء أسواق بدرجات أثر وحقول ثنائية اللغة، جاهزة للمنتجات.";
 
 /** Square brand mark on a light ground. Google shows this beside the site name. */
 export function brandLogoUrl() {
-  return absoluteUrl("/brand/logo-mark-on-light.png");
+  return absoluteUrl("/favicon-192x192.png");
 }
 
 export function brandWordmarkUrl() {
@@ -44,8 +44,8 @@ export function brandLogoJsonLd() {
     "@type": "ImageObject",
     url: brandLogoUrl(),
     contentUrl: brandLogoUrl(),
-    width: 1024,
-    height: 1024,
+    width: 192,
+    height: 192,
     caption: SITE_NAME,
   };
 }
@@ -72,6 +72,7 @@ export const GEO_TARGET_COUNTRIES = [
   { code: "QA", en: "Qatar", ar: "قطر" },
   { code: "BH", en: "Bahrain", ar: "البحرين" },
   { code: "OM", en: "Oman", ar: "عمان" },
+  { code: "KW", en: "Kuwait", ar: "الكويت" },
   { code: "EG", en: "Egypt", ar: "مصر" },
   { code: "JO", en: "Jordan", ar: "الأردن" },
   { code: "LB", en: "Lebanon", ar: "لبنان" },
@@ -85,6 +86,14 @@ export const GEO_TARGET_COUNTRIES = [
   { code: "DZ", en: "Algeria", ar: "الجزائر" },
   { code: "LY", en: "Libya", ar: "ليبيا" },
   { code: "MR", en: "Mauritania", ar: "موريتانيا" },
+  { code: "GB", en: "United Kingdom", ar: "المملكة المتحدة" },
+  { code: "DE", en: "Germany", ar: "ألمانيا" },
+  { code: "FR", en: "France", ar: "فرنسا" },
+  { code: "NL", en: "Netherlands", ar: "هولندا" },
+  { code: "IT", en: "Italy", ar: "إيطاليا" },
+  { code: "ES", en: "Spain", ar: "إسبانيا" },
+  { code: "TR", en: "Turkey", ar: "تركيا" },
+  { code: "US", en: "United States", ar: "الولايات المتحدة" },
 ] as const;
 
 export const GEO_AREA_SERVED = [
@@ -92,6 +101,7 @@ export const GEO_AREA_SERVED = [
   "Middle East",
   "Gulf Cooperation Council",
   "MENA",
+  "Europe",
   "Arabic-speaking countries",
   ...GEO_TARGET_COUNTRIES.map((c) => c.en),
 ] as const;
@@ -105,6 +115,7 @@ export const SEO_KEYWORDS_EN = [
   "REST news API",
   "realtime news API",
   "real-time news API",
+  "market intelligence API",
   "market briefing API",
   "breaking news API",
   "headlines API",
@@ -113,6 +124,11 @@ export const SEO_KEYWORDS_EN = [
   "worldwide news API",
   "global news API",
   "international news API",
+  "European news API",
+  "Europe market news API",
+  "UK news API",
+  "Germany news API",
+  "France news API",
   "market news API",
   "financial news API",
   "business news API",
@@ -148,6 +164,7 @@ export const SEO_KEYWORDS_EN = [
 /** Arabic / bilingual discovery terms including Middle East and Arabic-speaking markets. */
 export const SEO_KEYWORDS_AR = [
   "Briefly NewsStream",
+  "واجهة ذكاء أسواق",
   "واجهة برمجة أخبار",
   "API أخبار",
   "أخبار الأسواق",
@@ -156,6 +173,7 @@ export const SEO_KEYWORDS_AR = [
   "واجهة أخبار ثنائية اللغة",
   "أخبار الشرق الأوسط",
   "أخبار الخليج",
+  "أخبار أوروبا",
   "أخبار الدول العربية",
   "أخبار السعودية",
   "أخبار الإمارات",
@@ -174,17 +192,17 @@ export const SEO_KEYWORDS_AR = [
 
 /** Answer-first descriptions for SEO + AI Overviews / AEO. */
 export const SEO_DESCRIPTION_EN =
-  "Briefly NewsStream is a global and local market news briefing: Arabic and English fields, impact scores, and about 70 countries in one API for products.";
+  "Briefly NewsStream is a market intelligence API: Arabic and English fields, impact scores, and 100+ countries in one API for products across MENA, the Gulf, Europe, and global markets.";
 
 export const SEO_DESCRIPTION_AR =
-  "Briefly NewsStream موجز أخبار الأسواق العالمية و المحلية: حقول عربية وإنجليزية، درجات أثر، ونحو ٧٠ دولة في واجهة واحدة للمنتجات.";
+  "Briefly NewsStream واجهة ذكاء أسواق: حقول عربية وإنجليزية، درجات أثر، وأكثر من ١٠٠ دولة في واجهة واحدة للمنتجات عبر الشرق الأوسط والخليج وأوروبا والأسواق العالمية.";
 
 /** Short direct answers AI systems can cite (also used in FAQ / speakable). */
 export const AEO_ENTITY_ANSWER_EN =
-  "Briefly NewsStream is a global and local market news briefing with Arabic and English fields and impact scoring.";
+  "Briefly NewsStream is a market intelligence API with Arabic and English fields and impact scoring for products that need to know which news matters to markets.";
 
 export const AEO_ENTITY_ANSWER_AR =
-  "Briefly NewsStream موجز أخبار الأسواق العالمية و المحلية، بحقول عربية وإنجليزية ودرجات أثر.";
+  "Briefly NewsStream واجهة ذكاء أسواق بحقول عربية وإنجليزية ودرجات أثر للمنتجات التي تحتاج أن تعرف أي خبر يهم الأسواق.";
 
 export function absoluteUrl(path = "/") {
   const origin = publicSiteUrl();
@@ -218,10 +236,11 @@ export function ogImages(alt = SITE_NAME) {
 /** Geo + language meta for search engines and AI crawlers. */
 export function geoMetaTags(): Record<string, string> {
   return {
-    "geo.placename": GEO_PRIMARY.region,
+    "geo.placename": "Middle East, Gulf Cooperation Council, MENA, Europe",
     "content-language": "ar,en",
     "DC.language": "ar,en",
-    "audience": "developers, fintech, media, Middle East, Arabic-speaking markets",
+    audience:
+      "developers, fintech, media, Middle East, Gulf, Europe, Arabic-speaking markets",
   };
 }
 
@@ -303,6 +322,7 @@ function areaServedSchema() {
     { "@type": "Place", name: "Middle East" },
     { "@type": "Place", name: "Gulf Cooperation Council" },
     { "@type": "Place", name: "MENA" },
+    { "@type": "Place", name: "Europe" },
     { "@type": "AdministrativeArea", name: "Arabic-speaking countries" },
     ...GEO_TARGET_COUNTRIES.map((c) => ({
       "@type": "Country",
@@ -456,11 +476,12 @@ export function softwareApplicationJsonLd(lang: SeoLang) {
     ],
     featureList: [
       "Arabic-first bilingual AR+EN news API",
-      "Middle East market coverage",
+      "Middle East and Gulf market coverage",
+      "Europe and global country filters",
       "Arabic-speaking countries filters",
       "Market-impact scoring",
       "Community briefings",
-      "Coverage across approximately 70 countries",
+      "Coverage across 100+ countries",
       "Developer console with API keys and explorer",
       "Permanent article archive",
     ],
@@ -582,6 +603,45 @@ export function collectionPageJsonLd(input: {
     inLanguage: input.lang,
     isPartOf: { "@type": "WebSite", name: SITE_NAME, url: absoluteUrl("/") },
     about: areaServedSchema().slice(0, 8),
+  };
+}
+
+export function newsArticleJsonLd(input: {
+  lang: SeoLang;
+  id: string;
+  title: string;
+  summary: string;
+  url: string;
+  imageUrl?: string | null;
+  publishedAt: string;
+  sourceName: string;
+  country?: string;
+}) {
+  const pagePath = `/news/${input.id}`;
+  return {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: input.title.slice(0, 110),
+    description: input.summary.slice(0, 300),
+    datePublished: input.publishedAt,
+    dateModified: input.publishedAt,
+    inLanguage: input.lang,
+    mainEntityOfPage: absoluteUrl(pagePath),
+    url: absoluteUrl(pagePath),
+    image: input.imageUrl ? [input.imageUrl] : [ogShareAbsoluteUrl()],
+    author: {
+      "@type": "Organization",
+      name: input.sourceName,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: SITE_NAME,
+      logo: brandLogoJsonLd(),
+    },
+    isBasedOn: input.url,
+    about: input.country
+      ? { "@type": "Country", name: input.country }
+      : undefined,
   };
 }
 

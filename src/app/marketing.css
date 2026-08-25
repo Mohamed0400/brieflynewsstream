@@ -3859,10 +3859,6 @@ html[data-home-search] .mkt-news-page .homepage-feed-searching {
 }
 
 @media (max-width: 899px) {
-  .mkt-plan-pair .mkt-plan-featured {
-    order: -1;
-  }
-
   .mkt-regions-stage {
     min-height: 0;
   }

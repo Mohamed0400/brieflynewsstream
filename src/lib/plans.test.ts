@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { PLAN_DEFINITIONS, formatPlanCount, resolvePlanLimits } from "./plans";
+import { PLAN_DEFINITIONS, formatPlanCount, planPriceCents, resolvePlanLimits } from "./plans";
 import { pricingCopy } from "./pricing-copy";
 
 test("published plans match the production quota and key gates", () => {
@@ -18,21 +18,26 @@ test("published plans match the production quota and key gates", () => {
   assert.equal(PLAN_DEFINITIONS.ENTERPRISE.dailyRequests, 20_000);
   assert.equal(PLAN_DEFINITIONS.ENTERPRISE.maxKeys, 100);
   assert.equal(PLAN_DEFINITIONS.ENTERPRISE.commercialUse, true);
-  assert.equal(PLAN_DEFINITIONS.ENTERPRISE.listPriceMonthlyUsd, null);
+  assert.equal(PLAN_DEFINITIONS.ENTERPRISE.listPriceMonthlyUsd, 150);
+  assert.equal(planPriceCents("PRO"), 7000);
+  assert.equal(planPriceCents("ENTERPRISE"), 15000);
+  assert.equal(planPriceCents("FREE"), 0);
 });
 
 test("pricing copy quotes the same daily limits the API enforces", () => {
   const en = pricingCopy("en");
   const ar = pricingCopy("ar");
   const proQuota = `${formatPlanCount(PLAN_DEFINITIONS.PRO.dailyRequests)} ${en.featureQuotaUnit}`;
-  const entQuota = `${formatPlanCount(PLAN_DEFINITIONS.ENTERPRISE.dailyRequests)} ${en.featureQuotaUnit}${en.featureEntQuotaNote}`;
+  const entQuota = `${formatPlanCount(PLAN_DEFINITIONS.ENTERPRISE.dailyRequests)} ${en.featureQuotaUnit}`;
 
   assert.match(en.nextProof, new RegExp(String(PLAN_DEFINITIONS.FREE.dailyRequests)));
   assert.match(en.nextProof, new RegExp(formatPlanCount(PLAN_DEFINITIONS.PRO.dailyRequests)));
   assert.match(ar.nextProof, new RegExp(String(PLAN_DEFINITIONS.FREE.dailyRequests)));
   assert.match(ar.nextProof, new RegExp(formatPlanCount(PLAN_DEFINITIONS.PRO.dailyRequests)));
   assert.equal(proQuota, "500 requests a day");
-  assert.equal(entQuota, "20,000 requests a day by default, adjustable");
+  assert.equal(entQuota, "20,000 requests a day");
+  assert.equal(en.ctaEnterprise, "Start with Enterprise");
+  assert.match(en.pageLede, /\$150/);
 });
 
 test("account overrides replace the published daily cap", () => {

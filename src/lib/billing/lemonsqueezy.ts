@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import type { PlanTier } from "@prisma/client";
 import {
   createCheckout,
   lemonSqueezySetup,
@@ -6,6 +7,7 @@ import {
   listStores,
   listVariants,
 } from "@lemonsqueezy/lemonsqueezy.js";
+import { PLAN_DEFINITIONS, planPriceCents } from "@/lib/plans";
 import { publicSiteUrl } from "@/lib/site-url";
 
 export const LEMONSQUEEZY_PROVIDER = "lemonsqueezy";
@@ -20,8 +22,16 @@ function storeIdEnv() {
   return (process.env.LEMONSQUEEZY_STORE_ID || "").trim();
 }
 
-function variantIdEnv() {
-  return (process.env.LEMONSQUEEZY_VARIANT_ID || "").trim();
+function proVariantIdEnv() {
+  return (process.env.LEMONSQUEEZY_VARIANT_ID || process.env.LEMONSQUEEZY_PRO_VARIANT_ID || "").trim();
+}
+
+function enterpriseVariantIdEnv() {
+  return (process.env.LEMONSQUEEZY_ENTERPRISE_VARIANT_ID || "").trim();
+}
+
+function variantIdEnv(planTier: PlanTier = "PRO") {
+  return planTier === "ENTERPRISE" ? enterpriseVariantIdEnv() : proVariantIdEnv();
 }
 
 export function webhookSecret() {
@@ -29,7 +39,7 @@ export function webhookSecret() {
 }
 
 export function lemonSqueezyConfigured() {
-  return Boolean(apiKey() && storeIdEnv() && variantIdEnv());
+  return Boolean(apiKey() && storeIdEnv() && proVariantIdEnv());
 }
 
 export function ensureLemonSqueezy() {
@@ -43,10 +53,42 @@ export function ensureLemonSqueezy() {
   }
 }
 
-export async function resolveLemonSqueezyIds() {
+function variantMatchesPlan(
+  variant: { attributes: { name?: string | null; price?: number | null } },
+  planTier: PlanTier,
+) {
+  const name = (variant.attributes.name || "").toLowerCase();
+  const price = variant.attributes.price ?? 0;
+  const expectedCents = planPriceCents(planTier);
+  if (expectedCents > 0 && price === expectedCents) return true;
+  if (planTier === "ENTERPRISE") return name.includes("enterprise");
+  return name.includes("pro") && !name.includes("enterprise");
+}
+
+async function discoverVariantId(storeId: string, planTier: PlanTier) {
+  const products = await listProducts({ filter: { storeId } });
+  if (products.error || !products.data?.data?.length) {
+    throw new Error("lemonsqueezy_product_missing");
+  }
+  const ranked = [...products.data.data].sort((left, right) => {
+    const leftName = (left.attributes.name || "").toLowerCase();
+    const rightName = (right.attributes.name || "").toLowerCase();
+    const hint = planTier === "ENTERPRISE" ? "enterprise" : "pro";
+    return Number(rightName.includes(hint)) - Number(leftName.includes(hint));
+  });
+  for (const product of ranked) {
+    const variants = await listVariants({ filter: { productId: product.id } });
+    if (variants.error || !variants.data?.data?.length) continue;
+    const preferred = variants.data.data.find((row) => variantMatchesPlan(row, planTier));
+    if (preferred) return String(preferred.id);
+  }
+  throw new Error(planTier === "ENTERPRISE" ? "lemonsqueezy_enterprise_variant_missing" : "lemonsqueezy_variant_missing");
+}
+
+export async function resolveLemonSqueezyIds(planTier: PlanTier = "PRO") {
   ensureLemonSqueezy();
   let storeId = storeIdEnv();
-  let variantId = variantIdEnv();
+  let variantId = variantIdEnv(planTier);
 
   if (!storeId) {
     const stores = await listStores();
@@ -57,47 +99,47 @@ export async function resolveLemonSqueezyIds() {
   }
 
   if (!variantId) {
-    const products = await listProducts({ filter: { storeId } });
-    if (products.error || !products.data?.data?.length) {
-      throw new Error("lemonsqueezy_product_missing");
-    }
-    const product =
-      products.data.data.find((row) =>
-        (row.attributes.name || "").toLowerCase().includes("pro"),
-      ) ?? products.data.data[0];
-
-    const variants = await listVariants({
-      filter: { productId: product.id },
-    });
-    if (variants.error || !variants.data?.data?.length) {
-      throw new Error("lemonsqueezy_variant_missing");
-    }
-    const preferred =
-      variants.data.data.find((row) => {
-        const name = (row.attributes.name || "").toLowerCase();
-        return name.includes("pro") || row.attributes.price === 7000;
-      }) ?? variants.data.data[0];
-    variantId = String(preferred.id);
+    variantId = await discoverVariantId(storeId, planTier);
   }
 
   return { storeId, variantId };
 }
 
-export async function createProCheckout(input: {
+function checkoutCopy(planTier: PlanTier) {
+  const plan = PLAN_DEFINITIONS[planTier];
+  const price = plan.listPriceMonthlyUsd ?? 0;
+  if (planTier === "ENTERPRISE") {
+    return {
+      name: "Briefly NewsStream Enterprise",
+      description: `Enterprise plan — ${plan.dailyRequests.toLocaleString("en-US")} API requests/day, ${plan.maxKeys} keys, published SLA, billed at $${price}/month.`,
+    };
+  }
+  return {
+    name: "Briefly NewsStream Pro",
+    description: `Pro plan — ${plan.dailyRequests.toLocaleString("en-US")} API requests/day, commercial use, billed at $${price}/month.`,
+  };
+}
+
+export async function createPlanCheckout(input: {
   invoiceId: string;
   accountId: string;
   email?: string | null;
   invoiceNumber: string;
+  planTier: PlanTier;
 }) {
+  if (input.planTier !== "PRO" && input.planTier !== "ENTERPRISE") {
+    throw new Error("lemonsqueezy_unsupported_plan");
+  }
   ensureLemonSqueezy();
-  const { storeId, variantId } = await resolveLemonSqueezyIds();
+  const { storeId, variantId } = await resolveLemonSqueezyIds(input.planTier);
   const site = publicSiteUrl();
   const redirectUrl = `${site}/console/billing/success?invoice=${encodeURIComponent(input.invoiceId)}`;
+  const copy = checkoutCopy(input.planTier);
 
   const result = await createCheckout(storeId, variantId, {
     productOptions: {
-      name: "Briefly NewsStream Pro",
-      description: "Pro plan — 500 API requests/day, commercial use, billed monthly.",
+      name: copy.name,
+      description: copy.description,
       redirectUrl,
       receiptButtonText: "Open console",
       receiptLinkUrl: `${site}/console/overview`,
@@ -109,6 +151,7 @@ export async function createProCheckout(input: {
         invoice_id: input.invoiceId,
         account_id: input.accountId,
         invoice_number: input.invoiceNumber,
+        plan_tier: input.planTier,
       },
     },
     checkoutOptions: {
@@ -129,6 +172,15 @@ export async function createProCheckout(input: {
   }
 
   return { checkoutId, url, storeId, variantId };
+}
+
+export async function createProCheckout(input: {
+  invoiceId: string;
+  accountId: string;
+  email?: string | null;
+  invoiceNumber: string;
+}) {
+  return createPlanCheckout({ ...input, planTier: "PRO" });
 }
 
 export function verifyLemonSqueezySignature(rawBody: string, signature: string | null) {

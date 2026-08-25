@@ -55,6 +55,7 @@ test("customer self-pay is off while billing stays manual", () => {
 
 test("receipt PDF is a valid paid receipt", () => {
   assert.equal(formatUsd(7000), "$70.00");
+  assert.equal(formatUsd(15000), "$150.00");
   const pdf = buildReceiptPdf(EXAMPLE_RECEIPT);
   const text = pdf.toString("latin1");
   assert.ok(text.startsWith("%PDF-1.4"));

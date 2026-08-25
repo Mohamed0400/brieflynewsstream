@@ -25,7 +25,12 @@ export const limits = {
   googleNewsRss: intEnv("COLLECT_GNEWS_LIMIT", 12),
   /** Parallel RSS/HTML fetches per collect run. */
   collectConcurrency: Math.max(1, intEnv("COLLECT_CONCURRENCY", 4)),
-  /** Skip sources fetched successfully within this many hours (unless forced). */
+  /**
+   * Wall-clock budget for starting source fetches (collectAll + fillThinCountries).
+   * 0 = no deadline. Default 40 minutes so a GitHub job can finish normalize/edition.
+   */
+  collectBudgetMs: intEnv("COLLECT_BUDGET_MS", 2_400_000),
+  /** Skip sources fetched (ok or error) within this many hours (unless forced). */
   collectRefreshHours: Math.max(1, intEnv("COLLECT_REFRESH_HOURS", 4)),
   /** Minimum live articles each catalog country should hold in the freshness window. */
   minCountryArticles: Math.max(1, intEnv("MIN_COUNTRY_ARTICLES", 3)),

@@ -1,6 +1,6 @@
 import type { InvoiceStatus, PlanTier } from "@prisma/client";
 import {
-  createProCheckout,
+  createPlanCheckout,
   LEMONSQUEEZY_PROVIDER,
 } from "@/lib/billing/lemonsqueezy";
 import {
@@ -10,7 +10,7 @@ import {
   type InvoiceAction,
   type InvoiceLineItem,
 } from "@/lib/billing/types";
-import { PLAN_DEFINITIONS } from "@/lib/plans";
+import { PLAN_DEFINITIONS, planPriceCents } from "@/lib/plans";
 import { prisma } from "@/lib/prisma";
 
 function padInvoiceCount(count: number) {
@@ -26,13 +26,16 @@ export async function nextInvoiceNumber(prefix: "INV" | "EX") {
   return `${startsWith}${padInvoiceCount(count)}`;
 }
 
-function proLineItem(): InvoiceLineItem {
-  const unitCents = (PLAN_DEFINITIONS.PRO.listPriceMonthlyUsd ?? 70) * 100;
+function paidPlanLineItem(planTier: PlanTier): InvoiceLineItem {
+  if (planTier !== "PRO" && planTier !== "ENTERPRISE") {
+    throw new Error("free_plan_has_no_invoice");
+  }
+  const plan = PLAN_DEFINITIONS[planTier];
   return {
-    description: "Pro plan, monthly",
-    planTier: "PRO",
+    description: `${plan.label} plan, monthly`,
+    planTier,
     quantity: 1,
-    unitCents,
+    unitCents: planPriceCents(planTier),
   };
 }
 
@@ -68,15 +71,7 @@ export async function createPlanInvoice(input: {
   if (input.planTier === "FREE") {
     throw new Error("free_plan_has_no_invoice");
   }
-  const item =
-    input.planTier === "PRO"
-      ? proLineItem()
-      : {
-          description: "Enterprise plan",
-          planTier: "ENTERPRISE" as const,
-          quantity: 1,
-          unitCents: 0,
-        };
+  const item = paidPlanLineItem(input.planTier);
   const totalCents = item.unitCents * item.quantity;
   const status = input.status ?? "OPEN";
   const number = await nextInvoiceNumber(input.example ? "EX" : "INV");
@@ -122,13 +117,16 @@ export async function createPlanInvoice(input: {
   });
 }
 
-export async function requestProInvoice(accountId: string) {
+export async function requestPlanInvoice(accountId: string, planTier: PlanTier) {
+  if (planTier !== "PRO" && planTier !== "ENTERPRISE") {
+    throw new Error("free_plan_has_no_invoice");
+  }
   const existing = await prisma.invoice.findFirst({
     where: {
       accountId,
       example: false,
       status: "OPEN",
-      planTier: "PRO",
+      planTier,
     },
     include: { payments: { orderBy: { createdAt: "desc" } } },
   });
@@ -139,12 +137,16 @@ export async function requestProInvoice(accountId: string) {
   periodEnd.setUTCMonth(periodEnd.getUTCMonth() + 1);
   return createPlanInvoice({
     accountId,
-    planTier: "PRO",
-    description: "Pro plan, monthly",
+    planTier,
+    description: `${PLAN_DEFINITIONS[planTier].label} plan, monthly`,
     periodStart: now,
     periodEnd,
     dueAt: periodEnd,
   });
+}
+
+export async function requestProInvoice(accountId: string) {
+  return requestPlanInvoice(accountId, "PRO");
 }
 
 export async function applyInvoiceAdminAction(input: {
@@ -258,11 +260,12 @@ export async function payCustomerInvoice(accountId: string, invoiceId: string) {
       select: { email: true },
     });
     try {
-      const checkout = await createProCheckout({
+      const checkout = await createPlanCheckout({
         invoiceId: invoice.id,
         accountId,
         email: account?.email,
         invoiceNumber: invoice.number,
+        planTier: invoice.planTier,
       });
       await prisma.invoice.update({
         where: { id: invoice.id },

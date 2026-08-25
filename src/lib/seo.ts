@@ -468,9 +468,9 @@ export function softwareApplicationJsonLd(lang: SeoLang) {
       {
         "@type": "Offer",
         name: "Enterprise",
-        price: "0",
+        price: String(PLAN_DEFINITIONS.ENTERPRISE.listPriceMonthlyUsd),
         priceCurrency: "USD",
-        description: "Custom volume, SLA, and support. Contact sales.",
+        description: "Higher daily limits, more keys, priority support, and a published SLA. Request from Billing.",
         availability: "https://schema.org/InStock",
       },
     ],

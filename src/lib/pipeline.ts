@@ -26,10 +26,17 @@ import {
 import { categoryToCode, kuwaitDate } from "./market";
 import { limits } from "./limits";
 import { audienceValue } from "./nationalities";
+import {
+  collectDeadline,
+  shouldFetchSource,
+  shouldStartAnotherFetch,
+  sortSourcesOldestStaleFirst,
+} from "./collect-policy";
 
 export type PipelineResult = {
   sourcesOk: number;
   sourcesFailed: number;
+  deferred: number;
   rawCollected: number;
   articlesCreated: number;
   rejected: number;
@@ -46,11 +53,28 @@ function contentHash(title: string) {
   return createHash("sha256").update(normalized).digest("hex");
 }
 
-async function mapPool<T>(items: T[], concurrency: number, worker: (item: T) => Promise<void>) {
+async function mapPool<T>(
+  items: T[],
+  concurrency: number,
+  worker: (item: T) => Promise<void>,
+  options?: {
+    shouldStart?: () => boolean;
+    onDeferRemaining?: (remaining: T[]) => void;
+  },
+) {
   const queue = [...items];
   const size = Math.max(1, Math.min(concurrency, Math.max(1, queue.length)));
+  let stopped = false;
   await Promise.all(Array.from({ length: size }, async () => {
     while (queue.length) {
+      if (stopped) return;
+      if (options?.shouldStart && !options.shouldStart()) {
+        if (!stopped) {
+          stopped = true;
+          options.onDeferRemaining?.(queue.splice(0));
+        }
+        return;
+      }
       const item = queue.shift();
       if (!item) return;
       await worker(item);
@@ -121,17 +145,11 @@ async function storeCollectedItems(source: Source, items: Awaited<ReturnType<typ
 }
 
 async function collectOneSource(source: Source, result: PipelineResult, forceCollect = false) {
-  const searchIntervalHours = source.adapter === "gemini-nationality-search"
-    ? limits.nationalitySearchIntervalHours
-    : source.adapter.startsWith("gemini")
-      ? 6
-      : limits.collectRefreshHours;
-  if (
-    !forceCollect &&
-    source.lastFetchedAt &&
-    !source.lastError &&
-    Date.now() - source.lastFetchedAt.getTime() < searchIntervalHours * 60 * 60 * 1000
-  ) {
+  if (!shouldFetchSource(source, {
+    forceCollect,
+    collectRefreshHours: limits.collectRefreshHours,
+    nationalitySearchIntervalHours: limits.nationalitySearchIntervalHours,
+  })) {
     result.sourcesOk += 1;
     return;
   }
@@ -155,15 +173,34 @@ async function collectOneSource(source: Source, result: PipelineResult, forceCol
   }
 }
 
-async function collectAll(result: PipelineResult, forceCollect = false) {
+async function collectAll(
+  result: PipelineResult,
+  forceCollect = false,
+  deadline = Number.POSITIVE_INFINITY,
+) {
   const sources = await prisma.source.findMany({ where: { enabled: true } });
-  const gemini = sources.filter((source) => source.adapter.startsWith("gemini"));
-  const standard = sources.filter((source) => !source.adapter.startsWith("gemini"));
+  const ordered = sortSourcesOldestStaleFirst(sources);
+  const gemini = ordered.filter((source) => source.adapter.startsWith("gemini"));
+  const standard = ordered.filter((source) => !source.adapter.startsWith("gemini"));
+  const withinBudget = () => shouldStartAnotherFetch(Date.now(), deadline);
   await mapPool(standard, limits.collectConcurrency, (source) => (
     collectOneSource(source, result, forceCollect)
-  ));
-  for (const source of gemini) {
-    await collectOneSource(source, result, forceCollect);
+  ), {
+    shouldStart: withinBudget,
+    onDeferRemaining: (remaining) => {
+      result.deferred += remaining.length;
+    },
+  });
+  if (!withinBudget()) {
+    result.deferred += gemini.length;
+    return;
+  }
+  for (let index = 0; index < gemini.length; index += 1) {
+    if (!withinBudget()) {
+      result.deferred += gemini.length - index;
+      return;
+    }
+    await collectOneSource(gemini[index], result, forceCollect);
   }
 }
 
@@ -176,7 +213,9 @@ async function liveCountryCounts(since: Date) {
   return new Map(rows.map((row) => [row.country, row._count.id]));
 }
 
-async function fillThinCountries(result: PipelineResult) {
+async function fillThinCountries(result: PipelineResult, deadline = Number.POSITIVE_INFINITY) {
+  if (!shouldStartAnotherFetch(Date.now(), deadline)) return;
+
   const since = new Date(Date.now() - Math.max(1, limits.newsMaxAgeHours) * 60 * 60 * 1000);
   const catalog = [...catalogCountryCodes(), "EU"];
   const thin = countriesNeedingArticles(catalog, await liveCountryCounts(since), limits.minCountryArticles);
@@ -196,11 +235,16 @@ async function fillThinCountries(result: PipelineResult) {
     preferred.set(source.country, list);
   }
 
+  const withinBudget = () => shouldStartAnotherFetch(Date.now(), deadline);
   await mapPool(thin, Math.min(4, limits.collectConcurrency), async (country) => {
     const existing = preferred.get(country) ?? [];
     const gnews = existing.filter((source) => source.code.startsWith("GNEWS_"));
     const targets = (gnews.length ? gnews : existing).slice(0, 3);
     if (!targets.length) {
+      if (!withinBudget()) {
+        result.deferred += 1;
+        return;
+      }
       const seeded = allLiveCountrySources().find((source) => source.country === country);
       if (!seeded) return;
       const row = await prisma.source.upsert({
@@ -210,15 +254,30 @@ async function fillThinCountries(result: PipelineResult) {
       });
       targets.push(row);
     }
-    for (const source of targets) {
-      await collectOneSource(source, result, true);
+    for (let index = 0; index < targets.length; index += 1) {
+      if (!withinBudget()) {
+        result.deferred += targets.length - index;
+        return;
+      }
+      await collectOneSource(targets[index], result, true);
     }
+  }, {
+    shouldStart: withinBudget,
+    onDeferRemaining: (remaining) => {
+      result.deferred += remaining.length;
+    },
   });
 
   await normalizePending(result);
 
+  if (!withinBudget()) return;
+
   const stillThin = countriesNeedingArticles(catalog, await liveCountryCounts(since), limits.minCountryArticles);
   await mapPool(stillThin, Math.min(4, limits.collectConcurrency), async (country) => {
+    if (!withinBudget()) {
+      result.deferred += 1;
+      return;
+    }
     const code = `GNEWS_${country}_WIDE`;
     const url = googleNewsRssUrl(`${country} (economy OR business OR markets OR bank OR government OR oil)`);
     const template = allLiveCountrySources().find((source) => source.country === country);
@@ -237,7 +296,16 @@ async function fillThinCountries(result: PipelineResult) {
       },
       update: { url, enabled: true, name: `${country} Coverage` },
     });
+    if (!withinBudget()) {
+      result.deferred += 1;
+      return;
+    }
     await collectOneSource(source, result, true);
+  }, {
+    shouldStart: withinBudget,
+    onDeferRemaining: (remaining) => {
+      result.deferred += remaining.length;
+    },
   });
 }
 
@@ -586,6 +654,7 @@ export async function runPipeline(options: {
   const result: PipelineResult = {
     sourcesOk: 0,
     sourcesFailed: 0,
+    deferred: 0,
     rawCollected: 0,
     articlesCreated: 0,
     rejected: 0,
@@ -599,9 +668,15 @@ export async function runPipeline(options: {
   // Drain backlog first so a timed-out collect still leaves fresh articles in the feed.
   await normalizePending(result);
   if (!options.skipCollect) {
-    await collectAll(result, options.forceCollect);
+    const deadline = collectDeadline(Date.now(), limits.collectBudgetMs);
+    await collectAll(result, options.forceCollect, deadline);
     await normalizePending(result);
-    await fillThinCountries(result);
+    if (shouldStartAnotherFetch(Date.now(), deadline)) {
+      await fillThinCountries(result, deadline);
+    }
+    if (result.deferred) {
+      console.log(`Collect budget reached; deferred ${result.deferred} sources to the next run.`);
+    }
     await normalizePending(result);
   }
   await fillMissingStoryKeys();

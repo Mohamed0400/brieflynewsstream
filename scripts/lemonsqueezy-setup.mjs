@@ -69,9 +69,12 @@ for (const product of productList) {
 if (!productList.length) {
   console.error("");
   console.error("No products found.");
-  console.error("Create a Pro product in Lemon Squeezy:");
+  console.error("Create two subscription products in Lemon Squeezy:");
   console.error("  Name: Briefly NewsStream Pro");
   console.error("  Price: $70 / month (subscription)");
+  console.error("  Name: Briefly NewsStream Enterprise");
+  console.error("  Price: $150 / month (subscription)");
+  console.error("Lemon Squeezy does not support custom/variable plan prices.");
   console.error("Then re-run: node scripts/lemonsqueezy-setup.mjs");
   envText = setEnv(envText, "LEMONSQUEEZY_STORE_ID", storeId);
   envText = setEnv(envText, "BILLING_PROVIDER", "lemonsqueezy");
@@ -79,36 +82,64 @@ if (!productList.length) {
   process.exit(2);
 }
 
-const product =
-  productList.find((row) => (row.attributes.name || "").toLowerCase().includes("pro")) ||
-  productList[0];
-
-const variants = await listVariants({ filter: { productId: product.id } });
-if (variants.error) {
-  console.error(variants.error.message);
-  process.exit(1);
+const allVariants = [];
+for (const product of productList) {
+  const variants = await listVariants({ filter: { productId: product.id } });
+  if (variants.error) {
+    console.error(variants.error.message);
+    process.exit(1);
+  }
+  for (const variant of variants.data?.data || []) {
+    allVariants.push({
+      productName: product.attributes.name,
+      variant,
+    });
+  }
 }
 
-const variantList = variants.data?.data || [];
-if (!variantList.length) {
-  console.error("No variants on product", product.id);
+if (!allVariants.length) {
+  console.error("No variants on any product");
   process.exit(2);
 }
 
-const preferred =
-  variantList.find((row) => {
-    const name = (row.attributes.name || "").toLowerCase();
-    return name.includes("pro") || row.attributes.price === 7000;
-  }) || variantList[0];
+function pickVariant(hint, priceCents) {
+  return allVariants.find(({ productName, variant }) => {
+    const name = `${productName || ""} ${variant.attributes.name || ""}`.toLowerCase();
+    if (hint === "pro" && name.includes("enterprise")) return false;
+    return name.includes(hint) || variant.attributes.price === priceCents;
+  }) || null;
+}
 
-const variantId = String(preferred.id);
-console.log("variant_id", variantId);
-console.log("variant_name", preferred.attributes.name);
-console.log("variant_price_cents", preferred.attributes.price);
+const proPick = pickVariant("pro", 7000);
+const enterprisePick = pickVariant("enterprise", 15000);
+
+if (!proPick) {
+  console.error("Pro $70 variant not found.");
+  console.error("Create a subscription product named Briefly NewsStream Pro at $70 / month.");
+  process.exit(2);
+}
+
+const variantId = String(proPick.variant.id);
+console.log("pro_variant_id", variantId);
+console.log("pro_variant_name", proPick.variant.attributes.name);
+console.log("pro_variant_price_cents", proPick.variant.attributes.price);
 
 envText = setEnv(envText, "LEMONSQUEEZY_STORE_ID", storeId);
 envText = setEnv(envText, "LEMONSQUEEZY_VARIANT_ID", variantId);
 envText = setEnv(envText, "BILLING_PROVIDER", "lemonsqueezy");
+
+if (enterprisePick) {
+  const enterpriseVariantId = String(enterprisePick.variant.id);
+  envText = setEnv(envText, "LEMONSQUEEZY_ENTERPRISE_VARIANT_ID", enterpriseVariantId);
+  console.log("enterprise_variant_id", enterpriseVariantId);
+  console.log("enterprise_variant_name", enterprisePick.variant.attributes.name);
+  console.log("enterprise_variant_price_cents", enterprisePick.variant.attributes.price);
+} else {
+  console.error("");
+  console.error("Enterprise $150 variant not found.");
+  console.error("Create a subscription product named Briefly NewsStream Enterprise at $150 / month.");
+  console.error("Lemon Squeezy cannot do custom Enterprise pricing.");
+}
 
 if (!getEnv(envText, "LEMONSQUEEZY_WEBHOOK_SECRET")) {
   const secret = `lswhsec_${randomBytes(24).toString("base64url")}`;

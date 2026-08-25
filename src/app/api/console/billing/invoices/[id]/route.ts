@@ -63,7 +63,7 @@ export async function POST(
         {
           error: "billing_not_live",
           message:
-            "Card payments are not live. Open the Pro order and we confirm the upgrade.",
+            "Card payments are not live. Open the order and we confirm the upgrade.",
         },
         { status: 409 },
       );

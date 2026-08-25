@@ -4,6 +4,7 @@ import {
   DEFAULT_SCHEDULED_JOBS,
   ensureDefaultJobs,
   isValidCron,
+  LOCK_MS,
   releaseJobLock,
   runScheduledJob,
   writeSchedulerHeartbeat,
@@ -12,7 +13,7 @@ import {
 const QUEUE_PREFIX = "brieflynewsstream";
 const PROCESS_NAME = "pg-boss-worker";
 const HEARTBEAT_MS = 30_000;
-const JOB_EXPIRE_SECONDS = 45 * 60;
+const JOB_EXPIRE_SECONDS = Math.ceil(LOCK_MS / 1000);
 const activeJobKeys = new Set<ScheduledJobKey>();
 
 type ScheduledJobKey = typeof DEFAULT_SCHEDULED_JOBS[number]["key"];

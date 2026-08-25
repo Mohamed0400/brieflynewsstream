@@ -11,6 +11,12 @@ export type PlanDefinition = {
   archiveAccess: "limited" | "full";
 };
 
+export function planPriceCents(tier: PlanTier) {
+  const usd = PLAN_DEFINITIONS[tier].listPriceMonthlyUsd;
+  if (usd == null || usd <= 0) return 0;
+  return usd * 100;
+}
+
 export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
   FREE: {
     tier: "FREE",
@@ -35,7 +41,7 @@ export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
   ENTERPRISE: {
     tier: "ENTERPRISE",
     label: "Enterprise",
-    listPriceMonthlyUsd: null,
+    listPriceMonthlyUsd: 150,
     dailyRequests: 20_000,
     maxKeys: 100,
     commercialUse: true,

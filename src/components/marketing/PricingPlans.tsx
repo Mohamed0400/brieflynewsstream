@@ -3,14 +3,10 @@ import { BrandLogo } from "@/components/media/BrandLogo";
 import type { MarketingLang } from "@/lib/marketing-copy";
 import { withMarketingLang } from "@/lib/marketing-nav";
 import { PLAN_DEFINITIONS } from "@/lib/plans";
-import { PRICING_CONTACT, pricingCopy } from "@/lib/pricing-copy";
+import { pricingCopy } from "@/lib/pricing-copy";
 
 function formatCount(value: number) {
   return value.toLocaleString("en-US");
-}
-
-function mailto(subject: string) {
-  return `mailto:${PRICING_CONTACT}?subject=${encodeURIComponent(subject)}`;
 }
 
 export function PricingPlans({
@@ -86,7 +82,7 @@ export function PricingPlans({
     copy.featureProBilling,
   ];
   const entFeatures = [
-    `${formatCount(enterprise.dailyRequests)} ${copy.featureQuotaUnit}${copy.featureEntQuotaNote}`,
+    `${formatCount(enterprise.dailyRequests)} ${copy.featureQuotaUnit}${copy.featureEntQuotaNote}`.trim(),
     `${copy.featureEntKeysPrefix}${formatCount(enterprise.maxKeys)}${copy.featureEntKeysSuffix}`,
     copy.featureEntSla,
     copy.featureEntCustom,
@@ -160,11 +156,14 @@ export function PricingPlans({
         <article className="mkt-plan">
           <PlanHeading>{copy.planEnterprise}</PlanHeading>
           <p className="mkt-plan-for">{copy.forEnterprise}</p>
-          <p className="mkt-price-amount">{copy.customPrice}</p>
+          <p className="mkt-price-amount">
+            ${enterprise.listPriceMonthlyUsd}
+            <span>{copy.periodMonth}</span>
+          </p>
           <div className="mkt-plan-cta">
-            <a href={mailto("Enterprise plan")} className="mkt-btn mkt-btn-ghost">
+            <Link href={signupHref} className="mkt-btn mkt-btn-ghost">
               {copy.ctaEnterprise}
-            </a>
+            </Link>
           </div>
           <PlanMeters
             copy={copy}

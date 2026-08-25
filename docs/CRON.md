@@ -2,7 +2,7 @@
 
 This app needs an **external wake-up**. Collecting news from ~70 countries takes minutes. Serverless Next.js (Vercel) sleeps between requests, so in-process `node-cron` is only a backup on a long-lived host.
 
-Timezone is `APP_TIMEZONE` (default `Asia/Kuwait`). Collect runs **three times daily**: 06:00, 14:00, 22:00 Kuwait (03:00, 11:00, 19:00 UTC).
+Timezone is `APP_TIMEZONE` (default `Asia/Kuwait`). Collect runs **three times daily**: 06:00, 14:00, 22:00 Kuwait (03:00, 11:00, 19:00 UTC), plus an hourly GitHub Actions self-heal (`20 * * * *` UTC) that calls `run-once --if-stale` and no-ops when the last collect is `ok` and newer than 4 hours.
 
 ## How we run cron (pick the host)
 
@@ -12,7 +12,7 @@ Timezone is `APP_TIMEZONE` (default `Asia/Kuwait`). Collect runs **three times d
 | **DigitalOcean / other VPS** | pg-boss durable worker via `npm run worker:live` | Set `DATABASE_URL` or preferably `DIRECT_URL`, then keep one worker process running. |
 | **Any host (recommended)** | GitHub Actions `.github/workflows/collect.yml` | Secrets `DATABASE_URL` + `DIRECT_URL` (preferred) or `CRON_SECRET`/`ADMIN_API_KEY` + `SITE_URL` to HTTP-call `/api/cron/collect`. |
 
-GitHub Actions is the primary 3× daily runner. The workflow splits **collect** (ingest + edition, up to 90 min) and **translate** (drain all pending ar/en pairs, up to 90 min) so neither step hits the old 45-minute ceiling. Vercel Cron and the pg-boss worker are backups/additional runners. The DB job lock (45 minutes, matching each Actions step budget) prevents duplicate work if two runners overlap.
+GitHub Actions is the primary 3× daily runner. The workflow splits **collect** (ingest + edition, up to 180 min) and **translate** (`always()`, up to 90 min). Vercel Cron and the pg-boss worker are backups/additional runners. The DB job lock lasts at least 3 hours, is stamped with `lastRunAt` at claim time, and is heartbeat-extended every 60s. Health checks upsert missing jobs only — they do not clear live locks.
 
 Vercel currently allows up to 100 cron jobs per project on Hobby and Pro. Hobby restricts each job to once daily with hour-level timing; Pro supports once-per-minute schedules with minute-level timing. The two daily backup jobs above work on Hobby. See [Vercel Cron usage and pricing](https://vercel.com/docs/cron-jobs/usage-and-pricing).
 

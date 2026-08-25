@@ -10,10 +10,56 @@ export const JOB_TRANSLATE = "translate";
 
 const HEARTBEAT_ID = "default";
 const HEARTBEAT_MS = 30_000;
-/** Must exceed the GitHub Actions collect timeout (180m) so a long run is never double-claimed. */
-const LOCK_MS = 4 * 60 * 60 * 1000;
-const LOCK_RENEW_MS = 20 * 60 * 1000;
+/** At least the GitHub Actions collect timeout (180m); extra hour covers SIGTERM unwind. */
+export const LOCK_MS = 4 * 60 * 60 * 1000;
+/** Extend a live lock about once a minute so health polls cannot treat it as expired. */
+export const LOCK_HEARTBEAT_MS = 60_000;
+/** Hourly `--if-stale` collect no-ops when the last successful run is newer than this. */
+export const STALE_COLLECT_MAX_AGE_MS = 4 * 60 * 60 * 1000;
 const ONLINE_MS = 90_000;
+
+export function isLockExpired(lockedUntil: Date | null | undefined, now: Date) {
+  return lockedUntil != null && lockedUntil.getTime() <= now.getTime();
+}
+
+export function isCurrentlyLocked(lockedUntil: Date | null | undefined, now: Date) {
+  return lockedUntil != null && lockedUntil.getTime() > now.getTime();
+}
+
+/**
+ * A live claim always has lockedUntil in the future. Never treat previous-run
+ * lastRunAt as a reason to steal that lock (health polls used to do exactly that).
+ */
+export function shouldClearStaleLock(
+  job: {
+    lastStatus: string | null;
+    lockedUntil: Date | null;
+    lastRunAt: Date | null;
+  },
+  now: Date,
+) {
+  if (job.lastStatus !== "running") return false;
+  if (job.lockedUntil != null) return isLockExpired(job.lockedUntil, now);
+  if (job.lastRunAt == null) return true;
+  return now.getTime() - job.lastRunAt.getTime() >= LOCK_MS;
+}
+
+/** Watchdog: run collect when the last result is bad, old, or missing — not while locked. */
+export function shouldRunStaleCollect(
+  job: {
+    lastStatus: string | null;
+    lastRunAt: Date | null;
+    lockedUntil: Date | null;
+  },
+  now: Date,
+  maxAgeMs: number = STALE_COLLECT_MAX_AGE_MS,
+) {
+  if (isCurrentlyLocked(job.lockedUntil, now)) return false;
+  if (job.lastStatus === "error" || job.lastStatus === "interrupted") return true;
+  if (job.lastRunAt == null) return true;
+  if (now.getTime() - job.lastRunAt.getTime() >= maxAgeMs) return true;
+  return job.lastStatus !== "ok";
+}
 
 /** 06:00, 14:00, 22:00 in APP_TIMEZONE (Asia/Kuwait). */
 export const COLLECT_THREE_TIMES_DAILY = "0 6,14,22 * * *";
@@ -93,6 +139,7 @@ function summarizePipeline(result: {
   translated: number;
   editionItems: number;
   sourcesFailed: number;
+  deferred?: number;
 }) {
   return [
     `${result.rawCollected} collected`,
@@ -100,21 +147,23 @@ function summarizePipeline(result: {
     `${result.translated} translated`,
     `${result.editionItems} in today's edition`,
     result.sourcesFailed ? `${result.sourcesFailed} source errors` : null,
+    result.deferred ? `${result.deferred} deferred to next run` : null,
   ].filter(Boolean).join(", ");
 }
 
-/** Clear jobs left in `running` after a crash, timeout, or SIGKILL. */
+/** Clear jobs whose lock timestamp has expired. Never uses lastRunAt while a lock is still valid. */
 export async function clearStaleJobLocks() {
-  const staleBefore = new Date(Date.now() - LOCK_MS);
+  const now = new Date();
+  const running = await prisma.scheduledJob.findMany({
+    where: { lastStatus: "running" },
+    select: { key: true, lastStatus: true, lockedUntil: true, lastRunAt: true },
+  });
+  const staleKeys = running
+    .filter((job) => shouldClearStaleLock(job, now))
+    .map((job) => job.key);
+  if (staleKeys.length === 0) return;
   await prisma.scheduledJob.updateMany({
-    where: {
-      lastStatus: "running",
-      OR: [
-        { lockedUntil: { lt: new Date() } },
-        { lockedUntil: null, lastRunAt: { lt: staleBefore } },
-        { lastRunAt: { lt: staleBefore } },
-      ],
-    },
+    where: { key: { in: staleKeys } },
     data: {
       lockedUntil: null,
       lastStatus: "error",
@@ -143,7 +192,6 @@ export async function ensureDefaultJobs() {
       update: {},
     })
   )));
-  await clearStaleJobLocks();
 }
 
 export async function writeSchedulerHeartbeat(processName: string) {
@@ -181,6 +229,7 @@ async function executeJob(key: string) {
 }
 
 export async function runScheduledJob(key: string) {
+  await clearStaleJobLocks();
   const now = new Date();
   const claimed = await prisma.scheduledJob.updateMany({
     where: {
@@ -188,6 +237,7 @@ export async function runScheduledJob(key: string) {
       OR: [{ lockedUntil: null }, { lockedUntil: { lt: now } }],
     },
     data: {
+      lastRunAt: now,
       lockedUntil: new Date(now.getTime() + LOCK_MS),
       lastStatus: "running",
       lastError: null,
@@ -204,7 +254,7 @@ export async function runScheduledJob(key: string) {
     }).catch((error) => {
       console.error("scheduled job lock renew failed", key, error);
     });
-  }, LOCK_RENEW_MS);
+  }, LOCK_HEARTBEAT_MS);
 
   try {
     const lastSummary = await executeJob(key);

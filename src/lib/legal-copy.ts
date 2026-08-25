@@ -78,7 +78,7 @@ const copy: Record<MarketingLang, { privacy: LegalPageCopy; terms: LegalPageCopy
         {
           title: "Plans and limits",
           paragraphs: [
-            "Free includes 5 API requests a day and 2 keys. Pro is listed at $70 per month with 500 requests a day and 10 keys. Enterprise is custom, with 20,000 requests a day by default. Request Pro from Billing. Payment is not live in the console yet.",
+            "Free includes 5 API requests a day and 2 keys. Pro is listed at $70 per month with 500 requests a day and 10 keys. Enterprise is listed at $150 per month with 20,000 requests a day and 100 keys. Request Pro or Enterprise from Billing and pay by Lemon Squeezy checkout.",
           ],
         },
         {
@@ -167,7 +167,7 @@ const copy: Record<MarketingLang, { privacy: LegalPageCopy; terms: LegalPageCopy
         {
           title: "الخطط والحدود",
           paragraphs: [
-            "المجاني يشمل 5 طلبات API يومياً ومفتاحين. Pro مدرج بسعر 70 دولاراً شهرياً مع 500 طلب يومياً و10 مفاتيح. Enterprise تسعير مخصص، بحد افتراضي 20,000 طلب يومياً. اطلب Pro من الفوترة. الدفع غير مفعّل في اللوحة بعد.",
+            "المجاني يشمل 5 طلبات API يومياً ومفتاحين. Pro مدرج بسعر 70 دولاراً شهرياً مع 500 طلب يومياً و10 مفاتيح. Enterprise مدرج بسعر 150 دولاراً شهرياً مع 20,000 طلب يومياً و100 مفتاح. اطلب Pro أو Enterprise من الفوترة وادفع عبر Lemon Squeezy.",
           ],
         },
         {

@@ -70,17 +70,18 @@ export function BillingPanel({
     PAID: t.statusPaid,
     VOID: t.statusVoid,
   } as const;
-  const proCents = (PLAN_DEFINITIONS.PRO.listPriceMonthlyUsd ?? 70) * 100;
-  const payLabel = `${t.pay} ${formatUsd(proCents)}`;
+  const payLabel = checkout
+    ? `${t.pay} ${formatUsd(checkout.totalCents)}`
+    : t.pay;
 
-  async function openUpgrade() {
+  async function openUpgrade(planTier: "PRO" | "ENTERPRISE") {
     setBusy(true);
     setMessage("");
     try {
       const response = await fetch("/api/console/billing/invoices", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: "PRO" }),
+        body: JSON.stringify({ plan: planTier }),
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -166,12 +167,12 @@ export function BillingPanel({
         </article>
       </section>
 
-      {plan === "FREE" ? (
+      {plan !== "ENTERPRISE" ? (
         <section className="console-panel" aria-labelledby="billing-upgrade-title">
           <div className="console-panel-heading">
             <div>
-              <h2 id="billing-upgrade-title">{t.upgradeTitle}</h2>
-              <p>{t.upgradeHint}</p>
+              <h2 id="billing-upgrade-title">{plan === "PRO" ? t.upgradeEnterpriseTitle : t.upgradeTitle}</h2>
+              <p>{plan === "PRO" ? t.upgradeEnterpriseHint : t.upgradeHint}</p>
             </div>
           </div>
           {checkout ? (
@@ -193,7 +194,7 @@ export function BillingPanel({
                 ) : (
                   <a
                     className="console-primary-button"
-                    href={`mailto:${BILLING_CONTACT}?subject=${encodeURIComponent("Pro plan upgrade")}`}
+                    href={`mailto:${BILLING_CONTACT}?subject=${encodeURIComponent("Plan upgrade")}`}
                   >
                     {t.contactCta}
                   </a>
@@ -210,13 +211,23 @@ export function BillingPanel({
             </div>
           ) : (
             <div className="console-inline-actions">
+              {plan === "FREE" ? (
+                <button
+                  type="button"
+                  className="console-primary-button"
+                  disabled={busy}
+                  onClick={() => void openUpgrade("PRO")}
+                >
+                  {busy ? t.requesting : t.upgradeCta}
+                </button>
+              ) : null}
               <button
                 type="button"
-                className="console-primary-button"
+                className={plan === "FREE" ? "console-secondary-button" : "console-primary-button"}
                 disabled={busy}
-                onClick={() => void openUpgrade()}
+                onClick={() => void openUpgrade("ENTERPRISE")}
               >
-                {busy ? t.requesting : t.upgradeCta}
+                {busy ? t.requesting : t.upgradeEnterpriseCta}
               </button>
               <Link className="console-secondary-button" href={lang === "en" ? "/console/keys?lang=en" : "/console/keys"}>
                 {t.manageKeys}

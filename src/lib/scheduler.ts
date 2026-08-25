@@ -10,8 +10,9 @@ export const JOB_TRANSLATE = "translate";
 
 const HEARTBEAT_ID = "default";
 const HEARTBEAT_MS = 30_000;
-/** Matches the GitHub Actions collect timeout so a long run is never double-claimed. */
-const LOCK_MS = 45 * 60 * 1000;
+/** Must exceed the GitHub Actions collect timeout (180m) so a long run is never double-claimed. */
+const LOCK_MS = 4 * 60 * 60 * 1000;
+const LOCK_RENEW_MS = 20 * 60 * 1000;
 const ONLINE_MS = 90_000;
 
 /** 06:00, 14:00, 22:00 in APP_TIMEZONE (Asia/Kuwait). */
@@ -196,6 +197,15 @@ export async function runScheduledJob(key: string) {
     return { ok: false, skipped: true, message: "A collect or publish job is already running." };
   }
 
+  const renewLock = setInterval(() => {
+    void prisma.scheduledJob.updateMany({
+      where: { key, lastStatus: "running" },
+      data: { lockedUntil: new Date(Date.now() + LOCK_MS) },
+    }).catch((error) => {
+      console.error("scheduled job lock renew failed", key, error);
+    });
+  }, LOCK_RENEW_MS);
+
   try {
     const lastSummary = await executeJob(key);
     await prisma.scheduledJob.update({
@@ -224,6 +234,8 @@ export async function runScheduledJob(key: string) {
       },
     });
     return { ok: false, skipped: false, message: lastError };
+  } finally {
+    clearInterval(renewLock);
   }
 }
 

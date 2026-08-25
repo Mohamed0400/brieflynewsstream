@@ -63,24 +63,58 @@ export async function ensureLiveSources() {
 }
 
 async function storeCollectedItems(source: Source, items: Awaited<ReturnType<typeof collectSource>>) {
-  for (const item of items) {
-    await prisma.rawArticle.upsert({
-      where: {
-        sourceId_externalId: {
-          sourceId: source.id,
-          externalId: item.externalId.slice(0, 500),
-        },
-      },
-      create: { sourceId: source.id, ...item, externalId: item.externalId.slice(0, 500) },
-      update: {
+  if (!items.length) return;
+
+  const normalized = items.map((item) => ({
+    ...item,
+    externalId: item.externalId.slice(0, 500),
+    audienceCodes: item.audienceCodes ?? "",
+  }));
+  const existingRows = await prisma.rawArticle.findMany({
+    where: {
+      sourceId: source.id,
+      externalId: { in: normalized.map((item) => item.externalId) },
+    },
+    select: {
+      id: true,
+      externalId: true,
+      title: true,
+      summary: true,
+      url: true,
+      publisher: true,
+      audienceCodes: true,
+      imageUrl: true,
+      processedAt: true,
+    },
+  });
+  const existingByExternalId = new Map(existingRows.map((row) => [row.externalId, row]));
+
+  for (const item of normalized) {
+    const existing = existingByExternalId.get(item.externalId);
+    if (!existing) {
+      await prisma.rawArticle.create({
+        data: { sourceId: source.id, ...item },
+      });
+      continue;
+    }
+
+    const contentChanged =
+      existing.title !== item.title
+      || (existing.summary ?? "") !== (item.summary ?? "")
+      || existing.url !== item.url;
+
+    await prisma.rawArticle.update({
+      where: { id: existing.id },
+      data: {
         title: item.title,
         summary: item.summary,
         publisher: item.publisher,
-        audienceCodes: item.audienceCodes ?? "",
+        audienceCodes: item.audienceCodes,
         imageUrl: item.imageUrl,
         publishedAt: item.publishedAt,
         rawJson: item.rawJson,
-        processedAt: null,
+        // Only reopen for re-normalize when the story content actually changed.
+        ...(contentChanged || !existing.processedAt ? { processedAt: null } : {}),
       },
     });
   }
@@ -89,10 +123,11 @@ async function storeCollectedItems(source: Source, items: Awaited<ReturnType<typ
 async function collectOneSource(source: Source, result: PipelineResult, forceCollect = false) {
   const searchIntervalHours = source.adapter === "gemini-nationality-search"
     ? limits.nationalitySearchIntervalHours
-    : 6;
+    : source.adapter.startsWith("gemini")
+      ? 6
+      : limits.collectRefreshHours;
   if (
     !forceCollect &&
-    (source.adapter === "gemini-search" || source.adapter === "gemini-nationality-search") &&
     source.lastFetchedAt &&
     !source.lastError &&
     Date.now() - source.lastFetchedAt.getTime() < searchIntervalHours * 60 * 60 * 1000
@@ -206,29 +241,29 @@ async function fillThinCountries(result: PipelineResult) {
   });
 }
 
-async function normalizePending(result: PipelineResult) {
+async function normalizePendingBatch(result: PipelineResult) {
   const pending = await prisma.rawArticle.findMany({
     where: { processedAt: null },
     include: { source: true },
     orderBy: { publishedAt: "desc" },
     ...(limits.normalizeBatch > 0 ? { take: limits.normalizeBatch } : {}),
   });
+  if (!pending.length) return 0;
+
   const existingByUrl = new Map(
-    pending.length
-      ? (await prisma.article.findMany({
-          where: { url: { in: pending.map((row) => row.url) } },
-          select: {
-            id: true,
-            url: true,
-            title: true,
-            titleEn: true,
-            titleAr: true,
-            summaryEn: true,
-            summaryAr: true,
-            translatedAt: true,
-          },
-        })).map((row) => [row.url, row])
-      : [],
+    (await prisma.article.findMany({
+      where: { url: { in: pending.map((row) => row.url) } },
+      select: {
+        id: true,
+        url: true,
+        title: true,
+        titleEn: true,
+        titleAr: true,
+        summaryEn: true,
+        summaryAr: true,
+        translatedAt: true,
+      },
+    })).map((row) => [row.url, row]),
   );
 
   for (const raw of pending) {
@@ -355,6 +390,17 @@ async function normalizePending(result: PipelineResult) {
       }
       await markProcessed();
     }
+  }
+
+  return pending.length;
+}
+
+async function normalizePending(result: PipelineResult) {
+  for (let pass = 0; pass < limits.normalizePasses; pass += 1) {
+    const processed = await normalizePendingBatch(result);
+    if (processed === 0) break;
+    if (limits.normalizeBatch <= 0) break;
+    if (processed < limits.normalizeBatch) break;
   }
 }
 
@@ -534,6 +580,7 @@ export async function buildDailyEdition(
 export async function runPipeline(options: {
   forceEdition?: boolean;
   forceCollect?: boolean;
+  skipCollect?: boolean;
   skipTranslation?: boolean;
 } = {}): Promise<PipelineResult> {
   const result: PipelineResult = {
@@ -546,11 +593,17 @@ export async function runPipeline(options: {
     editionItems: 0,
     errors: [],
   };
-  await ensureLiveSources();
-  await collectAll(result, options.forceCollect);
+  if (!options.skipCollect) {
+    await ensureLiveSources();
+  }
+  // Drain backlog first so a timed-out collect still leaves fresh articles in the feed.
   await normalizePending(result);
-  await fillThinCountries(result);
-  await normalizePending(result);
+  if (!options.skipCollect) {
+    await collectAll(result, options.forceCollect);
+    await normalizePending(result);
+    await fillThinCountries(result);
+    await normalizePending(result);
+  }
   await fillMissingStoryKeys();
   await refreshExistingScores();
   result.editionItems = await buildDailyEdition(kuwaitDate(), { force: options.forceEdition });

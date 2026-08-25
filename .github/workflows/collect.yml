@@ -16,14 +16,17 @@ jobs:
   collect:
     name: Collect all countries
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 180
     env:
       APP_TIMEZONE: Asia/Kuwait
       NEXT_PUBLIC_APP_ENV: live
       GOOGLE_GROUNDED_SEARCH_ENABLED: "false"
       GOOGLE_EDITORIAL_ENABLED: "false"
       MIN_COUNTRY_ARTICLES: "3"
-      COLLECT_CONCURRENCY: "12"
+      COLLECT_CONCURRENCY: "6"
+      COLLECT_REFRESH_HOURS: "4"
+      NORMALIZE_BATCH_SIZE: "2500"
+      NORMALIZE_PASSES: "12"
       TRANSLATE_BATCH_SIZE: "80"
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       DIRECT_URL: ${{ secrets.DIRECT_URL }}
@@ -31,6 +34,8 @@ jobs:
       ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
       CRON_SECRET: ${{ secrets.CRON_SECRET }}
       SITE_URL: ${{ secrets.SITE_URL }}
+      # Keep Prisma pool ahead of collect concurrency to avoid pool timeouts.
+      PRISMA_CONNECTION_LIMIT: "8"
     steps:
       - uses: actions/checkout@v4
 
@@ -108,9 +113,12 @@ jobs:
     env:
       APP_TIMEZONE: Asia/Kuwait
       TRANSLATE_BATCH_SIZE: "80"
+      NORMALIZE_BATCH_SIZE: "2500"
+      NORMALIZE_PASSES: "8"
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       DIRECT_URL: ${{ secrets.DIRECT_URL }}
       GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+      PRISMA_CONNECTION_LIMIT: "5"
     steps:
       - uses: actions/checkout@v4
 
@@ -132,8 +140,14 @@ jobs:
         if: env.DATABASE_URL != ''
         run: |
           set -o pipefail
+          # If collect timed out after gathering raw rows, still push articles into the feed.
+          npx tsx src/worker/normalize-once.ts --skip-translation | tee normalize-result.json
           npx tsx src/worker/translate-once.ts --all | tee translate-result.json
           {
+            echo "## Normalize result"
+            echo '```json'
+            cat normalize-result.json
+            echo '```'
             echo "## Translate result"
             echo '```json'
             cat translate-result.json

@@ -25,6 +25,8 @@ export const limits = {
   googleNewsRss: intEnv("COLLECT_GNEWS_LIMIT", 12),
   /** Parallel RSS/HTML fetches per collect run. */
   collectConcurrency: Math.max(1, intEnv("COLLECT_CONCURRENCY", 4)),
+  /** Skip sources fetched successfully within this many hours (unless forced). */
+  collectRefreshHours: Math.max(1, intEnv("COLLECT_REFRESH_HOURS", 4)),
   /** Minimum live articles each catalog country should hold in the freshness window. */
   minCountryArticles: Math.max(1, intEnv("MIN_COUNTRY_ARTICLES", 3)),
   /** Max items kept from one HTML listing page. 0 = all. */
@@ -45,8 +47,10 @@ export const limits = {
   nationalityMaxAgeHours: intEnv("NATIONALITY_NEWS_MAX_AGE_HOURS", 48),
   /** Default items in the two-minute nationality rotation. */
   nationalityFeed: intEnv("NATIONALITY_FEED_LIMIT", 12),
-  /** Max raw articles normalized per pipeline run. 0 = all pending. */
-  normalizeBatch: intEnv("NORMALIZE_BATCH_SIZE", 0),
+  /** Max raw articles normalized per pipeline pass. 0 = all pending in one pass. */
+  normalizeBatch: intEnv("NORMALIZE_BATCH_SIZE", 2500),
+  /** Max normalize passes per collect run (each pass takes normalizeBatch rows). */
+  normalizePasses: Math.max(1, intEnv("NORMALIZE_PASSES", 8)),
   /** Candidate pool size before daily ranking. 0 = all scored articles in window. */
   dailyCandidates: intEnv("DAILY_CANDIDATE_POOL", 0),
   /** Published daily edition size (Top N). */

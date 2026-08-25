@@ -2,17 +2,27 @@
 
 This app needs an **external wake-up**. Collecting news from ~70 countries takes minutes. Serverless Next.js (Vercel) sleeps between requests, so in-process `node-cron` is only a backup on a long-lived host.
 
-Timezone is `APP_TIMEZONE` (default `Asia/Kuwait`). Collect runs **three times daily**: 06:00, 14:00, 22:00 Kuwait (03:00, 11:00, 19:00 UTC), plus an hourly GitHub Actions self-heal (`20 * * * *` UTC) that calls `run-once --if-stale` and no-ops when the last collect is `ok` and newer than 4 hours.
+Timezone is `APP_TIMEZONE` (default `Asia/Kuwait`). Three hosts wake collect at **different hours** so they do not overlap locks or burn the same GitHub minutes:
+
+| Kuwait | UTC | Host | What |
+|--------|-----|------|------|
+| 07:00 | 04:00 | **Vercel Cron** | HTTP `/api/cron/collect` (short serverless backup) |
+| 14:00 | 11:00 | **cron-job.org** | HTTP `/api/cron/collect` — set this time in their dashboard |
+| 22:00 | 19:00 | **GitHub Actions** | Full database pipeline (the long run, once a day) |
+| 23:00 | 20:00 | **Vercel Cron** | HTTP `/api/cron/translate` backfill |
+
+GitHub Actions used to run 3× daily plus an hourly self-heal. That burned the 2,000 included minutes. One evening collect is enough; Vercel and cron-job.org cover the other two slots.
 
 ## How we run cron (pick the host)
 
 | Host | Mechanism | What to configure |
 |------|-----------|-------------------|
-| **Vercel** | `vercel.json` → collect and translate HTTP routes | Daily backups: collect at 07:00 Kuwait (`0 4 * * *` UTC), translate at 23:00 Kuwait (`0 20 * * *` UTC). Set `CRON_SECRET`. |
+| **Vercel** | `vercel.json` → collect and translate HTTP routes | Collect at 07:00 Kuwait (`0 4 * * *` UTC), translate at 23:00 Kuwait (`0 20 * * *` UTC). Set `CRON_SECRET`. |
+| **cron-job.org** | HTTP GET/POST to `/api/cron/collect` | Once daily at **14:00 Kuwait (11:00 UTC)**. Header `Authorization: Bearer $CRON_SECRET`. |
 | **DigitalOcean / other VPS** | pg-boss durable worker via `npm run worker:live` | Set `DATABASE_URL` or preferably `DIRECT_URL`, then keep one worker process running. |
-| **Any host (recommended)** | GitHub Actions `.github/workflows/collect.yml` | Secrets `DATABASE_URL` + `DIRECT_URL` (preferred) or `CRON_SECRET`/`ADMIN_API_KEY` + `SITE_URL` to HTTP-call `/api/cron/collect`. |
+| **GitHub Actions** | `.github/workflows/collect.yml` | Once daily at 22:00 Kuwait. Secrets `DATABASE_URL` + `DIRECT_URL` (preferred) or `CRON_SECRET`/`ADMIN_API_KEY` + `SITE_URL` for HTTP collect. |
 
-GitHub Actions is the primary 3× daily runner. The workflow splits **collect** (ingest + edition, up to 180 min) and **translate** (`always()`, up to 90 min). Vercel Cron and the pg-boss worker are backups/additional runners. The DB job lock lasts at least 3 hours, is stamped with `lastRunAt` at claim time, and is heartbeat-extended every 60s. Health checks upsert missing jobs only — they do not clear live locks.
+GitHub Actions is the one long collect (ingest + translate + edition, up to 180 min). Do not add hourly or extra daily GHA crons — they consume Actions minutes even when collect is already fresh. Vercel Cron and cron-job.org are the other two daily wakes. The DB job lock lasts at least 3 hours, is stamped with `lastRunAt` at claim time, and is heartbeat-extended every 60s. Health checks upsert missing jobs only — they do not clear live locks.
 
 Vercel currently allows up to 100 cron jobs per project on Hobby and Pro. Hobby restricts each job to once daily with hour-level timing; Pro supports once-per-minute schedules with minute-level timing. The two daily backup jobs above work on Hobby. See [Vercel Cron usage and pricing](https://vercel.com/docs/cron-jobs/usage-and-pricing).
 
@@ -36,7 +46,7 @@ curl -X GET "https://www.brieflynewsstream.com/api/cron/collect" \
 
 | Key | Default cron | Used by |
 |-----|--------------|---------|
-| `collect` | `0 6,14,22 * * *` | Vercel Cron, GitHub Actions, pg-boss worker |
+| `collect` | `0 6,14,22 * * *` | Staggered external wakes (Vercel 07:00, cron-job.org 14:00, GitHub 22:00 Kuwait); pg-boss worker if running |
 | `translate` | `*/15 * * * *` | pg-boss worker; Vercel daily backup; collect also drains pending translations |
 | `publish-daily` | `0 6 * * *` | pg-boss worker; collect also refreshes today's edition |
 
@@ -90,7 +100,7 @@ Set `CRON_SECRET` in the Vercel project env. Vercel Cron sends `Authorization: B
 | `CRON_SECRET` or `ADMIN_API_KEY` | HTTP fallback | If `DATABASE_URL` is missing, POST `/api/cron/collect` |
 | `SITE_URL` | HTTP fallback | Defaults to `https://www.brieflynewsstream.com` |
 
-The workflow timeout is **180 minutes** (`timeout-minutes` in `.github/workflows/collect.yml`). A 45-minute cap was cancelling every scheduled run before collect could finish ~949 sources. If runs still approach the limit, raise `COLLECT_CONCURRENCY` (default `8` in Actions) or split collection across more frequent smaller runs.
+The workflow timeout is **180 minutes** (`timeout-minutes` in `.github/workflows/collect.yml`). A 45-minute cap was cancelling runs before collect could finish ~949 sources. GitHub runs this **once per day** to stay inside the 2,000 included Actions minutes. Vercel and cron-job.org cover the other two daily slots.
 
 After adding secrets: **Actions → Collect news → Run workflow** once. Then leave the schedule on. You do not need Console → Run now.
 

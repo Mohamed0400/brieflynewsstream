@@ -2,12 +2,9 @@ name: Collect news
 
 on:
   schedule:
-    # 06:00, 14:00, 22:00 Asia/Kuwait (UTC+3)
-    - cron: "0 3 * * *"
-    - cron: "0 11 * * *"
+    # Once daily: 22:00 Asia/Kuwait (UTC+3).
+    # Staggered from Vercel collect 07:00 Kuwait and cron-job.org 14:00 Kuwait.
     - cron: "0 19 * * *"
-    # Hourly self-heal: run-once --if-stale no-ops when collect already succeeded recently
-    - cron: "20 * * * *"
   workflow_dispatch:
 
 concurrency:
@@ -78,11 +75,7 @@ jobs:
             echo "used_http=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          extra=""
-          if [ "${{ github.event.schedule }}" = "20 * * * *" ]; then
-            extra="--if-stale"
-          fi
-          npx tsx src/worker/run-once.ts --collect-only $extra | tee pipeline-result.json
+          npx tsx src/worker/run-once.ts | tee pipeline-result.json
           echo "used_http=false" >> "$GITHUB_OUTPUT"
           {
             echo "## Collect pipeline result"
@@ -108,56 +101,6 @@ jobs:
             echo "## Collect HTTP result"
             echo '```json'
             echo "$response"
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-
-  translate:
-    name: Translate fresh articles
-    needs: collect
-    if: ${{ always() && needs.collect.result != 'skipped' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
-    env:
-      APP_TIMEZONE: Asia/Kuwait
-      TRANSLATE_BATCH_SIZE: "80"
-      NORMALIZE_BATCH_SIZE: "2500"
-      NORMALIZE_PASSES: "8"
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      DIRECT_URL: ${{ secrets.DIRECT_URL }}
-      GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-      PRISMA_CONNECTION_LIMIT: "5"
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate Prisma client
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/ci?schema=public
-          DIRECT_URL: postgresql://postgres:postgres@127.0.0.1:5432/ci?schema=public
-        run: npx prisma generate
-
-      - name: Translate all pending fresh articles
-        if: env.DATABASE_URL != ''
-        run: |
-          set -o pipefail
-          # If collect timed out after gathering raw rows, still push articles into the feed.
-          npx tsx src/worker/normalize-once.ts --skip-translation | tee normalize-result.json
-          npx tsx src/worker/translate-once.ts --all | tee translate-result.json
-          {
-            echo "## Normalize result"
-            echo '```json'
-            cat normalize-result.json
-            echo '```'
-            echo "## Translate result"
-            echo '```json'
-            cat translate-result.json
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 

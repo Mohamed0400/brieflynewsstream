@@ -64,7 +64,7 @@ Point `brieflynewsstream.com` (and `www` if used) at Vercel. Until DNS propagate
 
 ### 5. News ingestion cron
 
-Use **GitHub Actions** (3× daily) plus **Vercel Cron** hitting `GET /api/cron/collect`. Do not rely on in-process `node-cron` on Vercel. See `docs/CRON.md`.
+Use **GitHub Actions** (once daily, 22:00 Kuwait) plus **Vercel Cron** (07:00 collect) and **cron-job.org** (14:00 collect) hitting `/api/cron/collect`. Do not rely on in-process `node-cron` on Vercel. See `docs/CRON.md`.
 
 ---
 
@@ -108,7 +108,7 @@ Contact CTAs use `hello@brieflynewsstream.com`. Mailbox / DNS for that address m
 2. Confirm build uses `prisma generate && next build`  
 3. Configure Supabase Auth redirect URLs  
 4. Attach domain DNS  
-5. Set `CRON_SECRET` on Vercel and `DATABASE_URL` on GitHub Actions so collect runs 3× daily  
+5. Set `CRON_SECRET` on Vercel and `DATABASE_URL` on GitHub Actions so collect runs once daily on GHA, staggered from Vercel and cron-job.org  
 
 ---
 

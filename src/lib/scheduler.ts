@@ -14,7 +14,7 @@ const HEARTBEAT_MS = 30_000;
 export const LOCK_MS = 4 * 60 * 60 * 1000;
 /** Extend a live lock about once a minute so health polls cannot treat it as expired. */
 export const LOCK_HEARTBEAT_MS = 60_000;
-/** Hourly `--if-stale` collect no-ops when the last successful run is newer than this. */
+/** `--if-stale` collect no-ops when the last successful run is newer than this. */
 export const STALE_COLLECT_MAX_AGE_MS = 4 * 60 * 60 * 1000;
 const ONLINE_MS = 90_000;
 

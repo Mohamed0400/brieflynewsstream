@@ -13,7 +13,7 @@ Each calendar day in `APP_TIMEZONE` gets one durable `DailyEdition` row plus ran
 
 | Behavior | Detail |
 |----------|--------|
-| Collect | 06:00, 14:00, and 22:00 Asia/Kuwait via GitHub Actions; configurable for long-lived hosts |
+| Collect | 07:00 Vercel, 14:00 cron-job.org, 22:00 GitHub Actions (Asia/Kuwait); staggered so they do not overlap |
 | Translate | collect drains fresh pending pairs; Vercel runs a daily backup and long-lived hosts default to every 15 minutes |
 | Today’s edition | refreshed as new stories arrive, or on demand from Schedule |
 | Morning publish | 06:00 Asia/Kuwait by default, configurable in Schedule |

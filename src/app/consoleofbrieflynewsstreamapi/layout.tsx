@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "../ops-gate.css";
 
 export const metadata: Metadata = {
@@ -13,6 +13,14 @@ export const metadata: Metadata = {
       noimageindex: true,
     },
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  colorScheme: "light",
+  themeColor: "#f7f9fc",
 };
 
 export default function AdminAppLayout({ children }: { children: React.ReactNode }) {

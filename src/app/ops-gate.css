@@ -1,22 +1,35 @@
+/* Super-admin ops UI — same light tokens as the marketing site / customer console. */
+
 .ops-gate {
-  --ops-ink: #f3f6fb;
-  --ops-muted: #9aadc0;
-  --ops-navy: #0b1422;
+  color-scheme: light;
+  --ops-ink: #0b1422;
+  --ops-muted: #4b5c6e;
+  --ops-paper: #f7f9fc;
+  --ops-surface: #ffffff;
   --ops-accent: #5ec8dc;
-  --ops-line: rgb(94 200 220 / 22%);
-  --ops-danger: #f0b4b4;
+  --ops-line: rgb(11 20 34 / 12%);
+  --ops-danger: #9b2c2c;
+  --ops-shadow: 0 22px 48px rgb(11 20 34 / 12%);
+  --ops-radius: 12px;
+  --ops-control: 8px;
   min-height: 100dvh;
   display: grid;
   place-items: center;
-  padding: 2rem 1.25rem 3rem;
+  padding:
+    max(2rem, env(safe-area-inset-top))
+    max(1.25rem, env(safe-area-inset-right))
+    max(3rem, env(safe-area-inset-bottom))
+    max(1.25rem, env(safe-area-inset-left));
   background:
-    radial-gradient(80rem 28rem at 12% -10%, rgb(94 200 220 / 18%), transparent 55%),
-    linear-gradient(180deg, #071018 0%, var(--ops-navy) 42%, #0e1b2c 100%);
+    radial-gradient(70rem 24rem at 8% -8%, rgb(94 200 220 / 18%), transparent 55%),
+    radial-gradient(50rem 20rem at 100% 100%, rgb(11 20 34 / 5%), transparent 50%),
+    var(--ops-paper);
   color: var(--ops-ink);
 }
 
 .ops-gate[lang="ar"] {
   font-family: var(--font-ibm-arabic), "Segoe UI", Tahoma, sans-serif;
+  font-synthesis: none;
   letter-spacing: 0;
 }
 
@@ -27,35 +40,49 @@
 
 .ops-gate-frame {
   width: min(28rem, 100%);
+  padding: clamp(1.5rem, 4vw, 2rem);
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius);
+  background: var(--ops-surface);
+  box-shadow: var(--ops-shadow);
 }
 
 .ops-gate-brand {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 1.75rem;
+  margin-bottom: 1.5rem;
   text-decoration: none;
   color: inherit;
 }
 
 .ops-gate-brand img,
 .ops-gate-brand .brand-logo {
-  height: 2rem;
+  height: 1.85rem;
   width: auto;
 }
 
 .ops-gate-kicker {
   margin: 0 0 0.5rem;
-  color: var(--ops-accent);
+  color: var(--ops-muted);
   font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  font-weight: 650;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.ops-gate[lang="ar"] .ops-gate-kicker {
+  letter-spacing: 0.02em;
+  text-transform: none;
 }
 
 .ops-gate h1 {
   margin: 0 0 0.5rem;
-  font-size: clamp(1.5rem, 3vw, 1.85rem);
+  color: var(--ops-ink);
+  font-size: clamp(1.45rem, 3vw, 1.75rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
 }
 
 .ops-gate-lede {
@@ -74,9 +101,16 @@
 }
 
 .ops-gate .console-gate-input {
-  background: rgb(255 255 255 / 6%);
+  background: var(--ops-paper);
   border: 1px solid var(--ops-line);
+  border-radius: var(--ops-control);
   color: var(--ops-ink);
+}
+
+.ops-gate .console-gate-input:focus {
+  outline: 2px solid var(--ops-accent);
+  outline-offset: 1px;
+  border-color: var(--ops-accent);
 }
 
 .ops-gate .console-gate-help {
@@ -85,7 +119,14 @@
 
 .ops-gate .console-gate-submit {
   background: var(--ops-accent);
-  color: var(--ops-navy);
+  border-color: var(--ops-accent);
+  border-radius: var(--ops-control);
+  color: var(--ops-ink);
+  font-weight: 650;
+}
+
+.ops-gate .console-gate-submit:hover {
+  filter: brightness(0.97);
 }
 
 .ops-gate .console-gate-error {
@@ -93,33 +134,122 @@
 }
 
 .ops-gate-lang {
-  margin-top: 1.5rem;
+  margin-top: 1.35rem;
 }
 
+.ops-gate .console-lang-switch button {
+  color: var(--ops-muted);
+}
+
+.ops-gate .console-lang-switch button[aria-current="true"] {
+  background: rgb(94 200 220 / 0.18);
+  color: var(--ops-ink);
+}
+
+/* Authenticated ops chrome */
 .ops-shell {
+  color-scheme: light;
+  --console-bg: #f7f9fc;
+  --console-paper: #f7f9fc;
+  --console-surface: #ffffff;
+  --console-surface-strong: #e8eef4;
+  --console-text: #0b1422;
+  --console-ink: #0b1422;
+  --console-muted: #3a4b5c;
+  --console-border: rgb(11 20 34 / 14%);
+  --console-line: rgb(11 20 34 / 14%);
+  --console-accent: #5ec8dc;
+  --console-accent-strong: #0b1422;
+  --console-accent-soft: rgb(94 200 220 / 0.16);
+  --console-cyan: #5ec8dc;
+  --console-on-dark: #f7f9fc;
+  --console-placeholder: #526274;
   min-height: 100dvh;
-  background: #071018;
-  color: #f3f6fb;
+  background:
+    radial-gradient(ellipse 65% 45% at 100% 0%, rgb(94 200 220 / 0.14), transparent 55%),
+    radial-gradient(ellipse 50% 35% at 0% 100%, rgb(11 20 34 / 0.04), transparent 50%),
+    var(--console-bg);
+  color: var(--console-text);
 }
 
 .ops-shell .console-header {
-  background: #0b1422;
-  border-bottom: 1px solid rgb(94 200 220 / 22%);
+  background: color-mix(in srgb, var(--console-surface) 92%, transparent);
+  border-bottom: 1px solid var(--console-border);
+  backdrop-filter: blur(14px);
 }
 
 .ops-shell .console-frame {
-  background: #071018;
+  background: transparent;
 }
 
 .ops-shell .console-sidebar {
-  background: #0b1422;
-  border-inline-end: 1px solid rgb(94 200 220 / 18%);
+  background: var(--console-surface);
+  border-color: var(--console-border);
 }
 
 .ops-shell .console-main {
-  background: #0e1622;
+  background: transparent;
 }
 
 .ops-shell .console-account-block span {
-  color: #5ec8dc;
+  color: var(--console-muted);
+}
+
+.ops-shell .console-environment {
+  background: rgb(94 200 220 / 0.16);
+  border-color: rgb(94 200 220 / 0.35);
+  color: var(--console-ink);
+}
+
+.ops-shell .console-metric,
+.ops-shell .console-panel,
+.ops-shell .console-card {
+  border: 1px solid var(--console-border);
+  background: var(--console-surface);
+  box-shadow: 0 12px 28px rgb(11 20 34 / 6%);
+  color: var(--console-ink);
+}
+
+.ops-shell .console-metric-primary {
+  background: color-mix(in srgb, var(--console-cyan) 14%, #ffffff);
+}
+
+.ops-shell .schedule-empty-note {
+  border: 1px solid color-mix(in srgb, var(--console-cyan) 35%, var(--console-border));
+  background: color-mix(in srgb, var(--console-cyan) 12%, #ffffff);
+  border-radius: 12px;
+  color: var(--console-ink);
+}
+
+.ops-shell .console-metric span,
+.ops-shell .console-metric small,
+.ops-shell .schedule-empty-note p {
+  color: var(--console-muted);
+}
+
+.ops-shell .console-metric strong,
+.ops-shell .schedule-empty-note strong {
+  color: var(--console-ink);
+}
+
+.ops-shell .console-nav-link[data-active="true"] {
+  background: var(--console-accent-soft);
+  color: var(--console-ink);
+}
+
+.ops-shell .console-primary-button,
+.ops-shell .console-run-button {
+  background: var(--console-cyan);
+  border-color: var(--console-cyan);
+  color: var(--console-ink);
+}
+
+.ops-shell .console-secondary-button {
+  background: var(--console-surface);
+  border: 1px solid var(--console-border);
+  color: var(--console-ink);
+}
+
+.ops-shell input[type="checkbox"] {
+  accent-color: var(--console-cyan);
 }

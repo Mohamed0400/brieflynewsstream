@@ -39,7 +39,7 @@ export function AdminShell({
       <header className="console-header">
         <div className="console-header-inner">
           <Link href={ADMIN_OPERATIONS_PATH} className="console-brand" aria-label={copy.opsBrandAria}>
-            <BrandLogo tone="dark" className="console-brand-wordmark" priority />
+            <BrandLogo tone="light" className="console-brand-wordmark" priority />
           </Link>
           <div className="console-header-actions">
             <ConsoleLangSwitcher lang={lang} />

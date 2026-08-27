@@ -16,7 +16,7 @@ export function AdminAuthShell({
       <ConsoleAuthLangSync lang={copy.lang} />
       <div className="ops-gate-frame">
         <div className="ops-gate-brand">
-          <BrandLogo tone="dark" className="console-brand-wordmark" priority />
+          <BrandLogo tone="light" className="console-brand-wordmark" priority />
         </div>
         <p className="ops-gate-kicker">{copy.brandName}</p>
         <h1 id="ops-login-title">{copy.opsTitle}</h1>

@@ -5,6 +5,10 @@
       "schedule": "0 4 * * *"
     },
     {
+      "path": "/api/cron/archive",
+      "schedule": "30 0 * * *"
+    },
+    {
       "path": "/api/cron/translate",
       "schedule": "0 20 * * *"
     }

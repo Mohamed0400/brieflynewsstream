@@ -105,6 +105,7 @@ function MarketingNav({
   const navItems: Array<{ href: string; label: string; match: string }> = [
     { href: withLang("/"), label: copy.navHome, match: "/" },
     { href: withLang("/news"), label: copy.navLive, match: "/news" },
+    { href: withLang("/archive"), label: copy.navArchive, match: "/archive" },
     { href: withLang("/developers"), label: copy.navDevelopers, match: "/developers" },
     { href: withLang("/pricing"), label: copy.navPricing, match: "/pricing" },
   ];
@@ -356,6 +357,7 @@ function MarketingFooter({ lang }: { lang: MarketingLang }) {
             <h2>{copy.footerProduct}</h2>
             <Link href={withLang("/")}>{copy.footerHome}</Link>
             <Link href={withLang("/news")}>{copy.footerNews}</Link>
+            <Link href={withLang("/archive")}>{copy.footerArchive}</Link>
             <Link href={withLang("/pricing")}>{copy.navPricing}</Link>
           </nav>
           <nav aria-label={copy.footerResources}>

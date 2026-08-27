@@ -10,6 +10,7 @@ import {
   JOB_COLLECT,
   JOB_PUBLISH,
   JOB_TRANSLATE,
+  JOB_ARCHIVE,
   LOCK_MS,
   PUBLISH_PRESETS,
   shouldClearStaleLock,
@@ -26,16 +27,18 @@ test("default schedule presets are valid five-field cron", () => {
   assert.equal(isValidCron(""), false);
 });
 
-test("production cron jobs collect, translate, and publish bilingual articles", () => {
+test("production cron jobs collect, translate, publish, and archive", () => {
   const keys = DEFAULT_SCHEDULED_JOBS.map((job) => job.key);
-  assert.deepEqual(keys, [JOB_COLLECT, JOB_TRANSLATE, JOB_PUBLISH]);
+  assert.deepEqual(keys, [JOB_COLLECT, JOB_TRANSLATE, JOB_PUBLISH, JOB_ARCHIVE]);
   const collect = DEFAULT_SCHEDULED_JOBS.find((job) => job.key === JOB_COLLECT);
   const translate = DEFAULT_SCHEDULED_JOBS.find((job) => job.key === JOB_TRANSLATE);
   const publish = DEFAULT_SCHEDULED_JOBS.find((job) => job.key === JOB_PUBLISH);
+  const archive = DEFAULT_SCHEDULED_JOBS.find((job) => job.key === JOB_ARCHIVE);
   assert.equal(collect?.cron, COLLECT_THREE_TIMES_DAILY);
   assert.equal(isValidCron(COLLECT_THREE_TIMES_DAILY), true);
   assert.equal(translate?.cron, "*/15 * * * *");
   assert.equal(publish?.cron, "0 6 * * *");
+  assert.equal(archive?.cron, "30 3 * * *");
   for (const job of DEFAULT_SCHEDULED_JOBS) {
     assert.equal(isValidCron(job.cron), true, job.cron);
   }

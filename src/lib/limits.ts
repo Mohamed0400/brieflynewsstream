@@ -56,6 +56,11 @@ export const limits = {
   normalizeBatch: intEnv("NORMALIZE_BATCH_SIZE", 2500),
   /** Max normalize passes per collect run (each pass takes normalizeBatch rows). */
   normalizePasses: Math.max(1, intEnv("NORMALIZE_PASSES", 8)),
+  /**
+   * Normalize passes before RSS fetch. Keep this small so a huge backlog cannot
+   * burn the whole GitHub job before sources are refreshed.
+   */
+  normalizePreCollectPasses: Math.max(0, intEnv("NORMALIZE_PRE_COLLECT_PASSES", 1)),
   /** Candidate pool size before daily ranking. 0 = all scored articles in window. */
   dailyCandidates: intEnv("DAILY_CANDIDATE_POOL", 0),
   /** Published daily edition size (Top N). */

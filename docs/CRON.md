@@ -1,5 +1,7 @@
 # Cron jobs
 
+**Schedule of record:** [CRONJOBS.md](./CRONJOBS.md) (who runs, at what hour, GitHub minutes). This page is the implementation detail.
+
 This app needs an **external wake-up**. Collecting news from ~70 countries takes minutes. Serverless Next.js (Vercel) sleeps between requests, so in-process `node-cron` is only a backup on a long-lived host.
 
 Timezone is `APP_TIMEZONE` (default `Asia/Kuwait`). Three hosts wake collect at **different hours** so they do not overlap locks or burn the same GitHub minutes:

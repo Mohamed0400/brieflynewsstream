@@ -7,6 +7,7 @@ import { buildDailyEdition, MAX_TRANSLATION_PASSES, runPipeline } from "./pipeli
 export const JOB_COLLECT = "collect";
 export const JOB_PUBLISH = "publish-daily";
 export const JOB_TRANSLATE = "translate";
+export const JOB_ARCHIVE = "archive";
 
 const HEARTBEAT_ID = "default";
 const HEARTBEAT_MS = 30_000;
@@ -103,6 +104,13 @@ export const DEFAULT_SCHEDULED_JOBS = [
     name: "Publish today's edition",
     description: "Rebuild the stored /today edition from scored articles, then fill any missing ar/en pairs.",
     cron: "0 6 * * *",
+  },
+  {
+    key: JOB_ARCHIVE,
+    name: "Prune hot window",
+    description:
+      "Delete Supabase articles older than ARCHIVE_HOT_RETENTION_DAYS (default 5). If R2 is configured, upload cold archive first — see docs/R2-CLOUDFLARE-SETUP.md.",
+    cron: "30 3 * * *",
   },
 ] as const;
 
@@ -222,6 +230,12 @@ async function executeJob(key: string) {
       ? `${translated} articles translated, ${pending} still pending`
       : `${translated} articles translated`;
   }
+  if (key === JOB_ARCHIVE) {
+    const { runArchiveAndPrune } = await import("./archive/export");
+    const result = await runArchiveAndPrune({ prune: true });
+    if (!result.ok && !result.skipped) throw new Error(result.message);
+    return result.message;
+  }
   return summarizePipeline(await runPipeline({
     forceEdition: true,
     skipTranslation: process.env.CRON_COLLECT_ONLY === "true",
@@ -335,7 +349,7 @@ function serializeJob(job: {
     lastStatus: running ? "running" : job.lastStatus,
     lastError: job.lastError,
     lastSummary: job.lastSummary,
-    presets: job.key === JOB_PUBLISH
+    presets: job.key === JOB_PUBLISH || job.key === JOB_ARCHIVE
       ? PUBLISH_PRESETS
       : job.key === JOB_TRANSLATE
         ? TRANSLATE_PRESETS

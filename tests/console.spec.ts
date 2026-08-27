@@ -147,6 +147,7 @@ test("console schedule page exposes collect and publish controls", async ({ page
   };
   expect(body.run.ok).toBe(true);
   expect(body.jobs.map((job) => job.key).sort()).toEqual([
+    "archive",
     "collect",
     "publish-daily",
     "translate",

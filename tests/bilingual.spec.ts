@@ -19,6 +19,7 @@ test("health endpoint reports cron jobs and bilingual coverage", async ({ reques
   expect(health.checks.database).toBe("ok");
   expect(health.checks.jobs).toBe("ok");
   expect(health.jobs.map((job) => job.key).sort()).toEqual([
+    "archive",
     "collect",
     "publish-daily",
     "translate",

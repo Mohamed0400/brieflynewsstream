@@ -5,7 +5,9 @@ Next.js/TypeScript API for market and financial-news readers. It collects live p
 Operator docs:
 
 - [App functionality](docs/APP.md)
-- [Cron jobs and bilingual storage](docs/CRON.md)
+- [CRONJOBS — daily schedule (Vercel, cron-job.org, GitHub)](docs/CRONJOBS.md)
+- [Cron implementation (locks, pg-boss, bilingual)](docs/CRON.md)
+- [Cloudflare R2 cold archive setup (optional)](docs/R2-CLOUDFLARE-SETUP.md)
 
 ## Daily updates (stored in database)
 

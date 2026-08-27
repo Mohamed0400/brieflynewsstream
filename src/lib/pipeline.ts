@@ -463,8 +463,24 @@ async function normalizePendingBatch(result: PipelineResult) {
   return pending.length;
 }
 
-async function normalizePending(result: PipelineResult) {
-  for (let pass = 0; pass < limits.normalizePasses; pass += 1) {
+async function abandonStaleRawArticles() {
+  const cutoff = new Date(Date.now() - Math.max(1, limits.newsMaxAgeHours) * 60 * 60 * 1000);
+  const abandoned = await prisma.rawArticle.updateMany({
+    where: {
+      processedAt: null,
+      publishedAt: { lt: cutoff },
+    },
+    data: { processedAt: new Date() },
+  });
+  return abandoned.count;
+}
+
+async function normalizePending(
+  result: PipelineResult,
+  maxPasses = limits.normalizePasses,
+) {
+  const passes = Math.max(0, maxPasses);
+  for (let pass = 0; pass < passes; pass += 1) {
     const processed = await normalizePendingBatch(result);
     if (processed === 0) break;
     if (limits.normalizeBatch <= 0) break;
@@ -665,8 +681,13 @@ export async function runPipeline(options: {
   if (!options.skipCollect) {
     await ensureLiveSources();
   }
-  // Drain backlog first so a timed-out collect still leaves fresh articles in the feed.
-  await normalizePending(result);
+  // Drop raw rows that can never appear in the live window, then only lightly
+  // drain before fetch so a 20k+ backlog cannot starve RSS refresh.
+  const abandoned = await abandonStaleRawArticles();
+  if (abandoned > 0) {
+    console.log(`Abandoned ${abandoned} stale raw articles outside the ${limits.newsMaxAgeHours}h news window.`);
+  }
+  await normalizePending(result, limits.normalizePreCollectPasses);
   if (!options.skipCollect) {
     const deadline = collectDeadline(Date.now(), limits.collectBudgetMs);
     await collectAll(result, options.forceCollect, deadline);

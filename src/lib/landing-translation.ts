@@ -33,13 +33,6 @@ const pageCopy = {
     relativeMinutes: (minutes: number) => `${minutes}m ago`,
     relativeHours: (hours: number) => `${hours}h ago`,
     relativeDays: (days: number) => `${days}d ago`,
-    trustStripLabel: "Why readers use this brief",
-    trustItems: [
-      { id: "bilingual", label: "Arabic & English" },
-      { id: "window", label: "72-hour window" },
-      { id: "ranked", label: "Impact-ranked" },
-      { id: "coverage", label: "Gulf + global coverage" },
-    ],
     refreshLine: (count: number, hours: number, refreshed: string | null) =>
       refreshed
         ? `${count.toLocaleString("en")} stories in the last ${hours} hours · Sources refreshed ${refreshed}`
@@ -173,7 +166,7 @@ const pageCopy = {
     topStoriesSubtitle: "مرتّبة حسب الأثر في الأسواق",
     fullCatalogSubtitle: "الموجز الكامل، مرتّب حسب الأثر في الأسواق",
     topEditionIndicator: (count: number) => `عرض أهم ${count} خبراً اليوم حسب الأثر`,
-    loadFullBriefing: "تحميل الموجز الكامل",
+    loadFullBriefing: "عرض الموجز الكامل",
     viewAllStories: "عرض الكل ←",
     trustFooterTitle: "موثوق. شفاف. محدّث دائماً.",
     trustFooterSubtext: "مصادر موثوقة. ترتيب حسب الأثر الحقيقي في الأسواق.",
@@ -181,13 +174,6 @@ const pageCopy = {
     relativeMinutes: (minutes: number) => `منذ ${minutes} د`,
     relativeHours: (hours: number) => `منذ ${hours} س`,
     relativeDays: (days: number) => `منذ ${days} ي`,
-    trustStripLabel: "لماذا يعتمد القرّاء على هذا الموجز",
-    trustItems: [
-      { id: "bilingual", label: "عربي وإنجليزي" },
-      { id: "window", label: "نافذة 72 ساعة" },
-      { id: "ranked", label: "ترتيب حسب الأثر" },
-      { id: "coverage", label: "تغطية الخليج والعالم" },
-    ],
     refreshLine: (count: number, hours: number, refreshed: string | null) =>
       refreshed
         ? `${count.toLocaleString("en")} خبر خلال آخر ${hours} ساعة · تحديث المصادر ${refreshed}`

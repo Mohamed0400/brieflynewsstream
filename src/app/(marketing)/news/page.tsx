@@ -2,7 +2,6 @@ import { BriefPageBackground } from "@/components/BriefPageBackground";
 import { BriefHero } from "@/components/BriefHero";
 import { BriefMetricsDashboard } from "@/components/BriefMetricsDashboard";
 import { BriefTrustFooter } from "@/components/BriefTrustFooter";
-import { BriefTrustPills } from "@/components/BriefTrustPills";
 import { HomepageArticleFeed } from "@/components/HomepageArticleFeed";
 import { HomepageSearchBar } from "@/components/HomepageSearchBar";
 import { CommunityBriefingFilter } from "@/components/CommunityBriefingFilter";
@@ -281,8 +280,6 @@ export default async function Home({
             <ArrowSquareOut size={14} weight="regular" aria-hidden />
           </Link>
         </nav>
-
-        <BriefTrustPills lang={lang} />
 
         <details className="mkt-brief-filters-details">
           <summary className="mkt-brief-filters-details__summary">{copy.filtersTitle}</summary>

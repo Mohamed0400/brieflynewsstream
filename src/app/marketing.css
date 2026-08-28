@@ -2972,52 +2972,6 @@
   outline-offset: 4px;
 }
 
-/* Brief trust pills */
-.mkt-brief-trust-pills {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 0.5rem;
-  margin: 0 0 1.25rem;
-  padding: 0 0 0.15rem;
-  list-style: none;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.mkt-brief-trust-pills::-webkit-scrollbar {
-  display: none;
-}
-
-.mkt-brief-trust-pill {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 0.4rem;
-  min-height: 2rem;
-  padding: 0.3rem 0.85rem;
-  border: 1px solid var(--mkt-line);
-  border-radius: 999px;
-  background: var(--mkt-surface);
-  color: var(--mkt-ink);
-  font-size: 0.75rem;
-  font-weight: 600;
-  box-shadow: 0 1px 2px rgb(11 20 34 / 4%);
-}
-
-.mkt-brief-trust-pill svg {
-  color: var(--mkt-ink);
-}
-
-.mkt-brief-trust-pill.is-active {
-  border-color: var(--mkt-ink);
-  background: var(--mkt-ink);
-  color: #f7f9fc;
-}
-
-.mkt-brief-trust-pill.is-active svg {
-  color: #f7f9fc;
-}
-
 /* Collapsible filters */
 .mkt-brief-filters-details {
   margin: 0 0 1.25rem;

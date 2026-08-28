@@ -78,6 +78,15 @@ jobs:
             echo "used_http=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          {
+            echo "## Why this job is long-running"
+            echo ""
+            echo "Full collect walks ~70 countries / hundreds of sources, normalizes raw rows, translates ar/en, and rebuilds today's edition."
+            echo "Expect **30–180 minutes**. Do **not** cancel early — a cancelled run leaves a DB job lock that blocks the next collect until ops kills the zombie lock."
+            echo ""
+            echo "Vercel HTTP cron is only a short backup. This workflow is the source of truth for production freshness."
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
           npx tsx src/worker/run-once.ts | tee pipeline-result.json
           echo "used_http=false" >> "$GITHUB_OUTPUT"
           {

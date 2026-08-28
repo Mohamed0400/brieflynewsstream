@@ -3,7 +3,6 @@ import {
   clearStaleJobLocks,
   ensureDefaultJobs,
   JOB_COLLECT,
-  releaseJobLock,
   runScheduledJob,
   shouldRunStaleCollect,
   STALE_COLLECT_MAX_AGE_MS,
@@ -14,7 +13,14 @@ const ifStale = process.argv.includes("--if-stale");
 
 function registerInterruptHandlers() {
   const onSignal = () => {
-    void releaseJobLock(JOB_COLLECT).finally(() => process.exit(143));
+    void prisma.scheduledJob.updateMany({
+      where: { lastStatus: "running" },
+      data: {
+        lockedUntil: null,
+        lastStatus: "interrupted",
+        lastError: "Worker process received interrupt signal.",
+      },
+    }).finally(() => process.exit(143));
   };
   process.once("SIGTERM", onSignal);
   process.once("SIGINT", onSignal);

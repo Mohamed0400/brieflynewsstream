@@ -23,6 +23,11 @@ export const JOB_LOCK_MS: Record<string, number> = {
 };
 /** Extend a live lock about once a minute so health polls cannot treat it as expired. */
 export const LOCK_HEARTBEAT_MS = 60_000;
+/**
+ * If lockedUntil stops advancing (process died after Vercel timeout / cancelled run),
+ * treat the claim as a zombie after this many missed heartbeats.
+ */
+export const LOCK_ZOMBIE_MS = 3 * LOCK_HEARTBEAT_MS;
 /** `--if-stale` collect no-ops when the last successful run is newer than this. */
 export const STALE_COLLECT_MAX_AGE_MS = 4 * 60 * 60 * 1000;
 const ONLINE_MS = 90_000;
@@ -40,9 +45,42 @@ export function jobLockMs(key: string) {
 }
 
 /**
+ * Heartbeat renewals set lockedUntil = now + jobLockMs(key).
+ * Invert that to approximate the last renew time without a new DB column.
+ */
+export function approximateLastLockHeartbeat(
+  lockedUntil: Date | null | undefined,
+  key: string,
+) {
+  if (!lockedUntil) return null;
+  return new Date(lockedUntil.getTime() - jobLockMs(key));
+}
+
+/**
+ * True when status is running and the lock stopped being renewed
+ * (serverless timeout, killed process, cancelled Actions run).
+ */
+export function isZombieLock(
+  job: {
+    key?: string;
+    lastStatus: string | null;
+    lockedUntil: Date | null;
+  },
+  now: Date,
+  zombieAfterMs: number = LOCK_ZOMBIE_MS,
+) {
+  if (job.lastStatus !== "running") return false;
+  if (!isCurrentlyLocked(job.lockedUntil, now)) return false;
+  const lastBeat = approximateLastLockHeartbeat(job.lockedUntil, job.key ?? JOB_COLLECT);
+  if (!lastBeat) return true;
+  return now.getTime() - lastBeat.getTime() >= zombieAfterMs;
+}
+
+/**
  * A live claim always has lockedUntil in the future. Never treat previous-run
  * lastRunAt as a reason to steal that lock (health polls used to do exactly that).
- * Serverless timeouts leave locks renewed in the DB — cap runtime per job type.
+ * Serverless timeouts leave locks in the DB without heartbeats — clear those as zombies.
+ * Also cap total runtime per job type.
  */
 export function shouldClearStaleLock(
   job: {
@@ -54,6 +92,7 @@ export function shouldClearStaleLock(
   now: Date,
 ) {
   if (job.lastStatus !== "running") return false;
+  if (isZombieLock(job, now)) return true;
   const maxRuntime = jobLockMs(job.key ?? JOB_COLLECT);
   if (job.lastRunAt != null && now.getTime() - job.lastRunAt.getTime() >= maxRuntime) {
     return true;
@@ -177,7 +216,7 @@ function summarizePipeline(result: {
   ].filter(Boolean).join(", ");
 }
 
-/** Clear jobs whose lock timestamp has expired. Never uses lastRunAt while a lock is still valid. */
+/** Clear expired locks and heartbeat-dead zombie claims. */
 export async function clearStaleJobLocks() {
   const now = new Date();
   const running = await prisma.scheduledJob.findMany({
@@ -192,8 +231,8 @@ export async function clearStaleJobLocks() {
     where: { key: { in: staleKeys } },
     data: {
       lockedUntil: null,
-      lastStatus: "error",
-      lastError: "Previous run was interrupted before completion.",
+      lastStatus: "interrupted",
+      lastError: "Previous run was interrupted before completion (expired or zombie lock).",
     },
   });
   return staleKeys;
@@ -204,10 +243,30 @@ export async function releaseJobLock(key: string) {
     where: { key, lastStatus: "running" },
     data: {
       lockedUntil: null,
-      lastStatus: "error",
+      lastStatus: "interrupted",
       lastError: "Run was interrupted before completion.",
     },
   });
+}
+
+/** Force-release every running job lock (ops “Kill zombie locks” fallback). */
+export async function releaseAllRunningJobLocks() {
+  const running = await prisma.scheduledJob.findMany({
+    where: { lastStatus: "running" },
+    select: { key: true },
+    orderBy: { key: "asc" },
+  });
+  const keys = running.map((job) => job.key);
+  if (!keys.length) return [];
+  await prisma.scheduledJob.updateMany({
+    where: { key: { in: keys } },
+    data: {
+      lockedUntil: null,
+      lastStatus: "interrupted",
+      lastError: "Lock released manually from platform operations.",
+    },
+  });
+  return keys;
 }
 
 export async function ensureDefaultJobs() {
@@ -277,13 +336,8 @@ async function executeJob(key: string) {
   }));
 }
 
-export async function runScheduledJob(key: string, options?: { force?: boolean }) {
-  await clearStaleJobLocks();
-  if (options?.force) {
-    await releaseJobLock(key);
-  }
-  const now = new Date();
-  const claimed = await prisma.scheduledJob.updateMany({
+async function claimScheduledJob(key: string, now: Date) {
+  return prisma.scheduledJob.updateMany({
     where: {
       key,
       OR: [{ lockedUntil: null }, { lockedUntil: { lt: now } }],
@@ -295,18 +349,36 @@ export async function runScheduledJob(key: string, options?: { force?: boolean }
       lastError: null,
     },
   });
+}
+
+export async function runScheduledJob(key: string, options?: { force?: boolean }) {
+  await clearStaleJobLocks();
+  if (options?.force) {
+    await releaseJobLock(key);
+  }
+  let now = new Date();
+  let claimed = await claimScheduledJob(key, now);
+  if (claimed.count === 0) {
+    // Second chance: a zombie may still look locked until clearStale ran; clear again and retry once.
+    const cleared = await clearStaleJobLocks();
+    if (cleared.includes(key) || options?.force) {
+      if (options?.force) await releaseJobLock(key);
+      now = new Date();
+      claimed = await claimScheduledJob(key, now);
+    }
+  }
   if (claimed.count === 0) {
     const busy = await prisma.scheduledJob.findFirst({
       where: { key, lastStatus: "running" },
-      select: { key: true, lastRunAt: true, lockedUntil: true },
+      select: { key: true, lastRunAt: true, lockedUntil: true, lastStatus: true },
     });
     return {
       ok: false,
       skipped: true,
       message: options?.force
-        ? "Could not start the job. Try Release lock, then Force run again."
+        ? "Could not start the job. Try Kill zombie locks, then Force run again."
         : busy
-          ? `${key} is already running${busy.lastRunAt ? ` since ${busy.lastRunAt.toISOString()}` : ""}. Use Force run or Release lock in Operations → Schedule.`
+          ? `${key} is already running${busy.lastRunAt ? ` since ${busy.lastRunAt.toISOString()}` : ""}. Use Force run or Kill zombie locks in Operations.`
           : "Could not claim the job lock.",
     };
   }
@@ -387,7 +459,14 @@ function serializeJob(job: {
   lastSummary: string | null;
   lockedUntil: Date | null;
 }) {
-  const running = Boolean(job.lockedUntil && job.lockedUntil > new Date());
+  const now = new Date();
+  const running = Boolean(job.lockedUntil && job.lockedUntil > now);
+  const stale = shouldClearStaleLock({
+    key: job.key,
+    lastStatus: job.lastStatus === "running" || running ? "running" : job.lastStatus,
+    lockedUntil: job.lockedUntil,
+    lastRunAt: job.lastRunAt,
+  }, now);
   return {
     key: job.key,
     name: job.name,
@@ -396,10 +475,12 @@ function serializeJob(job: {
     timezone: job.timezone,
     enabled: job.enabled,
     running,
+    stale,
     lastRunAt: job.lastRunAt?.toISOString() ?? null,
     lastStatus: running ? "running" : job.lastStatus,
     lastError: job.lastError,
     lastSummary: job.lastSummary,
+    lockedUntil: job.lockedUntil?.toISOString() ?? null,
     presets: job.key === JOB_PUBLISH || job.key === JOB_ARCHIVE
       ? PUBLISH_PRESETS
       : job.key === JOB_TRANSLATE

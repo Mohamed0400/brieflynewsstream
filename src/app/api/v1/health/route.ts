@@ -37,10 +37,11 @@ export async function GET(request: Request) {
       lastStatus: job.lastStatus,
       lastRunAt: job.lastRunAt,
       running: job.running,
+      stale: job.stale,
     }));
     const missingJobs = requiredKeys.filter((key) => !jobs.some((job) => job.key === key));
     const disabledJobs = jobs.filter((job) => requiredKeySet.has(job.key) && !job.enabled).map((job) => job.key);
-    const stuckJobs = jobs.filter((job) => job.running).map((job) => job.key);
+    const stuckJobs = jobs.filter((job) => job.stale).map((job) => job.key);
     const jobsOk = missingJobs.length === 0 && disabledJobs.length === 0 && stuckJobs.length === 0;
     const bilingualOk = todayCoverage.ok && freshCoverage.ok;
     const embeddedSchedulerRequired = embeddedSchedulerEnabled();

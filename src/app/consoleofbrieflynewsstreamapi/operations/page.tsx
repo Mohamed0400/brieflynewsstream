@@ -1,5 +1,5 @@
 import { AdminOverviewPanel } from "@/components/console/AdminOverviewPanel";
-import { OpsCollectCta } from "@/components/console/OpsCollectCta";
+import { OpsOverviewActions } from "@/components/console/OpsOverviewActions";
 import { getConsoleLang } from "@/lib/console-lang";
 import { consoleDashboardCopy } from "@/lib/console-translation";
 
@@ -14,7 +14,7 @@ export default async function AdminOverviewPage() {
         <h1>{copy.opsOverview.title}</h1>
         <p className="console-page-description">{copy.opsOverview.description}</p>
       </header>
-      <OpsCollectCta />
+      <OpsOverviewActions />
       <AdminOverviewPanel />
     </div>
   );

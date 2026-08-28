@@ -7,11 +7,13 @@ import {
   embeddedSchedulerEnabled,
   isLockExpired,
   isValidCron,
+  isZombieLock,
   JOB_COLLECT,
   JOB_PUBLISH,
   JOB_TRANSLATE,
   JOB_ARCHIVE,
   LOCK_MS,
+  LOCK_ZOMBIE_MS,
   PUBLISH_PRESETS,
   shouldClearStaleLock,
   shouldRunStaleCollect,
@@ -80,20 +82,64 @@ test("job-specific lock windows keep short jobs from inheriting collect duration
   assert.ok(jobLockMs(JOB_TRANSLATE) < jobLockMs(JOB_COLLECT));
 });
 
-test("shouldClearStaleLock releases zombie translate locks even when lockedUntil is renewed", () => {
-  const now = new Date("2026-08-25T09:00:00.000Z");
-  const futureLock = new Date(now.getTime() + 2 * 60 * 60 * 1000);
-  const staleTranslateStart = new Date(now.getTime() - jobLockMs(JOB_TRANSLATE) - 1);
-  assert.equal(shouldClearStaleLock({
-    key: JOB_TRANSLATE,
+test("isZombieLock uses heartbeat age from lockedUntil inversion", () => {
+  const now = new Date("2026-08-28T16:25:00.000Z");
+  const lockMs = jobLockMs(JOB_COLLECT);
+  assert.ok(LOCK_ZOMBIE_MS >= 3 * 60_000);
+  assert.equal(isZombieLock({
+    key: JOB_COLLECT,
     lastStatus: "running",
-    lockedUntil: futureLock,
-    lastRunAt: staleTranslateStart,
+    lockedUntil: new Date(now.getTime() + lockMs - 10 * 60 * 1000),
   }, now), true);
+  assert.equal(isZombieLock({
+    key: JOB_COLLECT,
+    lastStatus: "running",
+    lockedUntil: new Date(now.getTime() + lockMs - 30_000),
+  }, now), false);
+  assert.equal(isZombieLock({
+    key: JOB_COLLECT,
+    lastStatus: "ok",
+    lockedUntil: new Date(now.getTime() + lockMs - 10 * 60 * 1000),
+  }, now), false);
+});
+
+test("shouldClearStaleLock releases zombie locks when heartbeats stop", () => {
+  const now = new Date("2026-08-28T16:25:00.000Z");
+  const lockMs = jobLockMs(JOB_COLLECT);
+  // Claimed ~10 minutes ago; lock never renewed → heartbeat age ≈ 10m.
+  const lockedUntil = new Date(now.getTime() + lockMs - 10 * 60 * 1000);
   assert.equal(shouldClearStaleLock({
     key: JOB_COLLECT,
     lastStatus: "running",
-    lockedUntil: futureLock,
+    lockedUntil,
+    lastRunAt: new Date(now.getTime() - 10 * 60 * 1000),
+  }, now), true);
+
+  // Live heartbeat within the last minute keeps the lock.
+  const liveLock = new Date(now.getTime() + lockMs - 30_000);
+  assert.equal(shouldClearStaleLock({
+    key: JOB_COLLECT,
+    lastStatus: "running",
+    lockedUntil: liveLock,
+    lastRunAt: new Date(now.getTime() - 30 * 60 * 1000),
+  }, now), false);
+});
+
+test("shouldClearStaleLock releases zombie translate locks even when lockedUntil is renewed", () => {
+  const now = new Date("2026-08-25T09:00:00.000Z");
+  const staleTranslateStart = new Date(now.getTime() - jobLockMs(JOB_TRANSLATE) - 1);
+  // Translate past its max runtime even if lockedUntil looks fresh.
+  assert.equal(shouldClearStaleLock({
+    key: JOB_TRANSLATE,
+    lastStatus: "running",
+    lockedUntil: new Date(now.getTime() + jobLockMs(JOB_TRANSLATE) - 30_000),
+    lastRunAt: staleTranslateStart,
+  }, now), true);
+  // Collect still inside its window with a recently renewed heartbeat stays locked.
+  assert.equal(shouldClearStaleLock({
+    key: JOB_COLLECT,
+    lastStatus: "running",
+    lockedUntil: new Date(now.getTime() + jobLockMs(JOB_COLLECT) - 30_000),
     lastRunAt: new Date(now.getTime() - 30 * 60 * 1000),
   }, now), false);
 });

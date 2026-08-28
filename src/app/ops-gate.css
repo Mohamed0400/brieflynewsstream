@@ -338,7 +338,78 @@
   flex-wrap: wrap;
 }
 
-.ops-shell .ops-collect-cta .console-primary-button {
+.ops-shell .ops-overview-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  flex-shrink: 0;
+}
+
+.ops-shell .ops-overview-actions {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.ops-shell .ops-recommendation-urgent {
+  margin: 0.75rem 0 0;
+  color: #9b2c2c;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.ops-shell .ops-recommendation-tags {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ops-shell .ops-recommendation-tags li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--console-border);
+}
+
+.ops-shell .ops-recommendation-tags li:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.ops-shell .ops-recommendation-tag {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  line-height: 1.35;
+  background: rgb(11 20 34 / 6%);
+}
+
+.ops-shell .ops-recommendation-tags li[data-severity="critical"] .ops-recommendation-tag {
+  background: rgb(155 44 44 / 14%);
+  color: #9b2c2c;
+}
+
+.ops-shell .ops-recommendation-tags li[data-severity="warning"] .ops-recommendation-tag {
+  background: rgb(180 120 20 / 16%);
+  color: #8a5a00;
+}
+
+.ops-shell .ops-recommendation-tags li[data-severity="info"] .ops-recommendation-tag {
+  background: rgb(94 200 220 / 18%);
+  color: var(--console-ink);
+}
+
+.ops-shell .ops-collect-cta .console-primary-button,
+.ops-shell .ops-collect-cta .console-danger-button {
   flex-shrink: 0;
   white-space: nowrap;
 }
@@ -348,8 +419,12 @@
     display: grid;
   }
 
-  .ops-shell .ops-collect-cta .console-primary-button {
+  .ops-shell .ops-overview-cta-row {
     width: 100%;
+  }
+
+  .ops-shell .ops-overview-cta-row > * {
+    flex: 1 1 auto;
   }
 }
 

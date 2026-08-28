@@ -158,7 +158,7 @@ export function OpsRecoveryPanel() {
             disabled={Boolean(busy)}
             onClick={() => void releaseLocks(true)}
           >
-            {busy === "release" ? t.working : t.releaseLocks}
+            {busy === "release" ? t.working : t.killZombieLocks}
           </button>
           <button
             type="button"

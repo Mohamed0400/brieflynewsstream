@@ -14,6 +14,7 @@ import {
   ensureDefaultJobs,
   getScheduleSnapshot,
   JOB_COLLECT,
+  releaseAllRunningJobLocks,
   releaseJobLock,
   runScheduledJob,
   shouldClearStaleLock,
@@ -232,7 +233,7 @@ export async function getOpsStatus(): Promise<OpsStatusSnapshot> {
       lastStatusRaw: job.lastStatus,
     };
   }), now);
-  const stuckJobs = jobs.filter((job) => job.running).map((job) => job.key);
+  const stuckJobs = jobs.filter((job) => job.stale).map((job) => job.key);
 
   return {
     at: now.toISOString(),
@@ -253,6 +254,9 @@ export async function getOpsStatus(): Promise<OpsStatusSnapshot> {
 
 export async function releaseStuckJobLocks(options: ReleaseLocksOptions = {}) {
   await ensureDefaultJobs();
+  if (options.force && !options.keys?.length) {
+    return releaseAllRunningJobLocks();
+  }
   const now = new Date();
   const running = await prisma.scheduledJob.findMany({
     where: { lastStatus: "running" },
@@ -270,6 +274,94 @@ export async function releaseStuckJobLocks(options: ReleaseLocksOptions = {}) {
     }
   }
   return released;
+}
+
+export type OpsRecommendation = {
+  id: string;
+  severity: "critical" | "warning" | "info";
+  action: "kill_zombie" | "collect" | "translate" | "recovery" | "none";
+};
+
+export async function getOpsRecommendations(): Promise<{
+  recommendations: OpsRecommendation[];
+  pipeline: {
+    stuckJobs: string[];
+    runningJobs: string[];
+    pendingTranslationArticles: number;
+    pendingRawArticles: number;
+    bilingualFreshOk: boolean;
+    bilingualFreshMissingArabic: number;
+    newestPublishedAt: string | null;
+    collectLastStatus: string | null;
+    collectLastRunAt: string | null;
+  };
+}> {
+  const status = await getOpsStatus();
+  const newest = await prisma.article.findFirst({
+    orderBy: { publishedAt: "desc" },
+    select: { publishedAt: true },
+  });
+  const collect = status.jobs.find((job) => job.key === JOB_COLLECT);
+  const newestPublishedAt = newest?.publishedAt?.toISOString() ?? null;
+  const ageMs = newest?.publishedAt ? Date.now() - newest.publishedAt.getTime() : null;
+  const recommendations: OpsRecommendation[] = [];
+
+  if (status.stuckJobs.length) {
+    recommendations.push({
+      id: "zombie_locks",
+      severity: "critical",
+      action: "kill_zombie",
+    });
+  }
+  if (collect?.lastStatus === "interrupted" || collect?.lastStatus === "error") {
+    recommendations.push({
+      id: "collect_failed",
+      severity: "critical",
+      action: "collect",
+    });
+  } else if (ageMs != null && ageMs > 6 * 60 * 60 * 1000) {
+    recommendations.push({
+      id: "stale_feed",
+      severity: "warning",
+      action: "collect",
+    });
+  }
+  if (status.pendingTranslationArticles > 50 || status.bilingual.fresh.missingArabic > 100) {
+    recommendations.push({
+      id: "translation_backlog",
+      severity: "warning",
+      action: "translate",
+    });
+  }
+  if (status.pendingRawArticles > 0) {
+    recommendations.push({
+      id: "raw_backlog",
+      severity: "warning",
+      action: "recovery",
+    });
+  }
+  if (!recommendations.length) {
+    recommendations.push({
+      id: "healthy",
+      severity: "info",
+      action: "none",
+    });
+  }
+
+  return {
+    recommendations,
+    pipeline: {
+      stuckJobs: status.stuckJobs,
+      runningJobs: status.jobs.filter((job) => job.running).map((job) => job.key),
+      pendingTranslationArticles: status.pendingTranslationArticles,
+      pendingRawArticles: status.pendingRawArticles,
+      bilingualFreshOk: status.bilingual.fresh.ok,
+      bilingualFreshMissingArabic: status.bilingual.fresh.missingArabic,
+      newestPublishedAt,
+      collectLastStatus: collect?.lastStatus ?? null,
+      collectLastRunAt: collect?.lastRunAt ?? null,
+    },
+  };
 }
 
 export async function runOpsRecovery(options: OpsRecoverOptions = {}): Promise<OpsRecoverResult> {

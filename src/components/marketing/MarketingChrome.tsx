@@ -434,7 +434,7 @@ function MarketingFooter({ lang }: { lang: MarketingLang }) {
           <nav aria-label={copy.footerResources}>
             <h2>{copy.footerResources}</h2>
             <Link href={withLang("/developers")}>{copy.footerDocs}</Link>
-            <Link href="/llms.txt">{copy.footerLlms}</Link>
+            <a href="/llms.txt">{copy.footerLlms}</a>
             <Link href={withLang("/console/login")}>{copy.footerConsole}</Link>
           </nav>
           <nav aria-label={copy.footerCompany}>

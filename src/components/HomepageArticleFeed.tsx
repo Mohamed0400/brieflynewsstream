@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CaretRight, Lightning } from "@phosphor-icons/react/ssr";
+import { CaretLeft, CaretRight, Lightning } from "@phosphor-icons/react/ssr";
 import type { Category, Region } from "@prisma/client";
 import { articleLocalizedText } from "@/lib/article-translation";
 import { countryRecord } from "@/lib/countries";
@@ -146,6 +146,21 @@ export function HomepageArticleFeed({
   const articleHref = (id: string) => (lang === "en" ? `/news/${id}?lang=en` : `/news/${id}`);
   const topCount = topEditionView ? (editionItemCount || matchedCount) : 0;
   const showLoadFullBriefing = topEditionView && catalogCount > matchedCount;
+  const fullCatalogView =
+    view === "all"
+    && !q
+    && !category
+    && !country
+    && !nationality
+    && sort !== "date"
+    && !from
+    && !to;
+  const feedSubtitle = topEditionView
+    ? copy.topEditionIndicator(topCount)
+    : fullCatalogView
+      ? copy.fullCatalogSubtitle
+      : copy.topStoriesSubtitle;
+  const ChevronIcon = copy.dir === "rtl" ? CaretLeft : CaretRight;
 
   return (
     <section id="homepage-feed" className="mkt-brief-feed" aria-live="polite">
@@ -161,11 +176,7 @@ export function HomepageArticleFeed({
             </span>
             <div>
               <h2>{copy.topStoriesTitle}</h2>
-              <p>
-                {topEditionView
-                  ? copy.topEditionIndicator(topCount)
-                  : copy.topStoriesSubtitle}
-              </p>
+              <p>{feedSubtitle}</p>
             </div>
           </div>
         </header>
@@ -197,19 +208,24 @@ export function HomepageArticleFeed({
                           <Link href={articleHref(article.id)}>{localized.title}</Link>
                         </h3>
                       </div>
-                      <p className="mkt-brief-feed-row__meta">{meta}</p>
-                    </div>
-                    <div className="mkt-brief-feed-row__aside">
-                      <time dateTime={article.publishedAt.toISOString()}>
-                        {relativePublishedAt(article.publishedAt, lang)}
-                      </time>
-                      <Link
-                        href={articleHref(article.id)}
-                        className="mkt-brief-feed-row__chevron"
-                        aria-label={localized.title}
-                      >
-                        <CaretRight size={18} weight="bold" aria-hidden="true" />
-                      </Link>
+                      {localized.summary ? (
+                        <p className="mkt-visually-hidden">{localized.summary}</p>
+                      ) : null}
+                      <div className="mkt-brief-feed-row__footer">
+                        <p className="mkt-brief-feed-row__meta">{meta}</p>
+                        <div className="mkt-brief-feed-row__aside">
+                          <time dateTime={article.publishedAt.toISOString()}>
+                            {relativePublishedAt(article.publishedAt, lang)}
+                          </time>
+                          <Link
+                            href={articleHref(article.id)}
+                            className="mkt-brief-feed-row__chevron"
+                            aria-label={localized.title}
+                          >
+                            <ChevronIcon size={18} weight="bold" aria-hidden="true" />
+                          </Link>
+                        </div>
+                      </div>
                     </div>
                   </article>
                 </li>

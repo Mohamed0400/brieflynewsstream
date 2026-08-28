@@ -7,6 +7,8 @@ import { HomepageArticleFeed } from "@/components/HomepageArticleFeed";
 import { HomepageSearchBar } from "@/components/HomepageSearchBar";
 import { CommunityBriefingFilter } from "@/components/CommunityBriefingFilter";
 import { articleListOrderBy, listDedupedArticles, parseQuery } from "@/lib/api";
+import { listTodaysEditionFeedArticles } from "@/lib/editions";
+import { isTopEditionFeedView, newsFeedHref } from "@/lib/feed-view";
 import { CATEGORY_META } from "@/lib/market";
 import { limits } from "@/lib/limits";
 import { SupportedCountriesScreen } from "@/components/SupportedCountriesScreen";
@@ -102,19 +104,9 @@ function feedHref(params: {
   from?: string;
   to?: string;
   page?: number;
+  view?: "top" | "all";
 }) {
-  const query = new URLSearchParams();
-  if (params.lang && params.lang !== "ar") query.set("lang", params.lang);
-  if (params.q) query.set("q", params.q);
-  if (params.category) query.set("category", params.category);
-  if (params.country) query.set("country", params.country);
-  if (params.nationality) query.set("nationality", params.nationality);
-  if (params.sort && params.sort !== "score") query.set("sort", params.sort);
-  if (params.from) query.set("from", params.from);
-  if (params.to) query.set("to", params.to);
-  if (params.page && params.page > 1) query.set("page", String(params.page));
-  const value = query.toString();
-  return value ? `/news?${value}` : "/news";
+  return newsFeedHref(params);
 }
 
 export default async function Home({
@@ -130,6 +122,7 @@ export default async function Home({
     from?: string;
     to?: string;
     page?: string;
+    view?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -140,6 +133,16 @@ export default async function Home({
   const sort = params.sort === "date" ? "date" : "score";
   const from = params.from && /^\d{4}-\d{2}-\d{2}$/.test(params.from) ? params.from : "";
   const to = params.to && /^\d{4}-\d{2}-\d{2}$/.test(params.to) ? params.to : "";
+  const topEditionView = isTopEditionFeedView({
+    view: params.view,
+    q,
+    category: params.category,
+    country,
+    nationality: params.nationality,
+    sort,
+    from,
+    to,
+  });
   const pageSize = Math.max(1, limits.dashboard);
   const requestedPage = Math.max(1, Number.parseInt(params.page || "1", 10) || 1);
   const liveFreshnessHours = Math.max(1, limits.newsMaxAgeHours);
@@ -161,28 +164,35 @@ export default async function Home({
   let matchedCount = 0;
   let fetchedArticles: Awaited<ReturnType<typeof listDedupedArticles>>["items"] = [];
   try {
-    const feedQuery = parseQuery(feedParams, { searchVariants });
-    freshnessHours = feedQuery.filters.freshnessHours ?? liveFreshnessHours;
-    const listed = await listDedupedArticles(
-      feedQuery.where,
-      articleListOrderBy(feedQuery.sort),
-      feedQuery.limit,
-      feedQuery.offset,
-      { lang, applyBriefRanking: feedQuery.applyBriefRanking },
-    );
-    matchedCount = listed.count;
-    fetchedArticles = listed.items;
+    if (topEditionView) {
+      const editionFeed = await listTodaysEditionFeedArticles(feedParams, { lang, searchVariants });
+      matchedCount = editionFeed.count;
+      fetchedArticles = editionFeed.items;
+    } else {
+      const feedQuery = parseQuery(feedParams, { searchVariants });
+      freshnessHours = feedQuery.filters.freshnessHours ?? liveFreshnessHours;
+      const listed = await listDedupedArticles(
+        feedQuery.where,
+        articleListOrderBy(feedQuery.sort),
+        feedQuery.limit,
+        feedQuery.offset,
+        { lang, applyBriefRanking: feedQuery.applyBriefRanking },
+      );
+      matchedCount = listed.count;
+      fetchedArticles = listed.items;
+    }
   } catch (error) {
     console.error("news feed query unavailable", error);
   }
   const liveCountrySet = new Set(stats.liveCountries);
   const countries = supportedCountryCodes(stats.sourceCountries);
   const countryGroups = groupCountryCodesByRegion(countries, lang);
-  const totalPages = Math.max(1, Math.ceil(matchedCount / pageSize));
-  const page = Math.min(requestedPage, totalPages);
+  const totalPages = topEditionView ? 1 : Math.max(1, Math.ceil(matchedCount / pageSize));
+  const page = topEditionView ? 1 : Math.min(requestedPage, totalPages);
   const articles = fetchedArticles;
   const articleCount = stats.articleCount;
   const editionItemCount = stats.editionItemCount;
+  const catalogCount = articleCount;
   const healthySources = stats.healthySources;
   const lastSourceRefresh = formatSourceRefresh(stats.lastSourceFetchAt, lang);
   const developerHref = lang === "en" ? "/developers?lang=en" : "/developers";
@@ -432,6 +442,10 @@ export default async function Home({
           matchedCount={matchedCount}
           totalPages={totalPages}
           articles={articles}
+          topEditionView={topEditionView}
+          editionItemCount={editionItemCount}
+          catalogCount={catalogCount}
+          view={params.view === "all" ? "all" : params.view === "top" ? "top" : undefined}
         />
 
         <BriefMetricsDashboard lang={lang} metrics={operationalMetrics} />

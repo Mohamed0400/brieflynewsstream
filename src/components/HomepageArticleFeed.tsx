@@ -5,6 +5,7 @@ import { articleLocalizedText } from "@/lib/article-translation";
 import { countryRecord } from "@/lib/countries";
 import { CATEGORY_META, REGION_META } from "@/lib/market";
 import { landingCopy } from "@/lib/landing-translation";
+import { newsFeedHref } from "@/lib/feed-view";
 import { BrandLoader } from "@/components/media/BrandLoader";
 import { ImpactBadge } from "@/components/ImpactBadge";
 import type { ArticleImpactScore } from "@/lib/impact-display";
@@ -54,19 +55,10 @@ function feedHref(params: {
   from?: string;
   to?: string;
   page?: number;
+  view?: "top" | "all";
+  hash?: string;
 }) {
-  const query = new URLSearchParams();
-  if (params.lang && params.lang !== "ar") query.set("lang", params.lang);
-  if (params.q) query.set("q", params.q);
-  if (params.category) query.set("category", params.category);
-  if (params.country) query.set("country", params.country);
-  if (params.nationality) query.set("nationality", params.nationality);
-  if (params.sort && params.sort !== "score") query.set("sort", params.sort);
-  if (params.from) query.set("from", params.from);
-  if (params.to) query.set("to", params.to);
-  if (params.page && params.page > 1) query.set("page", String(params.page));
-  const value = query.toString();
-  return value ? `/news?${value}` : "/news";
+  return newsFeedHref(params);
 }
 
 function categoryLabel(category: Category, lang: string) {
@@ -116,6 +108,10 @@ export function HomepageArticleFeed({
   matchedCount,
   totalPages,
   articles,
+  topEditionView,
+  editionItemCount,
+  catalogCount,
+  view,
 }: {
   lang: string;
   q: string;
@@ -130,10 +126,26 @@ export function HomepageArticleFeed({
   matchedCount: number;
   totalPages: number;
   articles: FeedArticle[];
+  topEditionView: boolean;
+  editionItemCount: number;
+  catalogCount: number;
+  view?: "top" | "all";
 }) {
   const copy = landingCopy(lang);
-  const filterState = { lang, q, category, country, nationality, sort, from, to };
+  const filterState = {
+    lang,
+    q,
+    category,
+    country,
+    nationality,
+    sort,
+    from,
+    to,
+    view: view === "all" ? "all" as const : undefined,
+  };
   const articleHref = (id: string) => (lang === "en" ? `/news/${id}?lang=en` : `/news/${id}`);
+  const topCount = topEditionView ? (editionItemCount || matchedCount) : 0;
+  const showLoadFullBriefing = topEditionView && catalogCount > matchedCount;
 
   return (
     <section id="homepage-feed" className="mkt-brief-feed" aria-live="polite">
@@ -149,12 +161,13 @@ export function HomepageArticleFeed({
             </span>
             <div>
               <h2>{copy.topStoriesTitle}</h2>
-              <p>{copy.topStoriesSubtitle}</p>
+              <p>
+                {topEditionView
+                  ? copy.topEditionIndicator(topCount)
+                  : copy.topStoriesSubtitle}
+              </p>
             </div>
           </div>
-          <Link href="#homepage-feed" className="mkt-brief-feed-card__view-all">
-            {copy.viewAllStories}
-          </Link>
         </header>
 
         {articles.length === 0 ? (
@@ -204,9 +217,20 @@ export function HomepageArticleFeed({
             })}
           </ol>
         )}
+
+        {showLoadFullBriefing ? (
+          <div className="mkt-brief-feed-card__footer">
+            <Link
+              href={feedHref({ ...filterState, view: "all", hash: "#homepage-feed" })}
+              className="mkt-brief-feed-card__load-more"
+            >
+              {copy.loadFullBriefing}
+            </Link>
+          </div>
+        ) : null}
       </div>
 
-      {totalPages > 1 && (
+      {!topEditionView && totalPages > 1 && (
         <nav className="feed-pagination mkt-brief-feed-pagination" aria-label="Feed pages">
           {page > 1 ? (
             <Link href={feedHref({ ...filterState, page: page - 1 })} className="feed-pagination-link" rel="prev">

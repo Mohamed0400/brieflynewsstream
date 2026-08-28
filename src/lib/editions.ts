@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import { parseQuery, serializeArticle } from "./api";
+import { hasLocalizedDisplay } from "./article-translation";
 import { isBlockedArticle } from "./content-safety";
 import { kuwaitDate } from "./market";
 import { limits } from "./limits";
@@ -70,6 +71,37 @@ export async function getDailyEditionPayload(date: string, searchParams?: URLSea
       ...serializeArticle(item.article, item.rank, query.filters.lang),
       section: item.section,
     })),
+  };
+}
+
+export async function listTodaysEditionFeedArticles(
+  searchParams: URLSearchParams,
+  options: { lang: "ar" | "en"; searchVariants?: string[] } = { lang: "ar" },
+) {
+  await ensureTodaysEdition();
+  const query = parseQuery(searchParams, { searchVariants: options.searchVariants });
+  const edition = await prisma.dailyEdition.findUnique({
+    where: { date: kuwaitDate() },
+    select: {
+      itemCount: true,
+      items: {
+        where: { article: query.where },
+        include: { article: { include: { source: true, score: true } } },
+        orderBy: { rank: "asc" },
+      },
+    },
+  });
+
+  const lang = options.lang === "en" ? "en" : "ar";
+  const items = (edition?.items ?? [])
+    .map((item) => item.article)
+    .filter((article) => !isBlockedArticle(article))
+    .filter((article) => hasLocalizedDisplay(article, lang));
+
+  return {
+    count: items.length,
+    items,
+    editionItemCount: edition?.itemCount ?? 0,
   };
 }
 

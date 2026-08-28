@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Clock, Globe, Pulse, Translate } from "@phosphor-icons/react/ssr";
 import { landingCopy } from "@/lib/landing-translation";
+import { newsFeedHref } from "@/lib/feed-view";
 
 const iconProps = { size: 22, weight: "regular" as const, "aria-hidden": true };
 
@@ -83,7 +84,10 @@ export function BriefHero({
         <p className="mkt-brief-pulse-card__label">
           {editionItemCount === 1 ? copy.storyMattersToday : copy.storiesMatterToday}
         </p>
-        <Link href="#homepage-feed" className="mkt-brief-pulse-card__link">
+        <Link
+          href={newsFeedHref({ lang, view: "top", hash: "#homepage-feed" })}
+          className="mkt-brief-pulse-card__link"
+        >
           {copy.seeTopStories}
         </Link>
       </aside>

@@ -72,7 +72,9 @@ export function AdminShell({
         <aside className="console-sidebar">
           <div className="console-account-block">
             <p>{copy.opsWorkspace}</p>
-            <strong title={accountEmail} dir="ltr">{accountEmail}</strong>
+            <strong className="console-account-email" title={accountEmail} dir="ltr">
+              {accountEmail}
+            </strong>
             <span>{copy.opsBrand}</span>
           </div>
           <nav className="console-navigation" aria-label={copy.opsNavAria}>

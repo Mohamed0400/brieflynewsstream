@@ -252,6 +252,13 @@ const dashboardCopy = {
       enterprise: "Enterprise",
       views: (n: number) => `${n.toLocaleString("en-US")} views`,
       accountsCount: (n: number) => `${n.toLocaleString("en-US")} accounts`,
+      collectCta: {
+        title: "Fresh news",
+        hint: "Fetch every source, translate new articles, and refresh today's edition. May take several minutes on Vercel.",
+        button: "Fetch fresh articles now",
+        running: "Collecting…",
+        failed: "Collect failed.",
+      },
     },
     opsSubscriptions: {
       retentionRate: "Retention rate",
@@ -871,6 +878,13 @@ const dashboardCopy = {
       enterprise: "Enterprise",
       views: (n: number) => `${n.toLocaleString("ar")} مشاهدة`,
       accountsCount: (n: number) => `${n.toLocaleString("ar")} حساب`,
+      collectCta: {
+        title: "أخبار حديثة",
+        hint: "جلب كل المصادر وترجمة المقالات الجديدة وتحديث نسخة اليوم. قد يستغرق عدة دقائق على Vercel.",
+        button: "جلب مقالات جديدة الآن",
+        running: "جارٍ الجمع…",
+        failed: "فشل الجمع.",
+      },
     },
     opsSubscriptions: {
       retentionRate: "معدل الاحتفاظ",

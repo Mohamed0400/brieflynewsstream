@@ -3118,6 +3118,9 @@ html[data-home-search] .homepage-feed {
     gap: 0.35rem;
     margin-bottom: 2rem;
     padding-inline: 0.75rem;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
   }
 
   .console-account-block p {
@@ -3127,14 +3130,23 @@ html[data-home-search] .homepage-feed {
     font-weight: 650;
   }
 
-  .console-account-block strong {
+  .console-account-block strong,
+  .console-account-email {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
     font-size: 0.875rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .console-account-block span {
+    min-width: 0;
     color: var(--console-accent-strong);
     font-size: 0.75rem;
     font-weight: 650;
+    overflow-wrap: anywhere;
   }
 
   .console-session-live {

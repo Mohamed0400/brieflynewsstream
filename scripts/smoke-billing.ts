@@ -17,6 +17,7 @@ const email = (process.env.CONSOLE_E2E_EMAIL || "console-e2e@briefly.local").tri
 
 async function main() {
   console.log("billing_provider_ready", billingProviderReady());
+  console.log("billing_test_mode", process.env.LEMONSQUEEZY_TEST_MODE === "true");
   if (!billingProviderReady()) {
     throw new Error("Billing provider not ready — check LEMONSQUEEZY_* env vars");
   }
@@ -46,11 +47,12 @@ async function main() {
   }
   console.log("checkout_ok", pay.checkoutUrl.startsWith("https://"));
   console.log("checkout_host", new URL(pay.checkoutUrl).hostname);
+  console.log("checkout_url", pay.checkoutUrl);
 
   const webhook = await markInvoicePaidFromProvider({
     invoiceId: invoice.id,
     provider: "lemonsqueezy",
-    providerRef: "ls_smoke_test",
+    providerRef: `ls_smoke_test_${Date.now()}`,
     method: "lemonsqueezy",
   });
   if ("error" in webhook) {

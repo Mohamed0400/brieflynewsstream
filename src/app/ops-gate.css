@@ -185,6 +185,28 @@
 .ops-shell .console-sidebar {
   background: var(--console-surface);
   border-color: var(--console-border);
+  min-width: 0;
+  overflow-x: clip;
+}
+
+.ops-shell .console-account-block {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.ops-shell .console-account-block strong,
+.ops-shell .console-account-email {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ops-shell .console-account-block span {
+  overflow-wrap: anywhere;
 }
 
 .ops-shell .console-main {
@@ -295,12 +317,40 @@
 }
 
 .ops-shell .ops-stat-list span {
+  min-width: 0;
+  overflow: hidden;
   color: var(--console-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ops-shell .ops-stat-list strong {
+  flex-shrink: 0;
 }
 
 .ops-shell .ops-stat-list-mono span {
   font-family: var(--font-geist-mono), monospace;
   font-size: 0.8125rem;
+}
+
+.ops-shell .ops-collect-cta .console-panel-heading {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.ops-shell .ops-collect-cta .console-primary-button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+@media (max-width: 639px) {
+  .ops-shell .ops-collect-cta .console-panel-heading {
+    display: grid;
+  }
+
+  .ops-shell .ops-collect-cta .console-primary-button {
+    width: 100%;
+  }
 }
 
 .ops-shell .ops-analytics-grid {
@@ -363,6 +413,11 @@
   justify-content: space-between;
   gap: 0.75rem;
   margin-bottom: 0.75rem;
+  min-width: 0;
+}
+
+.ops-shell .ops-customer-detail-head > * {
+  min-width: 0;
 }
 
 .ops-shell .ops-customer-detail-head h3 {
@@ -528,7 +583,11 @@
 }
 
 .ops-shell .ops-bar-chart-meta span {
+  min-width: 0;
+  overflow: hidden;
   color: var(--console-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ops-shell .ops-bar-chart-track {

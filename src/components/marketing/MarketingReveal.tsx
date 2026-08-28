@@ -14,7 +14,7 @@ type MarketingRevealProps = {
   children: ReactNode;
   className?: string;
   delayMs?: number;
-  as?: "section" | "div" | "p";
+  as?: "section" | "article" | "div" | "p";
 } & Omit<HTMLAttributes<HTMLElement>, "children" | "className" | "style">;
 
 function subscribeReducedMotion(onChange: () => void) {

@@ -26,11 +26,11 @@ const copy = {
       "Real-time market news with impact scores and structured fields, ready for your product.",
     manifestoVisualAlt:
       "Market intelligence interface with a digital globe, bilingual EN and AR widgets, impact scores, sector panels, and a high-impact news card.",
-    contrastOther: "Other news API providers = more news.",
+    contrastOtherSubject: "Other news APIs",
+    contrastOtherOutcome: "More headlines.",
     contrastBrand: "Briefly",
-    contrastBrieflyBefore: " = more ",
-    contrastBrieflyEm: "intelligence",
-    contrastBrieflyAfter: " per news item.",
+    contrastBrieflyEm: "Higher intelligence",
+    contrastBrieflyAfter: " per story.",
     definitionAnswer:
       "A market intelligence API delivers structured market news with impact scores and bilingual fields so products can decide which stories matter, not only list more headlines.",
     heroProof: `No credit card · ${PLAN_DEFINITIONS.FREE.dailyRequests} requests a day · Arabic and English support`,
@@ -328,9 +328,9 @@ const copy = {
     manifestoLede: "أخبار أسواق لحظية بدرجة تأثير وحقول منظمة جاهزة لمنتجك.",
     manifestoVisualAlt:
       "واجهة ذكاء أسواق بكرة أرضية رقمية وعناصر ثنائية اللغة ودرجات تأثير وأقسام قطاعات وبطاقة خبر عالي التأثير.",
-    contrastOther: "واجهات الأخبار الأخرى = المزيد من العناوين.",
+    contrastOtherSubject: "واجهات الأخبار الأخرى",
+    contrastOtherOutcome: "المزيد من العناوين.",
     contrastBrand: "Briefly",
-    contrastBrieflyBefore: " = ",
     contrastBrieflyEm: "ذكاء أعلى",
     contrastBrieflyAfter: " لكل خبر.",
     definitionAnswer:

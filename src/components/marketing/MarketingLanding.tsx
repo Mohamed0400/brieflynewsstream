@@ -223,15 +223,43 @@ export function MarketingLanding({
         <h2 id="mkt-contrast-title" className="mkt-visually-hidden">
           {lang === "en" ? "How Briefly differs" : "كيف تختلف Briefly"}
         </h2>
-        <MarketingReveal as="p" className="mkt-contrast-other">
-          {copy.contrastOther}
-        </MarketingReveal>
-        <MarketingReveal as="p" className="mkt-contrast-briefly" delayMs={80}>
-          <em>{copy.contrastBrand}</em>
-          {copy.contrastBrieflyBefore}
-          <span>{copy.contrastBrieflyEm}</span>
-          {copy.contrastBrieflyAfter}
-        </MarketingReveal>
+        <div className="mkt-contrast-stage">
+          <MarketingReveal
+            as="article"
+            className="mkt-contrast-panel mkt-contrast-panel--other"
+            aria-label={`${copy.contrastOtherSubject} = ${copy.contrastOtherOutcome}`}
+          >
+            <p className="mkt-contrast-subject">{copy.contrastOtherSubject}</p>
+            <p className="mkt-contrast-equation">
+              <span className="mkt-contrast-equals" aria-hidden="true">
+                =
+              </span>
+              <span className="mkt-contrast-outcome">{copy.contrastOtherOutcome}</span>
+            </p>
+          </MarketingReveal>
+
+          <div className="mkt-contrast-vs" aria-hidden="true">
+            <span>{lang === "en" ? "vs" : "مقابل"}</span>
+          </div>
+
+          <MarketingReveal
+            as="article"
+            className="mkt-contrast-panel mkt-contrast-panel--briefly"
+            delayMs={80}
+            aria-label={`${copy.contrastBrand} = ${copy.contrastBrieflyEm}${copy.contrastBrieflyAfter}`}
+          >
+            <p className="mkt-contrast-subject">{copy.contrastBrand}</p>
+            <p className="mkt-contrast-equation">
+              <span className="mkt-contrast-equals" aria-hidden="true">
+                =
+              </span>
+              <span className="mkt-contrast-outcome">
+                <span className="mkt-contrast-accent">{copy.contrastBrieflyEm}</span>
+                {copy.contrastBrieflyAfter}
+              </span>
+            </p>
+          </MarketingReveal>
+        </div>
       </section>
 
       <section className="mkt-section mkt-signal">

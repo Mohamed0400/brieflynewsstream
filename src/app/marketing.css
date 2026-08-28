@@ -3394,12 +3394,37 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  margin: 0 auto 0.35rem;
-  border-radius: 999px;
-  background: rgb(94 200 220 / 12%);
-  color: var(--mkt-cyan);
+  width: 2.125rem;
+  height: 2.125rem;
+  margin: 0 auto 0.4rem;
+  border: 1px solid rgb(247 249 252 / 10%);
+  border-radius: 0.45rem;
+  background: rgb(247 249 252 / 4%);
+  color: rgb(247 249 252 / 72%);
+}
+
+.mkt-brief-metric[data-metric-id="fresh"] .mkt-brief-metric__icon {
+  color: #7ec8dc;
+  background: rgb(94 200 220 / 8%);
+  border-color: rgb(94 200 220 / 18%);
+}
+
+.mkt-brief-metric[data-metric-id="feeds"] .mkt-brief-metric__icon {
+  color: #6dd4a8;
+  background: rgb(52 211 153 / 8%);
+  border-color: rgb(52 211 153 / 18%);
+}
+
+.mkt-brief-metric[data-metric-id="brief"] .mkt-brief-metric__icon {
+  color: #d4b06a;
+  background: rgb(245 158 11 / 8%);
+  border-color: rgb(245 158 11 / 18%);
+}
+
+.mkt-brief-metric[data-metric-id="countries"] .mkt-brief-metric__icon {
+  color: #b8a8e8;
+  background: rgb(167 139 250 / 8%);
+  border-color: rgb(167 139 250 / 18%);
 }
 
 .mkt-brief-metric__label {

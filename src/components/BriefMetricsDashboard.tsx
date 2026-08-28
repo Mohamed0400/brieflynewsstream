@@ -1,4 +1,10 @@
-import { Article, Globe, Newspaper, Star } from "@phosphor-icons/react/ssr";
+import type { Icon } from "@phosphor-icons/react";
+import {
+  ClockCounterClockwise,
+  GlobeStand,
+  Ranking,
+  Rss,
+} from "@phosphor-icons/react/ssr";
 import { landingCopy } from "@/lib/landing-translation";
 
 type Metric = {
@@ -8,11 +14,11 @@ type Metric = {
   detail: string;
 };
 
-const metricIcons: Record<string, typeof Article> = {
-  fresh: Article,
-  feeds: Newspaper,
-  brief: Star,
-  countries: Globe,
+const metricIcons: Record<string, Icon> = {
+  fresh: ClockCounterClockwise,
+  feeds: Rss,
+  brief: Ranking,
+  countries: GlobeStand,
 };
 
 const sparklineColors: Record<string, string> = {
@@ -71,16 +77,16 @@ export function BriefMetricsDashboard({
     >
       <ul className="mkt-brief-metrics__grid">
         {metrics.map((metric, index) => {
-          const IconComponent = metricIcons[metric.id] ?? Article;
+          const IconComponent = metricIcons[metric.id] ?? ClockCounterClockwise;
           const seed =
             typeof metric.value === "number"
               ? metric.value
               : Number.parseInt(String(metric.value).replace(/\D/g, ""), 10) || index + 1;
 
           return (
-            <li key={metric.id} className="mkt-brief-metric">
+            <li key={metric.id} className="mkt-brief-metric" data-metric-id={metric.id}>
               <div className="mkt-brief-metric__icon" aria-hidden="true">
-                <IconComponent size={22} weight="regular" />
+                <IconComponent size={20} weight="regular" />
               </div>
               <p className="mkt-brief-metric__label">{metric.label}</p>
               <p className="mkt-brief-metric__value">

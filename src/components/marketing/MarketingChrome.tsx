@@ -35,14 +35,27 @@ function useMarketingLocation() {
   const [pathname, setPathname] = useState(routePath);
   const [search, setSearch] = useState(urlSearch);
   const [lang, setLang] = useState<MarketingLang>(urlLang);
+  const [pendingLang, setPendingLang] = useState<MarketingLang | null>(null);
 
   useEffect(() => {
     setPathname(routePath);
     setSearch(urlSearch);
     setLang(urlLang);
+    setPendingLang(null);
   }, [routePath, urlSearch, urlLang]);
 
-  return { pathname, search, lang, setLang, setSearch };
+  const displayLang = pendingLang ?? lang;
+
+  return {
+    pathname,
+    search,
+    lang,
+    displayLang,
+    pendingLang,
+    setLang,
+    setSearch,
+    setPendingLang,
+  };
 }
 
 function useMarketingWaitCursor(pathname: string, search: string) {
@@ -74,11 +87,15 @@ function MarketingNav({
   pathname,
   search,
   lang,
+  displayLang,
+  pendingLang,
   setLang,
   setSearch,
+  setPendingLang,
 }: ReturnType<typeof useMarketingLocation>) {
-  const copy = marketingCopy(lang);
-  const withLang = (path: string) => withMarketingLang(path, lang);
+  const router = useRouter();
+  const copy = marketingCopy(displayLang);
+  const withLang = (path: string) => withMarketingLang(path, displayLang);
   const langHref = (nextLang: MarketingLang) => marketingLangHref(pathname, search, nextLang);
   const [open, setOpen] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -87,7 +104,7 @@ function MarketingNav({
 
   useEffect(() => {
     setOpen(false);
-  }, [pathname, lang]);
+  }, [pathname, displayLang]);
 
   useEffect(() => {
     const onResize = () => {
@@ -112,10 +129,15 @@ function MarketingNav({
     };
   }, [open]);
 
+  const langPending = pendingLang !== null;
+
   const switchLang = (nextLang: MarketingLang) => {
-    setLang(nextLang);
+    if (langPending || nextLang === lang) return;
     const href = langHref(nextLang);
+    setPendingLang(nextLang);
+    setLang(nextLang);
     setSearch(href.includes("?") ? href.split("?")[1] ?? "" : "");
+    router.push(href, { scroll: false });
   };
 
   const navItems: Array<{ href: string; label: string; match: string }> = [
@@ -166,10 +188,11 @@ function MarketingNav({
             })}
           </nav>
 
-          <MarketingSearch id="mkt-nav-q" lang={lang} search={search} />
+          <MarketingSearch id="mkt-nav-q" lang={displayLang} search={search} />
 
           <MarketingLangSwitcher
-            lang={lang}
+            lang={displayLang}
+            pending={langPending}
             label={copy.langAria}
             arHref={langHref("ar")}
             enHref={langHref("en")}
@@ -234,7 +257,8 @@ function MarketingNav({
 
           <div className="mkt-nav-sheet-toolbar">
             <MarketingLangSwitcher
-              lang={lang}
+              lang={displayLang}
+              pending={langPending}
               label={copy.langAria}
               arHref={langHref("ar")}
               enHref={langHref("en")}
@@ -245,7 +269,7 @@ function MarketingNav({
           <div className="mkt-nav-sheet-body">
             <MarketingSearch
               id="mkt-nav-q-menu"
-              lang={lang}
+              lang={displayLang}
               search={search}
               onSubmit={() => setOpen(false)}
             />
@@ -368,19 +392,27 @@ function MarketingSearch({
 
 function MarketingLangSwitcher({
   lang,
+  pending = false,
   label,
   arHref,
   enHref,
   onSelect,
 }: {
   lang: MarketingLang;
+  pending?: boolean;
   label: string;
   arHref: string;
   enHref: string;
   onSelect: (next: MarketingLang) => void;
 }) {
   return (
-    <div className="mkt-lang" role="group" aria-label={label} data-lang={lang}>
+    <div
+      className={`mkt-lang${pending ? " is-pending" : ""}`}
+      role="group"
+      aria-label={label}
+      aria-busy={pending || undefined}
+      data-lang={lang}
+    >
       <span className="mkt-lang-thumb" aria-hidden="true" />
       <Link
         href={arHref}
@@ -388,8 +420,12 @@ function MarketingLangSwitcher({
         lang="ar"
         className={lang === "ar" ? "is-active" : undefined}
         aria-current={lang === "ar" ? "true" : undefined}
+        aria-disabled={pending || undefined}
         scroll={false}
-        onClick={() => onSelect("ar")}
+        onClick={(event) => {
+          event.preventDefault();
+          onSelect("ar");
+        }}
       >
         العربية
       </Link>
@@ -399,8 +435,12 @@ function MarketingLangSwitcher({
         lang="en"
         className={lang === "en" ? "is-active" : undefined}
         aria-current={lang === "en" ? "true" : undefined}
+        aria-disabled={pending || undefined}
         scroll={false}
-        onClick={() => onSelect("en")}
+        onClick={(event) => {
+          event.preventDefault();
+          onSelect("en");
+        }}
       >
         English
       </Link>
@@ -471,24 +511,25 @@ export function MarketingShell({
   siteSettings?: PublicSiteSettings;
 }) {
   const location = useMarketingLocation();
-  const copy = marketingCopy(location.lang);
+  const displayLang = location.displayLang;
+  const copy = marketingCopy(displayLang);
   useMarketingWaitCursor(location.pathname, location.search);
   const tracking = siteSettings?.pageViewTracking ?? true;
   const attribution = siteSettings?.attributionCapture ?? true;
   const maintenanceBanner = siteSettings?.maintenanceBanner?.trim() || "";
 
   return (
-    <div className="mkt" lang={location.lang} dir={copy.dir}>
+    <div className="mkt" lang={displayLang} dir={copy.dir}>
       {maintenanceBanner ? (
         <div className="mkt-maintenance-banner" role="status">
           {maintenanceBanner}
         </div>
       ) : null}
       <AttributionCapture enabled={attribution} />
-      <PageViewBeacon locale={location.lang} enabled={tracking} />
+      <PageViewBeacon locale={displayLang} enabled={tracking} />
       <MarketingNav {...location} />
       {children}
-      <MarketingFooter lang={location.lang} />
+      <MarketingFooter lang={displayLang} />
     </div>
   );
 }

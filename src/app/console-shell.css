@@ -341,6 +341,10 @@
   font-size: 0.9375rem;
 }
 
+.console-app .console-welcome-download {
+  margin-top: 1rem;
+}
+
 .console-app .console-welcome-plan-card {
   display: grid;
   align-content: center;

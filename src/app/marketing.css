@@ -315,6 +315,33 @@
   font-weight: 700;
 }
 
+.mkt-lang.is-pending {
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.mkt-lang.is-pending::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  inset-inline-end: 0.45rem;
+  top: 50%;
+  width: 0.85rem;
+  height: 0.85rem;
+  margin-top: -0.425rem;
+  border: 2px solid rgb(11 20 34 / 18%);
+  border-top-color: var(--mkt-ink);
+  border-radius: 50%;
+  animation: mkt-lang-spin 650ms linear infinite;
+  pointer-events: none;
+}
+
+@keyframes mkt-lang-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .mkt-nav-actions {
   display: none;
   align-items: center;
@@ -427,8 +454,8 @@
   flex-direction: column;
   width: min(100%, 22.5rem);
   max-width: calc(100vw - 2.5rem);
-  min-height: 100dvh;
-  min-height: 100vh;
+  max-height: 100dvh;
+  max-height: 100vh;
   padding:
     max(0.85rem, env(safe-area-inset-top))
     max(1rem, env(safe-area-inset-right))
@@ -437,7 +464,10 @@
   background: var(--mkt-surface);
   border-inline-end: 1px solid var(--mkt-line);
   box-shadow: 0 24px 64px rgb(11 20 34 / 18%);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   transform: translateX(-102%);
   transition: transform 280ms var(--mkt-ease);
 }
@@ -517,13 +547,9 @@
 
 .mkt-nav-sheet-body {
   display: flex;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   flex-direction: column;
   gap: 0.85rem;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
   /* Room for search focus outline (2px + offset) so it is not clipped at scroll top */
   padding-block-start: 0.5rem;
   scroll-padding-block-start: 0.5rem;
@@ -589,11 +615,17 @@
 
 .mkt-nav-sheet-foot {
   display: flex;
+  flex: 0 0 auto;
   flex-direction: column;
   gap: 0.65rem;
   margin-top: 1rem;
   padding-top: 1rem;
   border-top: 1px solid var(--mkt-line);
+}
+
+.mkt-nav-sheet-cta span {
+  min-width: 5.5rem;
+  text-align: center;
 }
 
 .mkt-nav-sheet-login {
@@ -2723,6 +2755,12 @@
   min-height: 2.5rem;
   margin-top: 0.15rem;
   color: var(--mkt-ink);
+}
+
+.mkt-footer-brand-col .mkt-btn span,
+.mkt-nav-actions .mkt-btn-primary {
+  min-width: 5.5rem;
+  text-align: center;
 }
 
 .mkt-footer-brand-col .mkt-btn:hover {
@@ -5697,6 +5735,11 @@ html[data-home-search] .mkt-news-page .homepage-feed-searching {
   .mkt-nav-sheet-close,
   .mkt-nav-sheet-login {
     transition: none !important;
+  }
+
+  .mkt-lang.is-pending::after {
+    animation: none;
+    opacity: 0.55;
   }
 
   .mkt-btn:active,

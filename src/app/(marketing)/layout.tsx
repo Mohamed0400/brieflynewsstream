@@ -12,12 +12,12 @@ export default async function MarketingLayout({
   const siteSettings = await getPublicSiteSettings();
 
   return (
-    <Suspense fallback={<MarketingLoading />}>
-      <MarketingShell siteSettings={siteSettings}>
+    <MarketingShell siteSettings={siteSettings}>
+      <Suspense fallback={<MarketingLoading />}>
         <main id="mkt-main" className="mkt-main">
           {children}
         </main>
-      </MarketingShell>
-    </Suspense>
+      </Suspense>
+    </MarketingShell>
   );
 }

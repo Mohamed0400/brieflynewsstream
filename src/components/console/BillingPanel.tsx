@@ -56,7 +56,8 @@ export function BillingPanel({
     () => initialInvoices.find((row) => row.status === "OPEN") ?? null,
   );
   const [message, setMessage] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [busyAction, setBusyAction] = useState<"pay" | "cancel" | "upgrade" | null>(null);
+  const busy = busyAction !== null;
 
   const remaining = Math.max(0, dailyLimit - usedToday);
   const usagePct = dailyLimit > 0 ? Math.min(100, Math.round((usedToday / dailyLimit) * 100)) : 0;
@@ -75,7 +76,7 @@ export function BillingPanel({
     : t.pay;
 
   async function openUpgrade(planTier: "PRO" | "ENTERPRISE") {
-    setBusy(true);
+    setBusyAction("upgrade");
     setMessage("");
     try {
       const response = await fetch("/api/console/billing/invoices", {
@@ -97,12 +98,12 @@ export function BillingPanel({
     } catch {
       setMessage(t.requestFailed);
     } finally {
-      setBusy(false);
+      setBusyAction(null);
     }
   }
 
   async function act(invoiceId: string, action: "pay" | "cancel") {
-    setBusy(true);
+    setBusyAction(action === "pay" ? "pay" : "cancel");
     setMessage("");
     try {
       const response = await fetch(`/api/console/billing/invoices/${invoiceId}`, {
@@ -129,7 +130,7 @@ export function BillingPanel({
     } catch {
       setMessage(t.payFailed);
     } finally {
-      setBusy(false);
+      setBusyAction(null);
     }
   }
 
@@ -189,7 +190,7 @@ export function BillingPanel({
                     disabled={busy}
                     onClick={() => void act(checkout.id, "pay")}
                   >
-                    {busy ? t.paying : payLabel}
+                    {busyAction === "pay" ? t.paying : payLabel}
                   </button>
                 ) : (
                   <a
@@ -205,7 +206,7 @@ export function BillingPanel({
                   disabled={busy}
                   onClick={() => void act(checkout.id, "cancel")}
                 >
-                  {t.cancel}
+                  {busyAction === "cancel" ? t.cancelling : t.cancel}
                 </button>
               </div>
             </div>
@@ -218,7 +219,7 @@ export function BillingPanel({
                   disabled={busy}
                   onClick={() => void openUpgrade("PRO")}
                 >
-                  {busy ? t.requesting : t.upgradeCta}
+                  {busyAction === "upgrade" ? t.requesting : t.upgradeCta}
                 </button>
               ) : null}
               <button
@@ -227,7 +228,7 @@ export function BillingPanel({
                 disabled={busy}
                 onClick={() => void openUpgrade("ENTERPRISE")}
               >
-                {busy ? t.requesting : t.upgradeEnterpriseCta}
+                {busyAction === "upgrade" ? t.requesting : t.upgradeEnterpriseCta}
               </button>
               <Link className="console-secondary-button" href={lang === "en" ? "/console/keys?lang=en" : "/console/keys"}>
                 {t.manageKeys}
@@ -295,7 +296,7 @@ export function BillingPanel({
                         disabled={busy}
                         onClick={() => void act(invoice.id, "cancel")}
                       >
-                        {t.cancel}
+                        {busyAction === "cancel" ? t.cancelling : t.cancel}
                       </button>
                     </>
                   ) : invoice.receiptAvailable ? (

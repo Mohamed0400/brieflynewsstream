@@ -2296,6 +2296,31 @@ html[data-home-search] .homepage-feed {
   padding-inline-start: 1.1rem;
 }
 
+.ops-invoice-pick {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: rgb(11 20 34 / 22%);
+  text-underline-offset: 0.15em;
+}
+
+.ops-invoice-pick:hover,
+.ops-invoice-pick:focus-visible {
+  color: var(--console-ink);
+  text-decoration-color: currentColor;
+}
+
+.ops-invoice-pick[data-status="open"] {
+  font-weight: 650;
+}
+
 .console-bar-chart {
   display: grid;
   min-height: 17rem;

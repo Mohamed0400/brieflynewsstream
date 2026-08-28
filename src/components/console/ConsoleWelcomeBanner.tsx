@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle } from "@phosphor-icons/react";
+import { CheckCircle, DownloadSimple } from "@phosphor-icons/react";
 import { useConsoleCopy } from "@/components/console/ConsoleLang";
 import { BrandLogo } from "@/components/media/BrandLogo";
 
@@ -23,6 +23,17 @@ export function ConsoleWelcomeBanner({
             <p className="console-page-description">{copy.overview.description}</p>
           </div>
         </div>
+        <div className="console-inline-actions console-welcome-download">
+          <a
+            href="/api/console/platform-overview"
+            className="console-primary-button"
+            download="briefly-newsstream-platform.pdf"
+          >
+            <DownloadSimple size={18} weight="bold" aria-hidden="true" />
+            {copy.overview.downloadPdf}
+          </a>
+        </div>
+        <p className="console-help">{copy.overview.downloadPdfHint}</p>
       </div>
       <aside className="console-welcome-plan-card" aria-label={copy.overview.planAria}>
         <p className="console-welcome-plan-label">{copy.overview.accountTypeLabel}</p>

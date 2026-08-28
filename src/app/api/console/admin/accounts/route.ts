@@ -149,6 +149,8 @@ export async function GET(request: Request) {
         status: account.status,
         plan: account.plan,
         planSource: account.planSource,
+        dailyPointsOverride: account.dailyPointsOverride,
+        maxKeysOverride: account.maxKeysOverride,
         country: account.country,
         address: account.address,
         mobilePhone: account.mobilePhone,

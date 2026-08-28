@@ -17,6 +17,8 @@ type Customer = {
   status: string;
   plan: keyof typeof PLAN_DEFINITIONS;
   planSource: string;
+  dailyPointsOverride: number | null;
+  maxKeysOverride: number | null;
   country: string;
   address: string;
   mobilePhone: string;
@@ -62,6 +64,11 @@ type Customer = {
   }>;
 };
 
+export type AdminCustomerSnapshot = Pick<
+  Customer,
+  "id" | "email" | "plan" | "status" | "dailyPointsOverride" | "maxKeysOverride" | "invoices"
+>;
+
 function countryLabel(code: string, lang: "ar" | "en") {
   const row = COUNTRY_CATALOG.find((item) => item.code === code);
   if (!row) return code || "—";
@@ -78,9 +85,13 @@ function channelLabel(channel: string, lang: "ar" | "en") {
 }
 
 export function AdminCustomersPanel({
-  onSelectEmail,
+  refreshKey = 0,
+  onSelectCustomer,
+  onSelectInvoice,
 }: {
-  onSelectEmail?: (email: string) => void;
+  refreshKey?: number;
+  onSelectCustomer?: (customer: AdminCustomerSnapshot) => void;
+  onSelectInvoice?: (invoiceId: string) => void;
 }) {
   const { copy } = useConsoleCopy();
   const t = copy.customers;
@@ -113,7 +124,7 @@ export function AdminCustomersPanel({
     return () => {
       cancelled = true;
     };
-  }, [t.loadFailed]);
+  }, [t.loadFailed, refreshKey]);
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -198,7 +209,15 @@ export function AdminCustomersPanel({
                   data-selected={item.id === selectedId ? "true" : "false"}
                   onClick={() => {
                     setSelectedId(item.id);
-                    onSelectEmail?.(item.email);
+                    onSelectCustomer?.({
+                      id: item.id,
+                      email: item.email,
+                      plan: item.plan,
+                      status: item.status,
+                      dailyPointsOverride: item.dailyPointsOverride,
+                      maxKeysOverride: item.maxKeysOverride,
+                      invoices: item.invoices,
+                    });
                   }}
                 >
                   <td className="ops-cell-email">
@@ -356,7 +375,14 @@ export function AdminCustomersPanel({
               <ul className="ops-customer-invoices">
                 {selected.invoices.map((invoice) => (
                   <li key={invoice.id}>
-                    {invoice.number} · {invoice.status} · {money(invoice.totalCents)}
+                    <button
+                      type="button"
+                      className="ops-invoice-pick"
+                      data-status={invoice.status.toLowerCase()}
+                      onClick={() => onSelectInvoice?.(invoice.id)}
+                    >
+                      {invoice.number} · {invoice.status} · {money(invoice.totalCents)}
+                    </button>
                   </li>
                 ))}
               </ul>

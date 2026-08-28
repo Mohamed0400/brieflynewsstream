@@ -46,8 +46,23 @@ function articleRank(article: StoryArticle) {
   return article.score?.finalScore ?? 0;
 }
 
-/** Keep the highest-scored article per story group, preserving incoming order. */
-export function dedupeArticles<T extends StoryArticle>(articles: T[]): T[] {
+function shouldReplaceDuplicate(
+  existing: StoryArticle,
+  candidate: StoryArticle,
+  preferRecency: boolean,
+) {
+  if (preferRecency) {
+    return candidate.publishedAt.getTime() > existing.publishedAt.getTime();
+  }
+  return articleRank(candidate) > articleRank(existing);
+}
+
+/** Keep one article per story group, preserving incoming order. */
+export function dedupeArticles<T extends StoryArticle>(
+  articles: T[],
+  options: { preferRecency?: boolean } = {},
+): T[] {
+  const preferRecency = options.preferRecency === true;
   const bestByGroup = new Map<string, T>();
   const order: string[] = [];
 
@@ -59,7 +74,7 @@ export function dedupeArticles<T extends StoryArticle>(articles: T[]): T[] {
       order.push(group);
       continue;
     }
-    if (articleRank(article) > articleRank(existing)) {
+    if (shouldReplaceDuplicate(existing, article, preferRecency)) {
       bestByGroup.set(group, article);
     }
   }

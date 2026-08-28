@@ -39,7 +39,7 @@ export async function GET(request: Request) {
       orderBy,
       query.limit,
       query.offset,
-      { lang: query.filters.lang },
+      { lang: query.filters.lang, preferRecency: true },
     );
     const displaySeconds = articles.length
       ? Math.min(20, Math.max(8, Math.floor(120 / articles.length)))

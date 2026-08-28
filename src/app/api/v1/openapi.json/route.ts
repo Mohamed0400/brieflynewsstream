@@ -68,6 +68,9 @@ const spec = {
           url: { type: "string" },
           source: { type: "string" },
           publishedAt: { type: "string", format: "date-time" },
+          publishedAgeSeconds: { type: "integer", description: "Seconds since publisher timestamp." },
+          publishedAge: { type: "string", description: "Localized relative age label (e.g. 15m ago)." },
+          indexedAt: { type: "string", format: "date-time", description: "When Briefly indexed the story." },
           translated: { type: "boolean" },
           scores: {
             type: "object",

@@ -59,3 +59,34 @@ test("dedupeArticles keeps one article per story group", () => {
     storyGroupKey(articles[1]),
   );
 });
+
+test("dedupeArticles keeps the newest duplicate when preferRecency is true", () => {
+  const newer = new Date("2026-08-28T12:00:00.000Z");
+  const older = new Date("2026-08-28T04:00:00.000Z");
+  const articles = [
+    {
+      id: "new",
+      title: "Oil prices rise on supply concerns",
+      summary: "newer",
+      publisher: "Reuters",
+      country: "GLOBAL",
+      category: "OIL",
+      publishedAt: newer,
+      score: { finalScore: 40 },
+    },
+    {
+      id: "old",
+      title: "Oil prices rise on supply concerns",
+      summary: "older",
+      publisher: "Reuters",
+      country: "GLOBAL",
+      category: "OIL",
+      publishedAt: older,
+      score: { finalScore: 90 },
+    },
+  ];
+
+  const deduped = dedupeArticles(articles, { preferRecency: true });
+  assert.equal(deduped.length, 1);
+  assert.equal(deduped[0].id, "new");
+});

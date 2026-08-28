@@ -6,6 +6,7 @@ import { countryRecord } from "@/lib/countries";
 import { CATEGORY_META, REGION_META } from "@/lib/market";
 import { landingCopy } from "@/lib/landing-translation";
 import { newsFeedHref } from "@/lib/feed-view";
+import { formatPublishedAge } from "@/lib/published-age";
 import { BrandLoader } from "@/components/media/BrandLoader";
 import { ImpactBadge } from "@/components/ImpactBadge";
 import type { ArticleImpactScore } from "@/lib/impact-display";
@@ -73,25 +74,6 @@ function locationLabel(article: FeedArticle, lang: string) {
   const region = REGION_META.find((item) => item.value === article.region);
   if (!region) return article.country;
   return lang === "ar" ? region.labelAr : region.label;
-}
-
-function relativePublishedAt(date: Date, lang: string) {
-  const copy = landingCopy(lang);
-  const diffMs = Date.now() - date.getTime();
-  const minutes = Math.floor(diffMs / 60_000);
-  const hours = Math.floor(diffMs / 3_600_000);
-  const days = Math.floor(diffMs / 86_400_000);
-
-  if (minutes < 1) return copy.relativeJustNow;
-  if (minutes < 60) return copy.relativeMinutes(minutes);
-  if (hours < 24) return copy.relativeHours(hours);
-  if (days < 7) return copy.relativeDays(days);
-
-  return new Intl.DateTimeFormat(lang === "en" ? "en" : "ar", {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "Asia/Kuwait",
-  }).format(date);
 }
 
 export function HomepageArticleFeed({
@@ -213,7 +195,7 @@ export function HomepageArticleFeed({
                         <p className="mkt-brief-feed-row__meta">{meta}</p>
                         <div className="mkt-brief-feed-row__aside">
                           <time dateTime={article.publishedAt.toISOString()}>
-                            {relativePublishedAt(article.publishedAt, lang)}
+                            {formatPublishedAge(article.publishedAt, lang)}
                           </time>
                           <Link
                             href={articleHref(article.id)}

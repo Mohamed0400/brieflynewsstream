@@ -33,6 +33,7 @@ const pageCopy = {
     relativeJustNow: "just now",
     relativeMinutes: (minutes: number) => `${minutes}m ago`,
     relativeHours: (hours: number) => `${hours}h ago`,
+    relativeHoursMinutes: (hours: number, minutes: number) => `${hours}h ${minutes}m ago`,
     relativeDays: (days: number) => `${days}d ago`,
     refreshLine: (count: number, hours: number, refreshed: string | null) =>
       refreshed
@@ -175,6 +176,7 @@ const pageCopy = {
     relativeJustNow: "الآن",
     relativeMinutes: (minutes: number) => `منذ ${minutes} د`,
     relativeHours: (hours: number) => `منذ ${hours} س`,
+    relativeHoursMinutes: (hours: number, minutes: number) => `منذ ${hours} س ${minutes} د`,
     relativeDays: (days: number) => `منذ ${days} ي`,
     refreshLine: (count: number, hours: number, refreshed: string | null) =>
       refreshed

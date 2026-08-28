@@ -24,6 +24,9 @@ type ExplorerArticle = {
   url: string;
   source: string;
   publishedAt: string;
+  publishedAge?: string;
+  publishedAgeSeconds?: number;
+  indexedAt?: string;
   scores: {
     final: number;
     relevance: number;
@@ -616,11 +619,12 @@ export function ApiExplorer({
                       <span>{categoryLabel(article.category, filters.lang)}</span>
                       <span>{article.country}</span>
                       <time dateTime={article.publishedAt}>
-                        {new Intl.DateTimeFormat(filters.lang === "ar" ? "ar" : "en", {
-                          dateStyle: "medium",
-                          timeStyle: "short",
-                          timeZone: "Asia/Kuwait",
-                        }).format(new Date(article.publishedAt))}
+                        {article.publishedAge
+                          || new Intl.DateTimeFormat(filters.lang === "ar" ? "ar" : "en", {
+                            dateStyle: "medium",
+                            timeStyle: "short",
+                            timeZone: "Asia/Kuwait",
+                          }).format(new Date(article.publishedAt))}
                       </time>
                     </div>
                     <h3><a href={article.url} target="_blank" rel="noreferrer">{copy.title}</a></h3>

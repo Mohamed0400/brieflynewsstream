@@ -10,15 +10,18 @@ import {
   type ConsoleLoginCopy,
 } from "@/lib/console-translation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
-import { AUTH_TIMEOUT_MS, isAuthTimeoutError, withAuthTimeout } from "@/lib/supabase/auth-timeout";
-import { establishConsoleSessionClient, type SessionTokens } from "@/lib/account-client";
-import { ADMIN_OPERATIONS_PATH } from "@/lib/admin-app";
-import { consoleAuthCallbackUrl } from "@/lib/auth-redirect";
+import { isAuthTimeoutError } from "@/lib/supabase/auth-timeout";
 import {
-  isBlockedAccountStatus,
-  isDuplicateSignupError,
-  isDuplicateSignupUser,
-} from "@/lib/console-signup-auth";
+  AuthTimeoutError,
+  isAuthApiBlocked,
+  isAuthApiDuplicate,
+  recoverPasswordViaServer,
+  signInViaServer,
+  signUpViaServer,
+} from "@/lib/console-auth-client";
+import type { ConsoleAccountPayload } from "@/lib/account-client";
+import { ADMIN_OPERATIONS_PATH } from "@/lib/admin-app";
+import { isBlockedAccountStatus } from "@/lib/console-signup-auth";
 import { COUNTRY_CATALOG } from "@/lib/countries";
 import { normalizeSignupProfile } from "@/lib/signup-profile";
 import { BrandLoader } from "@/components/media/BrandLoader";
@@ -70,8 +73,7 @@ export function ConsoleLoginForm({
     setInfo("");
   }
 
-  async function afterAuthenticated(tokens?: SessionTokens) {
-    const payload = await establishConsoleSessionClient(tokens);
+  async function afterAuthenticated(payload: ConsoleAccountPayload) {
     if (isBlockedAccountStatus(payload.account.status)) {
       const supabase = createBrowserSupabaseClient();
       await supabase.auth.signOut();
@@ -98,28 +100,12 @@ export function ConsoleLoginForm({
     setError("");
     setInfo("");
     setLoading(true);
-    const supabase = createBrowserSupabaseClient();
     const normalizedEmail = email.trim().toLowerCase();
 
     try {
       if (mode === "signin") {
-        const { data, error: signInError } = await withAuthTimeout(
-          supabase.auth.signInWithPassword({
-            email: normalizedEmail,
-            password,
-          }),
-          AUTH_TIMEOUT_MS.signIn,
-        );
-        if (signInError) {
-          setError(signInError.message || copy.authFailed);
-          emailRef.current?.focus();
-          return;
-        }
-        await afterAuthenticated(
-          data.session
-            ? { access_token: data.session.access_token, refresh_token: data.session.refresh_token }
-            : undefined,
-        );
+        const payload = await signInViaServer({ email: normalizedEmail, password });
+        await afterAuthenticated(payload);
         return;
       }
 
@@ -129,65 +115,49 @@ export function ConsoleLoginForm({
           setError(parsed.error || copy.profileInvalid);
           return;
         }
-        const origin = window.location.origin;
-        const { data, error: signUpError } = await withAuthTimeout(
-          supabase.auth.signUp({
-            email: normalizedEmail,
-            password,
-            options: {
-              emailRedirectTo: consoleAuthCallbackUrl(origin),
-              data: parsed.profile,
-            },
-          }),
-          AUTH_TIMEOUT_MS.signUp,
-        );
-        if (signUpError) {
-          setError(
-            isDuplicateSignupError(signUpError.message)
-              ? copy.emailAlreadyRegistered
-              : signUpError.message || copy.authFailed,
-          );
-          emailRef.current?.focus();
+        const result = await signUpViaServer({
+          email: normalizedEmail,
+          password,
+          country: parsed.profile.country,
+          address: parsed.profile.address,
+          mobilePhone: parsed.profile.mobilePhone,
+        });
+        if (result.needsConfirmation) {
+          setInfo(copy.confirmSent);
+          setMode("check-email");
           return;
         }
-        if (isDuplicateSignupUser(data.user)) {
-          setError(copy.emailAlreadyRegistered);
-          emailRef.current?.focus();
-          return;
+        if (result.account) {
+          await afterAuthenticated({ account: result.account });
         }
-        if (data.session) {
-          await afterAuthenticated({
-            access_token: data.session.access_token,
-            refresh_token: data.session.refresh_token,
-          });
-          return;
-        }
-        setInfo(copy.confirmSent);
-        setMode("check-email");
         return;
       }
 
       if (mode === "forgot") {
-        const origin = window.location.origin;
-        const { error: resetError } = await withAuthTimeout(
-          supabase.auth.resetPasswordForEmail(
-            normalizedEmail,
-            { redirectTo: consoleAuthCallbackUrl(origin, "/console/reset-password") },
-          ),
-          AUTH_TIMEOUT_MS.resetEmail,
-        );
-        if (resetError) {
-          setError(resetError.message || copy.authFailed);
-          emailRef.current?.focus();
-          return;
-        }
+        await recoverPasswordViaServer(normalizedEmail);
         setInfo(copy.resetSent);
         return;
       }
     } catch (requestError) {
-      const networkMessage = mode === "signup" ? copy.signupNetworkError : copy.networkError;
-      setError(networkMessage);
-      toast.exception(requestError, networkMessage);
+      if (isAuthApiDuplicate(requestError)) {
+        setError(copy.emailAlreadyRegistered);
+        emailRef.current?.focus();
+        return;
+      }
+      if (isAuthApiBlocked(requestError)) {
+        setError(copy.accountUnavailable);
+        emailRef.current?.focus();
+        return;
+      }
+      if (requestError instanceof AuthTimeoutError || isAuthTimeoutError(requestError)) {
+        const networkMessage = mode === "signup" ? copy.signupNetworkError : copy.networkError;
+        setError(networkMessage);
+        toast.exception(requestError, networkMessage);
+        emailRef.current?.focus();
+        return;
+      }
+      const message = requestError instanceof Error ? requestError.message : copy.authFailed;
+      setError(message || copy.authFailed);
       emailRef.current?.focus();
     } finally {
       setLoading(false);

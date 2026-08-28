@@ -176,7 +176,11 @@ export default async function Home({
         articleListOrderBy(feedQuery.sort),
         feedQuery.limit,
         feedQuery.offset,
-        { lang, applyBriefRanking: feedQuery.applyBriefRanking },
+        {
+          lang,
+          applyBriefRanking: feedQuery.applyBriefRanking,
+          preferRecency: feedQuery.preferRecency,
+        },
       );
       matchedCount = listed.count;
       fetchedArticles = listed.items;

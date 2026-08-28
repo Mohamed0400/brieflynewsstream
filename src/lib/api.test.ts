@@ -124,6 +124,17 @@ test("current feeds default to 72 hours while explicit dates allow history", () 
   assert.equal(storedEdition.where.publishedAt, undefined);
 });
 
+test("parseQuery enables recency dedupe only for sort=date", () => {
+  const byScore = parseQuery(new URLSearchParams());
+  assert.equal(byScore.sort, "score");
+  assert.equal(byScore.preferRecency, false);
+
+  const byDate = parseQuery(new URLSearchParams({ sort: "date" }));
+  assert.equal(byDate.sort, "date");
+  assert.equal(byDate.preferRecency, true);
+  assert.equal(byDate.applyBriefRanking, false);
+});
+
 test("query failures distinguish Prisma client drift from invalid input", () => {
   const prismaFailure = describeQueryFailure(
     new Error("Invalid `prisma.article.findMany()` invocation:\nUnknown argument `titleEn`. Did you mean `title`?"),

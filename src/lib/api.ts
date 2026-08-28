@@ -10,6 +10,7 @@ import {
 } from "./brief-feed-ranking";
 import { limits } from "./limits";
 import { prisma } from "./prisma";
+import { formatPublishedAge, publishedAgeParts } from "./published-age";
 import {
   audienceCodesFromValue,
   expandNationalityInputs,
@@ -40,7 +41,7 @@ export async function listDedupedArticles(
   orderBy: Prisma.ArticleOrderByWithRelationInput[],
   limit: number,
   offset: number,
-  options: { lang?: string; applyBriefRanking?: boolean } = {},
+  options: { lang?: string; applyBriefRanking?: boolean; preferRecency?: boolean } = {},
 ): Promise<{ count: number; items: ListedArticle[] }> {
   const lang = options.lang === "en" ? "en" : "ar";
   const totalInWindow = await prisma.article.count({ where });
@@ -51,7 +52,7 @@ export async function listDedupedArticles(
     orderBy,
     take,
   });
-  const unique = dedupeArticles(rows);
+  const unique = dedupeArticles(rows, { preferRecency: options.preferRecency });
   const filtered = unique.filter((article) => hasLocalizedDisplay(article, lang));
   const safe = filtered.filter((article) => !isBlockedArticle(article));
   const ranked = options.applyBriefRanking ? sortArticlesForBriefFeed(safe) : safe;
@@ -238,6 +239,7 @@ export function parseQuery(
       region: params.get("region"),
       source: params.get("source"),
     }),
+    preferRecency: sort === "date",
     filters: {
       category: params.get("category"),
       country: params.get("country"),
@@ -337,6 +339,9 @@ export function serializeArticle(article: ArticleWithRelations, rank?: number, l
     imageUrl: optimizedFetchUrl(article.imageUrl, { width: 1200 }) || article.imageUrl,
     source: publicSourceName(article.publisher || article.source.name),
     publishedAt: article.publishedAt.toISOString(),
+    publishedAgeSeconds: publishedAgeParts(article.publishedAt).ageSeconds,
+    publishedAge: formatPublishedAge(article.publishedAt, lang),
+    indexedAt: article.createdAt.toISOString(),
     scores: article.score ? {
       final: article.score.finalScore,
       relevance: article.score.relevance,

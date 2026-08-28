@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { AuthTimeoutError, isAuthTimeoutError, withAuthTimeout } from "./auth-timeout";
+import {
+  AuthTimeoutError,
+  isAuthTimeoutError,
+  withAuthRetry,
+  withAuthTimeout,
+} from "./auth-timeout";
 
 describe("withAuthTimeout", () => {
   it("resolves when the promise completes in time", async () => {
@@ -13,6 +18,21 @@ describe("withAuthTimeout", () => {
       () => withAuthTimeout(new Promise(() => {}), 20),
       AuthTimeoutError,
     );
+  });
+});
+
+describe("withAuthRetry", () => {
+  it("retries once after a timeout", async () => {
+    let attempts = 0;
+    const value = await withAuthRetry(async () => {
+      attempts += 1;
+      if (attempts === 1) {
+        await new Promise(() => {});
+      }
+      return "ok";
+    }, 20, 1);
+    assert.equal(value, "ok");
+    assert.equal(attempts, 2);
   });
 });
 

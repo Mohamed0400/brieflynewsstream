@@ -1,5 +1,5 @@
 import { prisma } from "./prisma";
-import { parseQuery, serializeArticle } from "./api";
+import { articleListOrderBy, listDedupedArticles, parseQuery, serializeArticle } from "./api";
 import { hasLocalizedDisplay } from "./article-translation";
 import { isBlockedArticle } from "./content-safety";
 import { kuwaitDate } from "./market";
@@ -74,12 +74,49 @@ export async function getDailyEditionPayload(date: string, searchParams?: URLSea
   };
 }
 
+function hasEditionFeedFilters(searchParams: URLSearchParams) {
+  return Boolean(
+    searchParams.get("q")?.trim()
+    || searchParams.get("category")
+    || searchParams.get("country")
+    || searchParams.get("nationality")
+    || searchParams.get("from")
+    || searchParams.get("to")
+    || searchParams.get("sort") === "date",
+  );
+}
+
+async function listImpactRankedFallbackArticles(
+  searchParams: URLSearchParams,
+  options: { lang: "ar" | "en"; searchVariants?: string[] },
+) {
+  const lang = options.lang === "en" ? "en" : "ar";
+  const liveQuery = parseQuery(searchParams, {
+    applyDefaultFreshness: true,
+    searchVariants: options.searchVariants,
+  });
+  const { items } = await listDedupedArticles(
+    liveQuery.where,
+    articleListOrderBy("score"),
+    limits.dailyEdition,
+    0,
+    { lang, applyBriefRanking: true },
+  );
+  return items;
+}
+
 export async function listTodaysEditionFeedArticles(
   searchParams: URLSearchParams,
   options: { lang: "ar" | "en"; searchVariants?: string[] } = { lang: "ar" },
 ) {
   await ensureTodaysEdition();
-  const query = parseQuery(searchParams, { searchVariants: options.searchVariants });
+  // Edition rows are pre-curated; do not re-apply the live freshness window here
+  // (getDailyEditionPayload uses the same rule). Freshness on edition items caused
+  // itemCount/pulse to show N while the homepage feed returned zero.
+  const query = parseQuery(searchParams, {
+    applyDefaultFreshness: false,
+    searchVariants: options.searchVariants,
+  });
   const edition = await prisma.dailyEdition.findUnique({
     where: { date: kuwaitDate() },
     select: {
@@ -93,15 +130,33 @@ export async function listTodaysEditionFeedArticles(
   });
 
   const lang = options.lang === "en" ? "en" : "ar";
-  const items = (edition?.items ?? [])
+  let items = (edition?.items ?? [])
     .map((item) => item.article)
     .filter((article) => !isBlockedArticle(article))
     .filter((article) => hasLocalizedDisplay(article, lang));
 
+  const editionSize = Math.max(1, limits.dailyEdition);
+  const unfilteredTopEdition = !hasEditionFeedFilters(searchParams);
+
+  if (items.length === 0) {
+    items = await listImpactRankedFallbackArticles(searchParams, options);
+  } else if (unfilteredTopEdition && items.length < editionSize) {
+    const fallback = await listImpactRankedFallbackArticles(searchParams, options);
+    const seen = new Set(items.map((article) => article.id));
+    for (const article of fallback) {
+      if (items.length >= editionSize) break;
+      if (seen.has(article.id)) continue;
+      items.push(article);
+      seen.add(article.id);
+    }
+  }
+
+  const visibleItems = unfilteredTopEdition ? items.slice(0, editionSize) : items;
+
   return {
-    count: items.length,
-    items,
-    editionItemCount: edition?.itemCount ?? 0,
+    count: visibleItems.length,
+    items: visibleItems,
+    editionItemCount: edition?.itemCount ?? visibleItems.length,
   };
 }
 

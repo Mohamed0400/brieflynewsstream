@@ -145,6 +145,27 @@ test("query failures distinguish Prisma client drift from invalid input", () => 
   assert.equal(invalid.message, "date must be YYYY-MM-DD");
 });
 
+test("country and nationality filters combine for host-market community briefings", () => {
+  const query = parseQuery(new URLSearchParams({
+    country: "SA",
+    nationality: "PH",
+  }));
+
+  assert.deepEqual(query.filters.nationalityCodes, ["PH"]);
+  assert.deepEqual(query.where.country, { in: ["SA"] });
+  assert.deepEqual(query.where.AND, [{
+    OR: [{ audienceCodes: { contains: "|PH|" } }],
+  }]);
+});
+
+test("nationality must be allowed for the selected host country", () => {
+  assert.throws(
+    () => parseQuery(new URLSearchParams({ country: "SA", nationality: "SA" })),
+    /not in the community list for SA/,
+  );
+  assert.doesNotThrow(() => parseQuery(new URLSearchParams({ country: "SA", nationality: "PH" })));
+});
+
 test("lang selects display language without filtering source language", () => {
   const arabic = parseQuery(new URLSearchParams({ q: "ذهب" }));
   assert.equal(arabic.filters.lang, "ar");

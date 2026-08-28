@@ -43,8 +43,8 @@ export async function generateMetadata({
       ? siteTitle("en", "Market briefing")
       : siteTitle("ar", "موجز الأسواق"),
     description: isEn
-      ? "Bilingual market news briefing from Briefly NewsStream. Gulf, MENA, and global stories with impact scores — filter by country, category, and region."
-      : "موجز أخبار أسواق ثنائي اللغة من Briefly NewsStream. أخبار الخليج والشرق الأوسط والعالم بدرجات أثر — صفِّ حسب الدولة والفئة والمنطقة.",
+      ? "Daily Gulf, MENA, and global market briefing in Arabic and English. Impact-ranked stories from the last 72 hours — filter by country, category, and community."
+      : "موجز يومي لأسواق الخليج والشرق الأوسط والعالم بالعربية والإنجليزية. أخبار مرتّبة حسب الأثر خلال 72 ساعة — صفِّ حسب الدولة والفئة والجالية.",
     path: "/news",
     pathEn: "/news?lang=en",
     keywords: [
@@ -79,6 +79,15 @@ const arabicCategoryLabels: Record<string, string> = {
   markets: "أخبار السوق المؤثرة",
 };
 
+function formatSourceRefresh(date: Date | null, lang: "ar" | "en") {
+  if (!date) return null;
+  return new Intl.DateTimeFormat(lang === "en" ? "en" : "ar", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Kuwait",
+  }).format(date);
+}
+
 function feedHref(params: {
   lang?: string;
   q?: string;
@@ -96,7 +105,7 @@ function feedHref(params: {
   if (params.category) query.set("category", params.category);
   if (params.country) query.set("country", params.country);
   if (params.nationality) query.set("nationality", params.nationality);
-  if (params.sort && params.sort !== "date") query.set("sort", params.sort);
+  if (params.sort && params.sort !== "score") query.set("sort", params.sort);
   if (params.from) query.set("from", params.from);
   if (params.to) query.set("to", params.to);
   if (params.page && params.page > 1) query.set("page", String(params.page));
@@ -124,7 +133,7 @@ export default async function Home({
   const copy = landingCopy(lang);
   const q = params.q?.trim().replace(/\s+/g, " ").slice(0, 200) || "";
   const country = params.country?.toUpperCase();
-  const sort = params.sort === "score" ? "score" : "date";
+  const sort = params.sort === "date" ? "date" : "score";
   const from = params.from && /^\d{4}-\d{2}-\d{2}$/.test(params.from) ? params.from : "";
   const to = params.to && /^\d{4}-\d{2}-\d{2}$/.test(params.to) ? params.to : "";
   const pageSize = Math.max(1, limits.dashboard);
@@ -155,7 +164,7 @@ export default async function Home({
       articleListOrderBy(feedQuery.sort),
       feedQuery.limit,
       feedQuery.offset,
-      { lang },
+      { lang, applyBriefRanking: feedQuery.applyBriefRanking },
     );
     matchedCount = listed.count;
     fetchedArticles = listed.items;
@@ -171,6 +180,8 @@ export default async function Home({
   const articleCount = stats.articleCount;
   const editionItemCount = stats.editionItemCount;
   const healthySources = stats.healthySources;
+  const lastSourceRefresh = formatSourceRefresh(stats.lastSourceFetchAt, lang);
+  const developerHref = lang === "en" ? "/developers?lang=en" : "/developers";
   const offset = (page - 1) * pageSize;
   const filterState = {
     lang,
@@ -242,7 +253,33 @@ export default async function Home({
           <h1>{copy.heroTitle}</h1>
           <p data-aeo-answer>{copy.heroLede}</p>
           <p>{copy.heroBody}</p>
+          <div className="mkt-news-hero-foot">
+            <p className="mkt-news-refresh">
+              {copy.refreshLine(articleCount, liveFreshnessHours, lastSourceRefresh)}
+            </p>
+            <div className="mkt-news-hero-actions">
+              <Link href="#homepage-feed" className="mkt-news-hero-link mkt-news-hero-link--primary">
+                {copy.jumpToFeed}
+              </Link>
+              <Link href={developerHref} className="mkt-news-hero-link">
+                {copy.developerLink}
+              </Link>
+            </div>
+          </div>
         </div>
+
+        <ul
+          className="mkt-news-trust-strip"
+          aria-label={copy.trustStripLabel}
+          dir={copy.dir}
+          lang={copy.lang}
+        >
+          {copy.trustItems.map((item) => (
+            <li key={item.id} className="mkt-news-trust-item">
+              {item.label}
+            </li>
+          ))}
+        </ul>
 
       <HomepageDataOverview
           lang={lang}
@@ -325,82 +362,92 @@ export default async function Home({
             }}
           />
           <p className="homepage-search-help">{copy.searchHelp}</p>
-          <div className="flex flex-wrap gap-2">
-            <Link
-              href={feedHref({
-                lang,
-                q,
-                nationality: params.nationality,
-                sort,
-                from,
-                to,
-              })}
-              className={`filter-chip ${!params.category ? "filter-chip-active" : ""}`}
-              scroll={false}
-            >
-              {copy.all}
-            </Link>
-            {CATEGORY_META.map((item) => (
+          <div
+            className="mkt-hscroll-strip mkt-news-category-strip"
+            aria-label={lang === "ar" ? "فئات الأخبار" : "News categories"}
+          >
+            <div className="mkt-hscroll-strip__track mkt-news-category-chips">
               <Link
-                key={item.code}
                 href={feedHref({
                   lang,
                   q,
-                  category: item.code,
-                  country,
                   nationality: params.nationality,
                   sort,
                   from,
                   to,
                 })}
-                className={`filter-chip ${params.category === item.code ? "filter-chip-active" : ""}`}
+                className={`filter-chip ${!params.category ? "filter-chip-active" : ""}`}
                 scroll={false}
               >
-                {lang === "ar" ? arabicCategoryLabels[item.code] || item.label : item.label}
+                {copy.all}
               </Link>
-            ))}
+              {CATEGORY_META.map((item) => (
+                <Link
+                  key={item.code}
+                  href={feedHref({
+                    lang,
+                    q,
+                    category: item.code,
+                    country,
+                    nationality: params.nationality,
+                    sort,
+                    from,
+                    to,
+                  })}
+                  className={`filter-chip ${params.category === item.code ? "filter-chip-active" : ""}`}
+                  scroll={false}
+                >
+                  {lang === "ar" ? arabicCategoryLabels[item.code] || item.label : item.label}
+                </Link>
+              ))}
+            </div>
           </div>
-          <form className="homepage-filter-bar" method="get">
-            {lang !== "ar" && <input type="hidden" name="lang" value={lang} />}
-            {params.category && <input type="hidden" name="category" value={params.category} />}
-            {params.nationality && <input type="hidden" name="nationality" value={params.nationality} />}
-            {q && <input type="hidden" name="q" value={q} />}
-            <label className="homepage-filter-field" htmlFor="home-country">
-              <span>{lang === "ar" ? "الدولة" : "Country"}</span>
-              <select id="home-country" name="country" defaultValue={country || ""}>
-                <option value="">{lang === "ar" ? "كل الدول" : "All countries"}</option>
-                {countryGroups.map((group) => (
-                  <optgroup key={group.key} label={group.label}>
-                    {group.items.map((item) => (
-                      <option key={item.code} value={item.code}>
-                        {item.label}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
-            </label>
-            <label className="homepage-filter-field" htmlFor="home-sort">
-              <span>{copy.sort}</span>
-              <select id="home-sort" name="sort" defaultValue={sort}>
-                <option value="date">{copy.sortDate}</option>
-                <option value="score">{copy.sortScore}</option>
-              </select>
-            </label>
-            <label className="homepage-filter-field" htmlFor="home-from">
-              <span>{copy.fromDate}</span>
-              <input id="home-from" name="from" type="date" defaultValue={from} />
-            </label>
-            <label className="homepage-filter-field" htmlFor="home-to">
-              <span>{copy.toDate}</span>
-              <input id="home-to" name="to" type="date" defaultValue={to} />
-            </label>
-            <button type="submit" className="homepage-filter-button">
-              {copy.apply}
-            </button>
-          </form>
+          <div
+            className="mkt-hscroll-strip mkt-news-filter-strip"
+            aria-label={lang === "ar" ? "فلاتر الموجز" : "Brief filters"}
+          >
+            <form className="homepage-filter-bar mkt-hscroll-strip__track" method="get">
+              {lang !== "ar" && <input type="hidden" name="lang" value={lang} />}
+              {params.category && <input type="hidden" name="category" value={params.category} />}
+              {params.nationality && <input type="hidden" name="nationality" value={params.nationality} />}
+              {q && <input type="hidden" name="q" value={q} />}
+              <label className="homepage-filter-field" htmlFor="home-country">
+                <span>{lang === "ar" ? "الدولة" : "Country"}</span>
+                <select id="home-country" name="country" defaultValue={country || ""}>
+                  <option value="">{lang === "ar" ? "كل الدول" : "All countries"}</option>
+                  {countryGroups.map((group) => (
+                    <optgroup key={group.key} label={group.label}>
+                      {group.items.map((item) => (
+                        <option key={item.code} value={item.code}>
+                          {item.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </label>
+              <label className="homepage-filter-field" htmlFor="home-sort">
+                <span>{copy.sort}</span>
+                <select id="home-sort" name="sort" defaultValue={sort}>
+                  <option value="score">{copy.sortScore}</option>
+                  <option value="date">{copy.sortDate}</option>
+                </select>
+              </label>
+              <label className="homepage-filter-field" htmlFor="home-from">
+                <span>{copy.fromDate}</span>
+                <input id="home-from" name="from" type="date" defaultValue={from} />
+              </label>
+              <label className="homepage-filter-field" htmlFor="home-to">
+                <span>{copy.toDate}</span>
+                <input id="home-to" name="to" type="date" defaultValue={to} />
+              </label>
+              <button type="submit" className="homepage-filter-button">
+                {copy.apply}
+              </button>
+            </form>
+          </div>
           <CommunityBriefingFilter
-            key={params.nationality || "all"}
+            key={`${country || "all"}-${params.nationality || "all"}`}
             initialNationality={params.nationality || ""}
             category={params.category}
             country={country}
@@ -409,7 +456,6 @@ export default async function Home({
             sort={sort}
             from={from}
             to={to}
-            freshnessHours={freshnessHours}
           />
         </section>
 

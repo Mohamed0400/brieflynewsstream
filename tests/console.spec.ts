@@ -52,21 +52,16 @@ test("public dashboard metrics match API-backed records", async ({ page, request
   await expect(page.locator(".homepage-overview-card").filter({ hasText: "Languages supported" })).toContainText("AR + EN");
 });
 
-test("community briefing supports country typeahead and action states", async ({ page }) => {
-  await page.goto("/?lang=en");
+test("community briefing scopes options to the selected host country", async ({ page }) => {
+  await page.goto("/news?lang=en&country=SA");
   const community = page.getByLabel("Community briefing");
-  await community.focus();
-  await page.keyboard.press("k");
-  await expect(community).toHaveValue("KW");
+  await expect(page.getByText("Communities in Saudi Arabia")).toBeVisible();
+  await community.selectOption("PH");
+  await page.getByRole("button", { name: "Show", exact: true }).click();
 
-  const showButton = page.getByRole("button", { name: "Show Kuwait briefing" });
-  await showButton.hover();
-  await expect(showButton).toHaveCSS("background-color", "rgb(20, 83, 45)");
-  await showButton.click();
-
-  await expect(page).toHaveURL(/nationality=KW/);
-  await expect(page.getByRole("button", { name: "Refresh Kuwait briefing" })).toBeVisible();
-  await expect(page.getByText(/Kuwait selected/)).toBeVisible();
+  await expect(page).toHaveURL(/country=SA/);
+  await expect(page).toHaveURL(/nationality=PH/);
+  await expect(page.getByText("Filipino · Saudi Arabia")).toBeVisible();
 });
 
 test("homepage supports newest sort and date filters", async ({ page }) => {

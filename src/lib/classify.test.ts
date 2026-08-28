@@ -2,12 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { Category } from "@prisma/client";
 import { COUNTRY_CATALOG } from "./countries";
-import { classifyArticle, detectCountry } from "./classify";
+import { classifyArticle, detectCountry, shouldStoreArticle, calculateScores } from "./classify";
 import { normalizeDisplayHeadline } from "./editorial";
 import {
   audienceCodesFromValue,
   audienceValue,
   expandNationalityInputs,
+  sortAudienceCodesByEditorialOrder,
 } from "./nationalities";
 import { supportedCountryCodes } from "./supported-countries";
 import { countrySourceCoverage } from "./country-sources";
@@ -82,6 +83,68 @@ test("rejects clearly off-topic content", () => {
   assert.equal(result.accepted, false);
 });
 
+test("rejects Taipei Times lifestyle and consumer stories on country-locked TW sources", () => {
+  const countryLocked = { countryLocked: true };
+  const cases = [
+    ["Protecting ourselves from fraud schemes", "Consumer tips on avoiding online scams and phishing."],
+    ["Fun and games for the weekend", "Crossword puzzles and board games to try at home."],
+    ["The importance of changing your name", "Administrative guidance on legal name changes."],
+    ["Storm warning issued for northern counties", "Heavy rainfall and typhoon alerts across the region."],
+    ["Warning about fake property listings online", "Rental scam alerts and fake listings on social media."],
+  ] as const;
+
+  for (const [title, summary] of cases) {
+    const classified = classifyArticle(title, summary, Category.MARKETS, countryLocked);
+    assert.equal(classified.accepted, false, `expected rejection for "${title}"`);
+    const scores = calculateScores({
+      text: `${title} ${summary}`,
+      relevance: classified.relevance,
+      sourceQuality: 78,
+      publishedAt: new Date(),
+    });
+    assert.equal(shouldStoreArticle(classified, scores), false, `expected pipeline rejection for "${title}"`);
+  }
+});
+
+test("accepts genuine Taiwan market news on country-locked TW sources", () => {
+  const countryLocked = { countryLocked: true };
+  const classified = classifyArticle(
+    "Taiwan semiconductor exports rise on AI chip demand",
+    "TSMC shares climbed as investors bet on earnings and technology exports.",
+    Category.MARKETS,
+    countryLocked,
+  );
+  assert.equal(classified.accepted, true);
+  const scores = calculateScores({
+    text: "Taiwan semiconductor exports rise on AI chip demand TSMC shares climbed as investors bet on earnings and technology exports.",
+    relevance: classified.relevance,
+    sourceQuality: 78,
+    publishedAt: new Date(),
+  });
+  assert.equal(shouldStoreArticle(classified, scores), true);
+});
+
+test("rejects weak generic market hits that previously passed via countryLocked", () => {
+  const classified = classifyArticle(
+    "Local business owners gather for brunch",
+    "Growth remains a talking point among members.",
+    Category.MARKETS,
+    { countryLocked: true },
+  );
+  assert.equal(classified.weakMarketOnly, true);
+  assert.equal(classified.accepted, false);
+});
+
+test("countryLocked no longer bypasses zero-signal local stories", () => {
+  const classified = classifyArticle(
+    "City council announces park renovation plans",
+    "Residents welcomed the new green space opening next month.",
+    Category.MARKETS,
+    { countryLocked: true },
+  );
+  assert.equal(classified.accepted, false);
+});
+
 test("detects Kuwait and US context", () => {
   assert.equal(detectCountry("CBK updates Kuwait monetary policy", "GLOBAL"), "KW");
   assert.equal(detectCountry("Federal Reserve discusses rates", "GLOBAL"), "US");
@@ -129,6 +192,11 @@ test("stores audience codes as exact, multi-value tokens", () => {
   const stored = audienceValue(["IN", "EG", "IN"]);
   assert.equal(stored, "|IN||EG|");
   assert.deepEqual(audienceCodesFromValue(stored), ["IN", "EG"]);
+});
+
+test("audience chips follow Gulf-first editorial order", () => {
+  const sorted = sortAudienceCodesByEditorialOrder(["QA", "PH", "KW", "SA", "AE"]);
+  assert.deepEqual(sorted, ["KW", "SA", "AE", "QA", "PH"]);
 });
 
 test("display headlines never retain truncation marks", () => {

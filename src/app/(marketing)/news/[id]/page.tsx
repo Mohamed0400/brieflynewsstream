@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { serializeArticle } from "@/lib/api";
+import { isBlockedArticle } from "@/lib/content-safety";
 import { prisma } from "@/lib/prisma";
 import {
   breadcrumbJsonLd,
@@ -15,10 +16,12 @@ import {
 export const dynamic = "force-dynamic";
 
 async function loadArticle(id: string) {
-  return prisma.article.findUnique({
+  const article = await prisma.article.findUnique({
     where: { id },
     include: { source: true, score: true },
   });
+  if (!article || isBlockedArticle(article)) return null;
+  return article;
 }
 
 export async function generateMetadata({

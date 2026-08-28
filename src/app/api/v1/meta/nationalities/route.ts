@@ -6,6 +6,8 @@ import { limits } from "@/lib/limits";
 import {
   NATIONALITY_GROUPS,
   NATIONALITY_OPTIONS,
+  nationalityGroupsForHost,
+  nationalityOptionsForHost,
 } from "@/lib/nationalities";
 import { prisma } from "@/lib/prisma";
 
@@ -16,6 +18,10 @@ export async function GET(request: Request) {
   if (denied) return denied;
 
   try {
+    const url = new URL(request.url);
+    const hostCountry = url.searchParams.get("country")?.trim().toUpperCase() || undefined;
+    const options = nationalityOptionsForHost(hostCountry);
+    const groups = nationalityGroupsForHost(hostCountry);
     const freshnessHours = Math.max(1, limits.nationalityMaxAgeHours);
     const cutoff = new Date(Date.now() - freshnessHours * 60 * 60 * 1000);
     const rows = await prisma.$queryRaw<Array<{ code: string; count: number }>>(Prisma.sql`
@@ -34,8 +40,9 @@ export async function GET(request: Request) {
     return withQuotaHeaders(request, NextResponse.json({
       freshnessHours,
       ranking: false,
+      hostCountry: hostCountry ?? null,
       note: "Audience options for community briefings; this is not a demographic ranking.",
-      items: NATIONALITY_OPTIONS.map((option) => ({
+      items: options.map((option) => ({
         code: option.code,
         slug: option.slug,
         country: option.country,
@@ -43,7 +50,7 @@ export async function GET(request: Request) {
         flag: option.flag,
         freshArticleCount: counts.get(option.code) ?? 0,
       })),
-      groups: NATIONALITY_GROUPS.map((group) => ({
+      groups: groups.map((group) => ({
         ...group,
         freshArticleCount: group.countryCodes.reduce(
           (total, code) => total + (counts.get(code) ?? 0),

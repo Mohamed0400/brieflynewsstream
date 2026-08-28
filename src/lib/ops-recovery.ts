@@ -1,4 +1,5 @@
 import type { BilingualCoverage } from "./article-translation";
+import { purgeLowQualityArticles } from "./article-quality";
 import { drainPendingTranslations, getBilingualCoverage } from "./article-translation";
 import { kuwaitDate } from "./market";
 import { limits } from "./limits";
@@ -52,6 +53,7 @@ export type OpsRecoverOptions = {
   normalize?: boolean;
   translate?: boolean;
   collect?: boolean;
+  purgeQuality?: boolean;
 };
 
 export type OpsRecoverResult = {
@@ -65,6 +67,8 @@ export type OpsRecoverResult = {
   translated: number | null;
   translationPending: number | null;
   collect: { ok: boolean; skipped: boolean; message: string } | null;
+  qualityPurged: number | null;
+  qualityScanned: number | null;
   messages: string[];
   remaining: {
     pendingRawArticles: number;
@@ -136,12 +140,13 @@ export function mapOpsJobStatuses(
 }
 
 export function resolveRecoverPlan(options: OpsRecoverOptions) {
-  const explicit = options.forceLocks || options.normalize || options.translate || options.collect;
+  const explicit = options.forceLocks || options.normalize || options.translate || options.collect || options.purgeQuality;
   return {
     forceLocks: options.forceLocks === true || !explicit,
     normalize: options.normalize === true || !explicit,
     translate: options.translate === true || !explicit,
     collect: options.collect === true,
+    purgeQuality: options.purgeQuality === true,
   };
 }
 
@@ -169,6 +174,11 @@ export function summarizeRecoverResult(result: Omit<OpsRecoverResult, "at" | "re
   }
   if (result.collect) {
     messages.push(result.collect.message);
+  }
+  if (result.qualityPurged != null && result.qualityPurged > 0) {
+    messages.push(`Purged ${result.qualityPurged} low-quality article(s) after scanning ${result.qualityScanned ?? 0}.`);
+  } else if (result.qualityScanned != null && result.qualityScanned > 0) {
+    messages.push(`Scanned ${result.qualityScanned} article(s); none matched the low-quality purge rules.`);
   }
   if (!messages.length) messages.push("No recovery actions changed pipeline state.");
   return messages;
@@ -321,6 +331,14 @@ export async function runOpsRecovery(options: OpsRecoverOptions = {}): Promise<O
     };
   }
 
+  let qualityPurged: number | null = null;
+  let qualityScanned: number | null = null;
+  if (plan.purgeQuality) {
+    const purge = await purgeLowQualityArticles();
+    qualityPurged = purge.purged;
+    qualityScanned = purge.scanned;
+  }
+
   const remaining = {
     pendingRawArticles: await countPendingRawArticles(),
     pendingTranslationArticles: await countPendingTranslationArticles(fresh),
@@ -337,6 +355,8 @@ export async function runOpsRecovery(options: OpsRecoverOptions = {}): Promise<O
     translated,
     translationPending,
     collect,
+    qualityPurged,
+    qualityScanned,
     messages: [],
   };
   partial.messages = summarizeRecoverResult(partial);

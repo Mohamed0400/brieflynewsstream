@@ -2,12 +2,18 @@ import { Category, Prisma } from "@prisma/client";
 import { categoryFromCode, categoryToCode, regionFromCode, regionToCode } from "./market";
 import { articleLocalizedText, hasLocalizedDisplay, isArabicText, isBilingualComplete, isEnglishText } from "./article-translation";
 import { optimizedFetchUrl } from "./cloudinary";
+import { isBlockedArticle } from "./content-safety";
 import { dedupeArticles } from "./dedupe";
+import {
+  shouldApplyBriefRanking,
+  sortArticlesForBriefFeed,
+} from "./brief-feed-ranking";
 import { limits } from "./limits";
 import { prisma } from "./prisma";
 import {
   audienceCodesFromValue,
   expandNationalityInputs,
+  isNationalityAllowedForHost,
   optionForCode,
 } from "./nationalities";
 import { searchWords, countryCodesForSearchWord } from "./search";
@@ -34,7 +40,7 @@ export async function listDedupedArticles(
   orderBy: Prisma.ArticleOrderByWithRelationInput[],
   limit: number,
   offset: number,
-  options: { lang?: string } = {},
+  options: { lang?: string; applyBriefRanking?: boolean } = {},
 ): Promise<{ count: number; items: ListedArticle[] }> {
   const lang = options.lang === "en" ? "en" : "ar";
   const take = Math.min(
@@ -49,9 +55,11 @@ export async function listDedupedArticles(
   });
   const unique = dedupeArticles(rows);
   const filtered = unique.filter((article) => hasLocalizedDisplay(article, lang));
+  const safe = filtered.filter((article) => !isBlockedArticle(article));
+  const ranked = options.applyBriefRanking ? sortArticlesForBriefFeed(safe) : safe;
   return {
-    count: filtered.length,
-    items: filtered.slice(offset, offset + limit),
+    count: ranked.length,
+    items: ranked.slice(offset, offset + limit),
   };
 }
 
@@ -134,6 +142,16 @@ export function parseQuery(
   if (nationalityInput.length && !nationalityCodes.length) {
     throw new Error("Unknown nationality. Use an ISO code or a value from /api/v1/meta/nationalities");
   }
+  const hostCountry = (params.get("country") || "").trim().toUpperCase() || undefined;
+  if (hostCountry && nationalityCodes.length) {
+    for (const code of nationalityCodes) {
+      if (!isNationalityAllowedForHost(hostCountry, code)) {
+        throw new Error(
+          `Nationality ${code} is not in the community list for ${hostCountry}. Use GET /api/v1/meta/nationalities?country=${hostCountry}`,
+        );
+      }
+    }
+  }
   const region = params.get("region") ? regionFromCode(params.get("region")!) : undefined;
   const date = params.get("date");
   const from = params.get("from");
@@ -213,6 +231,14 @@ export function parseQuery(
     limit,
     offset,
     sort,
+    applyBriefRanking: sort === "score" && shouldApplyBriefRanking({
+      category: params.get("category"),
+      country: params.get("country"),
+      nationalityCodes,
+      q: searchText || null,
+      region: params.get("region"),
+      source: params.get("source"),
+    }),
     filters: {
       category: params.get("category"),
       country: params.get("country"),

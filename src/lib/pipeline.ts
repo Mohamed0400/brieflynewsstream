@@ -10,7 +10,9 @@ import {
   cleanText,
   detectCountry,
   regionForCountry,
+  shouldStoreArticle,
 } from "./classify";
+import { isBlockedContent } from "./content-safety";
 import {
   allLiveCountrySources,
   countriesNeedingArticles,
@@ -26,6 +28,7 @@ import {
 } from "./dedupe";
 import { categoryToCode, kuwaitDate } from "./market";
 import { limits } from "./limits";
+import { sortArticlesForBriefFeed } from "./brief-feed-ranking";
 import { audienceValue } from "./nationalities";
 import {
   collectDeadline,
@@ -426,6 +429,18 @@ async function normalizePendingBatch(result: PipelineResult) {
       publishedAt: raw.publishedAt,
     });
 
+    if (isBlockedContent(title, summary)) {
+      result.rejected += 1;
+      await markProcessed();
+      continue;
+    }
+
+    if (!nationalityNews && !shouldStoreArticle(classified, scores)) {
+      result.rejected += 1;
+      await markProcessed();
+      continue;
+    }
+
     const seeded = seedBilingualFields(title, summary);
     try {
       await prisma.$transaction([
@@ -639,7 +654,7 @@ export async function buildDailyEdition(
   const cutoff = new Date(
     editionEnd.getTime() - Math.max(1, limits.newsMaxAgeHours) * 60 * 60 * 1000,
   );
-  const candidates = dedupeArticles(await prisma.article.findMany({
+  const candidates = sortArticlesForBriefFeed(dedupeArticles(await prisma.article.findMany({
     where: {
       publishedAt: { gte: cutoff, lte: editionEnd },
       score: { isNot: null },
@@ -647,7 +662,7 @@ export async function buildDailyEdition(
     include: { score: true, source: true },
     orderBy: [{ finalScore: "desc" }, { publishedAt: "desc" }],
     ...(limits.dailyCandidates > 0 ? { take: limits.dailyCandidates } : {}),
-  }));
+  })));
 
   const selected: typeof candidates = [];
   const regionCount = new Map<string, number>();

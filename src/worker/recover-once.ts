@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma";
+import { purgeLowQualityArticles } from "../lib/article-quality";
 import { drainPendingTranslations } from "../lib/article-translation";
 import { limits } from "../lib/limits";
 import {
@@ -71,6 +72,11 @@ async function main() {
     collectSummary = collect.message;
   }
 
+  let qualityPurge: Awaited<ReturnType<typeof purgeLowQualityArticles>> | null = null;
+  if (process.argv.includes("--purge-quality")) {
+    qualityPurge = await purgeLowQualityArticles();
+  }
+
   const jobsAfter = await prisma.scheduledJob.findMany({
     select: { key: true, lastStatus: true, lastRunAt: true, lastError: true, lastSummary: true },
     orderBy: { key: "asc" },
@@ -88,6 +94,7 @@ async function main() {
     translationPending: translation.pending,
     translateJob: translateJobSummary,
     collect: collectSummary,
+    qualityPurge,
     jobsAfter,
   }, null, 2));
 

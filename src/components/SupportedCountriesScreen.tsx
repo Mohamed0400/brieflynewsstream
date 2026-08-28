@@ -114,7 +114,11 @@ export function SupportedCountriesScreen({
                 {group.label}
                 <span className="homepage-country-group-count">{group.items.length}</span>
               </h3>
-              <ul>
+              <div
+                className="mkt-hscroll-strip homepage-country-group-scroll"
+                aria-label={group.label}
+              >
+                <ul className="mkt-hscroll-strip__track">
                 {group.items.map((item) => {
                   flatIndex += 1;
                   const index = flatIndex;
@@ -139,7 +143,8 @@ export function SupportedCountriesScreen({
                     </li>
                   );
                 })}
-              </ul>
+                </ul>
+              </div>
             </div>
           ))
         )}

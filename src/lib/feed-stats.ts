@@ -12,6 +12,7 @@ type NewsFeedStats = {
   sourceCountries: string[];
   healthySources: number;
   sourceCount: number;
+  lastSourceFetchAt: Date | null;
 };
 
 let statsCache: { at: number; data: NewsFeedStats } | null = null;
@@ -53,6 +54,11 @@ export async function getNewsFeedStats(): Promise<NewsFeedStats> {
         && !source.lastError
       )).length,
       sourceCount: sources.length,
+      lastSourceFetchAt: sources.reduce<Date | null>((latest, source) => {
+        if (!source.lastFetchedAt) return latest;
+        if (!latest || source.lastFetchedAt > latest) return source.lastFetchedAt;
+        return latest;
+      }, null),
     };
     statsCache = { at: now, data };
     return data;
@@ -66,6 +72,7 @@ export async function getNewsFeedStats(): Promise<NewsFeedStats> {
       sourceCountries: [],
       healthySources: 0,
       sourceCount: 0,
+      lastSourceFetchAt: null,
     };
   }
 }

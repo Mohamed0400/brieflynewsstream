@@ -2,8 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState, useTransition } from "react";
+import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
+import { landingCopy } from "@/lib/landing-translation";
 import {
+  nationalityAudienceLabel,
+  nationalityGroupsForHost,
+  nationalityOptionsForHost,
   NATIONALITY_GROUPS,
   NATIONALITY_OPTIONS,
   optionForCode,
@@ -18,7 +22,6 @@ export function CommunityBriefingFilter({
   sort,
   from,
   to,
-  freshnessHours,
 }: {
   initialNationality: string;
   category?: string;
@@ -28,10 +31,10 @@ export function CommunityBriefingFilter({
   sort?: string;
   from?: string;
   to?: string;
-  freshnessHours: number;
 }) {
   const router = useRouter();
-  const isArabic = lang !== "en";
+  const copy = landingCopy(lang === "en" ? "en" : "ar");
+  const briefing = copy.communityBriefing;
   const normalizedInitial = (() => {
     const value = initialNationality.trim().toLowerCase();
     const group = NATIONALITY_GROUPS.find((item) => (
@@ -46,13 +49,34 @@ export function CommunityBriefingFilter({
   })();
   const [nationality, setNationality] = useState(normalizedInitial);
   const [pending, startTransition] = useTransition();
+  const scopedOptions = useMemo(() => nationalityOptionsForHost(country), [country]);
+  const scopedGroups = useMemo(() => nationalityGroupsForHost(country), [country]);
+  const allowedCodes = useMemo(
+    () => new Set(scopedOptions.map((option) => option.code)),
+    [scopedOptions],
+  );
+
+  useEffect(() => {
+    if (!nationality) return;
+    const group = NATIONALITY_GROUPS.find((item) => item.code === nationality);
+    if (group) {
+      if (scopedGroups.some((item) => item.code === group.code)) return;
+      setNationality("");
+      return;
+    }
+    if (!allowedCodes.has(nationality)) setNationality("");
+  }, [allowedCodes, country, nationality, scopedGroups]);
+
   const selected = optionForCode(nationality);
-  const selectedGroup = NATIONALITY_GROUPS.find((group) => group.code === nationality);
+  const selectedGroup = scopedGroups.find((group) => group.code === nationality)
+    ?? NATIONALITY_GROUPS.find((group) => group.code === nationality);
   const selectedLabel = selected
-    ? isArabic
-      ? selected.nameAr
-      : selected.country
-    : selectedGroup?.label;
+    ? nationalityAudienceLabel(selected, copy.lang)
+    : selectedGroup
+      ? (copy.lang === "ar" && selectedGroup.code === "AFRICA"
+        ? briefing.africaGroup
+        : selectedGroup.label)
+      : null;
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -61,7 +85,7 @@ export function CommunityBriefingFilter({
     if (q) params.set("q", q);
     if (category) params.set("category", category);
     if (country) params.set("country", country);
-    if (sort && sort !== "date") params.set("sort", sort);
+    if (sort && sort !== "score") params.set("sort", sort);
     if (from) params.set("from", from);
     if (to) params.set("to", to);
     if (nationality) params.set("nationality", nationality);
@@ -74,67 +98,70 @@ export function CommunityBriefingFilter({
   if (q) clearParams.set("q", q);
   if (category) clearParams.set("category", category);
   if (country) clearParams.set("country", country);
-  if (sort && sort !== "date") clearParams.set("sort", sort);
+  if (sort && sort !== "score") clearParams.set("sort", sort);
   if (from) clearParams.set("from", from);
   if (to) clearParams.set("to", to);
   const clearHref = clearParams.toString() ? `/news?${clearParams}` : "/news";
-  const actionLabel = pending
-    ? (isArabic ? "جارٍ تحميل التغطية..." : "Loading briefing...")
-    : selectedLabel
-      ? isArabic
-        ? `${normalizedInitial === nationality ? "تحديث" : "عرض"} تغطية ${selectedLabel}`
-        : `${normalizedInitial === nationality ? "Refresh" : "View"} ${selectedLabel} briefing`
-      : isArabic
-        ? "عرض التغطية الحديثة"
-        : "View latest briefing";
+
+  const statusText = selectedLabel
+    ? country
+      ? briefing.selectedInHost(selectedLabel, country)
+      : selectedLabel
+    : country
+      ? briefing.pickCommunity
+      : null;
 
   return (
     <form onSubmit={submit} className="community-briefing-form">
-      <label className="community-briefing-field" htmlFor="community-nationality">
-        <span>{isArabic ? "تغطية الجاليات" : "Community briefing"}</span>
-        <select
-          id="community-nationality"
-          name="nationality"
-          value={nationality}
-          onChange={(event) => setNationality(event.target.value)}
-        >
-          <option value="">{isArabic ? "كل الجاليات" : "All nationality audiences"}</option>
-          {NATIONALITY_GROUPS.map((group) => (
-            <option key={group.code} value={group.code}>
-              {isArabic && group.code === "AFRICA" ? "الجاليات الأفريقية" : group.label}
-            </option>
-          ))}
-          {NATIONALITY_OPTIONS.map((option) => (
-            <option key={option.code} value={option.code}>
-              {isArabic
-                ? `${option.nameAr} - ${option.nationalityAr}`
-                : `${option.country} - ${option.nationality}`}
-            </option>
-          ))}
-        </select>
-      </label>
-      <button
-        type="submit"
-        disabled={pending}
-        className="community-briefing-button"
-        data-selected={nationality ? "true" : "false"}
+      <div
+        className="mkt-hscroll-strip community-briefing-scroll"
+        aria-label={briefing.label}
       >
-        {actionLabel}
-      </button>
-      {initialNationality && (
-        <Link href={clearHref} className="community-briefing-clear" scroll={false}>
-          {isArabic ? "مسح" : "Clear"}
-        </Link>
+        <div className="mkt-hscroll-strip__track community-briefing-controls">
+          <label className="community-briefing-field" htmlFor="community-nationality">
+            <span>{briefing.label}</span>
+            {country && (
+              <span className="community-briefing-hint">{briefing.hintHost(country)}</span>
+            )}
+            <select
+              id="community-nationality"
+              name="nationality"
+              value={nationality}
+              onChange={(event) => setNationality(event.target.value)}
+            >
+              <option value="">{briefing.all}</option>
+              {scopedGroups.map((group) => (
+                <option key={group.code} value={group.code}>
+                  {copy.lang === "ar" && group.code === "AFRICA" ? briefing.africaGroup : group.label}
+                </option>
+              ))}
+              {scopedOptions.map((option) => (
+                <option key={option.code} value={option.code}>
+                  {nationalityAudienceLabel(option, copy.lang)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="submit"
+            disabled={pending}
+            className="community-briefing-button"
+            data-selected={nationality ? "true" : "false"}
+          >
+            {pending ? briefing.loading : briefing.show}
+          </button>
+          {initialNationality && (
+            <Link href={clearHref} className="community-briefing-clear" scroll={false}>
+              {briefing.clear}
+            </Link>
+          )}
+        </div>
+      </div>
+      {statusText && (
+        <span className="community-briefing-status" aria-live="polite">
+          {statusText}
+        </span>
       )}
-      <span className="community-briefing-status" aria-live="polite">
-        {selectedLabel
-          ? isArabic
-            ? `تم اختيار ${selectedLabel}. عمر الأخبار لا يتجاوز ${freshnessHours} ساعة.`
-            : `${selectedLabel} selected. News is at most ${freshnessHours} hours old.`
-          : isArabic
-            ? `عمر الأخبار لا يتجاوز ${freshnessHours} ساعة.`
-            : `News is at most ${freshnessHours} hours old.`}
-      </span>
     </form>
   );
 }

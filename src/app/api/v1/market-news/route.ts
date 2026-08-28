@@ -26,7 +26,7 @@ export async function GET(request: Request) {
       orderBy,
       query.limit,
       query.offset,
-      { lang: query.filters.lang },
+      { lang: query.filters.lang, applyBriefRanking: query.applyBriefRanking },
     );
     return jsonApi({
       meta: apiMeta({

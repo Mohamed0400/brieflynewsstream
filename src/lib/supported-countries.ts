@@ -130,6 +130,20 @@ export function regionEditorialRank(regionKey: CountryRegionKey, code: string) {
   return REGION_ORDER_INDEX.get(`${regionKey}:${code.trim().toUpperCase()}`) ?? Number.MAX_SAFE_INTEGER;
 }
 
+/** Editorial priority for feed ranking and audience chips. Lower = earlier. */
+export const EDITORIAL_REGION_PRIORITY: Record<CountryRegionKey, number> = {
+  global: 0,
+  middle_east: 1,
+  africa: 2,
+  europe: 3,
+  americas: 4,
+  asia_pacific: 5,
+};
+
+export function regionGroupPriority(key: CountryRegionKey) {
+  return EDITORIAL_REGION_PRIORITY[key] ?? 99;
+}
+
 export function regionGroupLabel(key: CountryRegionKey, lang: "ar" | "en") {
   const meta = REGION_GROUP_META.find((item) => item.key === key);
   if (!meta) return key;

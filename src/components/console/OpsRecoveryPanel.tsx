@@ -192,6 +192,14 @@ export function OpsRecoveryPanel() {
           >
             {busy === "collect" ? t.working : t.forceCollect}
           </button>
+          <button
+            type="button"
+            className="console-secondary-button"
+            disabled={Boolean(busy)}
+            onClick={() => void runRecover({ purgeQuality: true, forceLocks: false, normalize: false, translate: false }, "purge")}
+          >
+            {busy === "purge" ? t.working : t.purgeQuality}
+          </button>
         </div>
         <p className="console-help">{t.vercelNote}</p>
       </section>

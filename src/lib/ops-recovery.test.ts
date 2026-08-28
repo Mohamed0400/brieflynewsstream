@@ -13,6 +13,7 @@ test("resolveRecoverPlan defaults to full recover minus collect", () => {
     normalize: true,
     translate: true,
     collect: false,
+    purgeQuality: false,
   });
 });
 
@@ -22,11 +23,13 @@ test("resolveRecoverPlan honors explicit step flags", () => {
     translate: false,
     forceLocks: false,
     collect: true,
+    purgeQuality: true,
   }), {
     forceLocks: false,
     normalize: true,
     translate: false,
     collect: true,
+    purgeQuality: true,
   });
 });
 
@@ -75,11 +78,14 @@ test("summarizeRecoverResult reports cleared locks and backlog", () => {
     translated: 45,
     translationPending: 5,
     collect: null,
+    qualityPurged: 12,
+    qualityScanned: 400,
     messages: [],
   });
   assert.match(messages.join(" "), /Cleared 1 stale lock/);
   assert.match(messages.join(" "), /Normalized 100 raw/);
   assert.match(messages.join(" "), /Translated 45/);
+  assert.match(messages.join(" "), /Purged 12 low-quality/);
   assert.match(messages.join(" "), /5 still pending/);
 });
 

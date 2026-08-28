@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import { parseQuery, serializeArticle } from "./api";
+import { isBlockedArticle } from "./content-safety";
 import { kuwaitDate } from "./market";
 import { limits } from "./limits";
 import { ensureTodaysEdition } from "./pipeline";
@@ -40,8 +41,9 @@ export async function getDailyEditionPayload(date: string, searchParams?: URLSea
 
   if (!edition) return null;
 
-  const filteredCount = edition.items.length;
-  const pageItems = edition.items.slice(
+  const safeItems = edition.items.filter((item) => !isBlockedArticle(item.article));
+  const filteredCount = safeItems.length;
+  const pageItems = safeItems.slice(
     pagination.offset,
     pagination.offset + pagination.limit,
   );

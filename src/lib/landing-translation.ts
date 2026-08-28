@@ -1,10 +1,27 @@
+import { hostCountryBriefingLabel } from "./nationalities";
+
 const pageCopy = {
   en: {
     lang: "en",
     dir: "ltr" as const,
-    heroTitle: "Market Brief",
-    heroLede: "Regional and global market news from the last 72 hours, ranked by impact.",
-    heroBody: "Gulf, MENA, and worldwide desks share one briefing. Filter by country when you need a local view.",
+    heroTitle: "Your daily market briefing",
+    heroLede:
+      "Gulf, MENA, and global market news from the last 72 hours — ranked by impact so you see what moves markets first.",
+    heroBody:
+      "Read in Arabic or English. Filter by country, category, or community when you need a local lens.",
+    jumpToFeed: "Today's stories",
+    developerLink: "API for developers",
+    trustStripLabel: "Why readers use this brief",
+    trustItems: [
+      { id: "bilingual", label: "Arabic & English" },
+      { id: "window", label: "72-hour window" },
+      { id: "ranked", label: "Impact-ranked" },
+      { id: "coverage", label: "Gulf + global coverage" },
+    ],
+    refreshLine: (count: number, hours: number, refreshed: string | null) =>
+      refreshed
+        ? `${count.toLocaleString("en")} stories in the last ${hours} hours · Sources refreshed ${refreshed}`
+        : `${count.toLocaleString("en")} stories in the last ${hours} hours · Updated continuously`,
     console: "Console",
     filtersTitle: "Filter coverage",
     searchPlaceholder: "Search oil, rates, or inflation",
@@ -25,6 +42,30 @@ const pageCopy = {
     page: "Page",
     noMatches: "No articles match the current filters.",
     impact: "Impact",
+    impactTier: {
+      high: "High impact",
+      moderate: "Moderate",
+      watch: "On watch",
+      low: "Low",
+    },
+    impactMarket: {
+      oil: "Oil & energy",
+      rates: "Rates & policy",
+      markets: "Broader markets",
+    },
+    impactModalKicker: "Desk estimate",
+    impactModalTitle: "Estimated market impact",
+    impactModalNote: "Signal-based estimate across three market desks. Not a trading recommendation.",
+    impactModalClose: "Close impact details",
+    impactBadgeOpen: (tier: "high" | "moderate" | "watch" | "low") => {
+      const labels = {
+        high: "High impact",
+        moderate: "Moderate impact",
+        watch: "On watch",
+        low: "Low impact",
+      };
+      return `View estimated impact details. ${labels[tier]}.`;
+    },
     environment: "environment",
     freshArticles: "Fresh articles",
     storedArticles: "All stored articles",
@@ -52,22 +93,53 @@ const pageCopy = {
     countrySearchLabel: "Search supported countries",
     countrySearchEmpty: "No countries match your search.",
     liveInFeed: "In this briefing",
-    overviewTitle: "Data overview",
-    overviewWindowTitle: "Live briefing window",
+    overviewTitle: "Why this brief",
+    overviewWindowTitle: "Fresh window",
     overviewWindowValue: "72h",
-    overviewWindowDetail: "The default query window for current market news. Older stories stay available through the API.",
+    overviewWindowDetail: "Only recent market-moving news — no stale headlines cluttering your scan.",
     overviewCountriesTitle: "Countries covered",
-    overviewCountriesDetail: "Global and regional coverage with country-level filtering.",
+    overviewCountriesDetail: "Gulf, MENA, and worldwide desks in one feed. Tap a country to narrow the view.",
     overviewLanguagesTitle: "Languages supported",
     overviewLanguagesValue: "AR + EN",
-    overviewLanguagesDetail: "Every story is kept in Arabic and English.",
+    overviewLanguagesDetail: "Every story available in Arabic and English — switch anytime.",
+    paginationPrev: "Previous",
+    paginationNext: "Next",
+    paginationGoTo: (page: number) => `Go to page ${page}`,
+    paginationStatus: (page: number, total: number) => `Page ${page} of ${total}`,
+    communityBriefing: {
+      label: "Community briefing",
+      all: "All communities",
+      hintHost: (hostCode: string) => `Communities in ${hostCountryBriefingLabel(hostCode, "en")}`,
+      show: "Show",
+      loading: "Loading…",
+      clear: "Clear",
+      pickCommunity: "Pick a community",
+      africaGroup: "African communities",
+      selectedInHost: (community: string, hostCode: string) =>
+        `${community} · ${hostCountryBriefingLabel(hostCode, "en")}`,
+    },
   },
   ar: {
     lang: "ar",
     dir: "rtl" as const,
-    heroTitle: "موجز الأسواق",
-    heroLede: "أخبار أسواق إقليمية وعالمية خلال آخر 72 ساعة، مرتّبة حسب الأثر.",
-    heroBody: "مكاتب الخليج والشرق الأوسط والعالم في موجز واحد. صفِّ حسب الدولة عندما تحتاج منظوراً محلياً.",
+    heroTitle: "موجزك اليومي للأسواق",
+    heroLede:
+      "أخبار الخليج والشرق الأوسط والعالم خلال آخر 72 ساعة — مرتّبة حسب الأثر لتقرأ ما يحرّك الأسواق أولاً.",
+    heroBody:
+      "اقرأ بالعربية أو الإنجليزية. صفِّ حسب الدولة أو الفئة أو الجالية عندما تحتاج منظوراً محلياً.",
+    jumpToFeed: "قصص اليوم",
+    developerLink: "واجهة المطوّرين",
+    trustStripLabel: "لماذا يعتمد القرّاء على هذا الموجز",
+    trustItems: [
+      { id: "bilingual", label: "عربي وإنجليزي" },
+      { id: "window", label: "نافذة 72 ساعة" },
+      { id: "ranked", label: "ترتيب حسب الأثر" },
+      { id: "coverage", label: "تغطية الخليج والعالم" },
+    ],
+    refreshLine: (count: number, hours: number, refreshed: string | null) =>
+      refreshed
+        ? `${count.toLocaleString("en")} خبر خلال آخر ${hours} ساعة · تحديث المصادر ${refreshed}`
+        : `${count.toLocaleString("en")} خبر خلال آخر ${hours} ساعة · يُحدَّث باستمرار`,
     console: "اللوحة",
     filtersTitle: "تصفية التغطية",
     searchPlaceholder: "ابحث عن النفط أو الفائدة أو التضخم",
@@ -88,6 +160,30 @@ const pageCopy = {
     page: "الصفحة",
     noMatches: "لا توجد أخبار مطابقة للفلاتر الحالية.",
     impact: "التأثير",
+    impactTier: {
+      high: "أثر مرتفع",
+      moderate: "أثر متوسط",
+      watch: "تحت المراقبة",
+      low: "أثر محدود",
+    },
+    impactMarket: {
+      oil: "النفط والطاقة",
+      rates: "الفائدة والسياسة",
+      markets: "الأسواق العامة",
+    },
+    impactModalKicker: "تقدير المكتب",
+    impactModalTitle: "الأثر المتوقع على الأسواق",
+    impactModalNote: "تقدير مبني على إشارات الخبر عبر ثلاثة مكاتب أسواق. ليس توصية تداول.",
+    impactModalClose: "إغلاق تفاصيل الأثر",
+    impactBadgeOpen: (tier: "high" | "moderate" | "watch" | "low") => {
+      const labels = {
+        high: "أثر مرتفع",
+        moderate: "أثر متوسط",
+        watch: "تحت المراقبة",
+        low: "أثر محدود",
+      };
+      return `عرض تفاصيل الأثر المتوقع. ${labels[tier]}.`;
+    },
     environment: "البيئة",
     freshArticles: "الأخبار الحديثة",
     storedArticles: "كل الأخبار المخزنة",
@@ -115,15 +211,31 @@ const pageCopy = {
     countrySearchLabel: "ابحث في الدول المدعومة",
     countrySearchEmpty: "لا توجد دول مطابقة لبحثك.",
     liveInFeed: "موجودة في هذا الموجز",
-    overviewTitle: "نظرة على البيانات",
-    overviewWindowTitle: "نافذة الموجز المباشر",
+    overviewTitle: "لماذا هذا الموجز",
+    overviewWindowTitle: "نافذة حديثة",
     overviewWindowValue: "72 ساعة",
-    overviewWindowDetail: "النافذة الافتراضية لاستعلام أخبار الأسواق الحالية. الأخبار الأقدم تبقى متاحة عبر الواجهة.",
+    overviewWindowDetail: "أخبار السوق الحديثة فقط — بدون عناوين قديمة تشتت القراءة.",
     overviewCountriesTitle: "الدول المغطاة",
-    overviewCountriesDetail: "تغطية عالمية وإقليمية مع تصفية حسب الدولة.",
+    overviewCountriesDetail: "مكاتب الخليج والشرق الأوسط والعالم في موجز واحد. اضغط على دولة لتضييق العرض.",
     overviewLanguagesTitle: "اللغات المدعومة",
     overviewLanguagesValue: "ع + EN",
-    overviewLanguagesDetail: "كل خبر محفوظ بالعربية والإنجليزية.",
+    overviewLanguagesDetail: "كل خبر متاح بالعربية والإنجليزية — بدّل اللغة في أي وقت.",
+    paginationPrev: "السابق",
+    paginationNext: "التالي",
+    paginationGoTo: (page: number) => `انتقل إلى الصفحة ${page}`,
+    paginationStatus: (page: number, total: number) => `الصفحة ${page} من ${total}`,
+    communityBriefing: {
+      label: "تغطية الجاليات",
+      all: "كل الجاليات",
+      hintHost: (hostCode: string) => `جاليات في ${hostCountryBriefingLabel(hostCode, "ar")}`,
+      show: "عرض",
+      loading: "جاري التحميل…",
+      clear: "مسح",
+      pickCommunity: "اختر الجالية",
+      africaGroup: "الجاليات الأفريقية",
+      selectedInHost: (community: string, hostCode: string) =>
+        `${community} · ${hostCountryBriefingLabel(hostCode, "ar")}`,
+    },
   },
 } as const;
 

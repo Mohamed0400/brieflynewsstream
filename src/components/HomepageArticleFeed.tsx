@@ -4,11 +4,14 @@ import { articleLocalizedText } from "@/lib/article-translation";
 import {
   audienceCodesFromValue,
   optionForCode,
+  sortAudienceCodesByEditorialOrder,
 } from "@/lib/nationalities";
 import { categoryToCode, regionToCode } from "@/lib/market";
 import { publicSourceName } from "@/lib/public-source";
 import { landingCopy } from "@/lib/landing-translation";
 import { BrandLoader } from "@/components/media/BrandLoader";
+import { ImpactBadge } from "@/components/ImpactBadge";
+import type { ArticleImpactScore } from "@/lib/impact-display";
 
 const timeFormat = new Intl.DateTimeFormat("en", {
   dateStyle: "medium",
@@ -35,7 +38,7 @@ type FeedArticle = {
   publishedAt: Date;
   audienceCodes: string | null;
   source: { name: string };
-  score: { finalScore: number } | null;
+  score: ArticleImpactScore | null;
 };
 
 function paginationItems(page: number, totalPages: number) {
@@ -68,7 +71,7 @@ function feedHref(params: {
   if (params.category) query.set("category", params.category);
   if (params.country) query.set("country", params.country);
   if (params.nationality) query.set("nationality", params.nationality);
-  if (params.sort && params.sort !== "date") query.set("sort", params.sort);
+  if (params.sort && params.sort !== "score") query.set("sort", params.sort);
   if (params.from) query.set("from", params.from);
   if (params.to) query.set("to", params.to);
   if (params.page && params.page > 1) query.set("page", String(params.page));
@@ -146,20 +149,23 @@ export function HomepageArticleFeed({
             className="mkt-news-article"
           >
             <div className="mkt-news-article-rail" aria-hidden="false">
-              <div
-                className="mkt-news-article-score"
-                role="group"
-                aria-label={`${copy.impact}: ${Math.round(article.score?.finalScore ?? 0)}`}
-              >
-                <strong>{Math.round(article.score?.finalScore ?? 0)}</strong>
-                <span className="mkt-news-article-score-label">{copy.impact}</span>
-              </div>
               <span className="mkt-news-article-index">{String(offset + index + 1).padStart(2, "0")}</span>
             </div>
             <div className="mkt-news-article-body">
+              <div className="mkt-news-article-head">
+                <ImpactBadge score={article.score} lang={lang} />
+                {article.score ? (
+                  <span
+                    className="mkt-news-article-score-num"
+                    aria-label={`${copy.impact}: ${Math.round(article.score.finalScore)}`}
+                  >
+                    {Math.round(article.score.finalScore)}
+                  </span>
+                ) : null}
+              </div>
               {article.audienceCodes && (
                 <div className="mkt-news-article-audiences">
-                  {audienceCodesFromValue(article.audienceCodes).map((code) => {
+                  {sortAudienceCodesByEditorialOrder(audienceCodesFromValue(article.audienceCodes)).map((code) => {
                     const option = optionForCode(code);
                     return option ? (
                       <span key={code} className="mkt-news-article-audience">
@@ -198,10 +204,10 @@ export function HomepageArticleFeed({
         <nav className="feed-pagination" aria-label="Feed pages">
           {page > 1 ? (
             <Link href={feedHref({ ...filterState, page: page - 1 })} className="feed-pagination-link" rel="prev">
-              Previous
+              {copy.paginationPrev}
             </Link>
           ) : (
-            <span className="feed-pagination-link is-disabled">Previous</span>
+            <span className="feed-pagination-link is-disabled">{copy.paginationPrev}</span>
           )}
           <div className="feed-pagination-center">
             <div className="feed-pagination-pages">
@@ -217,7 +223,7 @@ export function HomepageArticleFeed({
                     key={item.key}
                     href={feedHref({ ...filterState, page: item.page })}
                     className="feed-pagination-page"
-                    aria-label={`Go to page ${item.page}`}
+                    aria-label={copy.paginationGoTo(item.page)}
                   >
                     {item.page}
                   </Link>
@@ -225,15 +231,15 @@ export function HomepageArticleFeed({
               ))}
             </div>
             <p className="feed-pagination-status" aria-live="polite">
-              Page {page} of {totalPages}
+              {copy.paginationStatus(page, totalPages)}
             </p>
           </div>
           {page < totalPages ? (
             <Link href={feedHref({ ...filterState, page: page + 1 })} className="feed-pagination-link" rel="next">
-              Next
+              {copy.paginationNext}
             </Link>
           ) : (
-            <span className="feed-pagination-link is-disabled">Next</span>
+            <span className="feed-pagination-link is-disabled">{copy.paginationNext}</span>
           )}
         </nav>
       )}

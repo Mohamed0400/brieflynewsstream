@@ -4,6 +4,7 @@ import { buildReceiptPdf, EXAMPLE_RECEIPT } from "./receipt-pdf";
 import {
   applyInvoiceAction,
   billingProviderReady,
+  billingTestMode,
   canDownloadReceipt,
   canPayInvoice,
   canVoidInvoice,
@@ -51,6 +52,22 @@ test("customer self-pay is off while billing stays manual", () => {
   else process.env.BILLING_PROVIDER = previous;
   if (prevKey === undefined) delete process.env.STRIPE_SECRET_KEY;
   else process.env.STRIPE_SECRET_KEY = prevKey;
+});
+
+test("billing test mode flag", () => {
+  const prev = process.env.LEMONSQUEEZY_TEST_MODE;
+  const prevProvider = process.env.BILLING_PROVIDER;
+  process.env.BILLING_PROVIDER = "lemonsqueezy";
+  delete process.env.LEMONSQUEEZY_TEST_MODE;
+  assert.equal(billingTestMode(), false);
+  process.env.LEMONSQUEEZY_TEST_MODE = "true";
+  assert.equal(billingTestMode(), true);
+  process.env.BILLING_PROVIDER = "manual";
+  assert.equal(billingTestMode(), false);
+  if (prev === undefined) delete process.env.LEMONSQUEEZY_TEST_MODE;
+  else process.env.LEMONSQUEEZY_TEST_MODE = prev;
+  if (prevProvider === undefined) delete process.env.BILLING_PROVIDER;
+  else process.env.BILLING_PROVIDER = prevProvider;
 });
 
 test("receipt PDF is a valid paid receipt", () => {

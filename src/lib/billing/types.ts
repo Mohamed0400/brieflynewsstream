@@ -71,3 +71,9 @@ export function billingProviderReady() {
   }
   return false;
 }
+
+/** True when Lemon Squeezy test-mode keys are active — checkout accepts test cards. */
+export function billingTestMode() {
+  if (BILLING_PROVIDER() !== "lemonsqueezy") return false;
+  return process.env.LEMONSQUEEZY_TEST_MODE?.trim().toLowerCase() === "true";
+}

@@ -576,6 +576,44 @@
   gap: 0.75rem;
 }
 
+.console-app .billing-test-cards {
+  margin-bottom: 1.25rem;
+  border: 1px dashed color-mix(in srgb, var(--console-accent, #38bdf8) 45%, transparent);
+  background: color-mix(in srgb, var(--console-accent, #38bdf8) 6%, var(--console-panel, #111));
+}
+
+.console-app .billing-test-cards__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.console-app .billing-test-cards__list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.console-app .billing-test-cards__label {
+  font-size: 0.875rem;
+  color: var(--console-muted, #94a3b8);
+}
+
+.console-app .billing-test-cards__number {
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+}
+
+.console-app .billing-test-cards__meta {
+  margin: 0.85rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--console-muted, #94a3b8);
+}
+
 .console-app .billing-checkout-amount {
   margin: 0;
   font-size: 1.75rem;

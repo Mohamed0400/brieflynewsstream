@@ -490,6 +490,9 @@ const dashboardCopy = {
       adminSaving: "Saving...",
       adminSaved: (email: string) => `Updated ${email}`,
       adminFailed: "Could not update that account.",
+      testCardsTitle: "Test card numbers",
+      testCardsHint: "Lemon Squeezy test mode is on. Use these cards at checkout — no real charge.",
+      testCardsMeta: "Expiry: any future date (e.g. 12/35) · CVC: any 3 digits · Other fields: any value.",
     },
     overview: {
       title: "Overview | Briefly NewsStream",
@@ -1078,6 +1081,9 @@ const dashboardCopy = {
       adminSaving: "جاري الحفظ...",
       adminSaved: (email: string) => `تم تحديث ${email}`,
       adminFailed: "تعذّر تحديث هذا الحساب.",
+      testCardsTitle: "أرقام بطاقات الاختبار",
+      testCardsHint: "وضع Lemon Squeezy التجريبي مفعّل. استخدم هذه البطاقات عند الدفع — بدون خصم حقيقي.",
+      testCardsMeta: "انتهاء الصلاحية: أي تاريخ مستقبلي (مثل 12/35) · CVC: أي 3 أرقام · باقي الحقول: أي قيمة.",
     },
     overview: {
       title: "نظرة عامة | Briefly NewsStream",

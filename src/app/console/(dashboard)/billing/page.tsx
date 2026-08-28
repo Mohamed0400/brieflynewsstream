@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { BillingPanel } from "@/components/console/BillingPanel";
+import { BillingTestCards } from "@/components/console/BillingTestCards";
 import { getOrCreateAccount, getSessionUser } from "@/lib/account";
 import {
   listAccountInvoices,
   serializeInvoice,
 } from "@/lib/billing/invoices";
-import { billingProviderReady } from "@/lib/billing/types";
+import { billingProviderReady, billingTestMode } from "@/lib/billing/types";
 import { getConsoleLang } from "@/lib/console-lang";
 import { consoleDashboardCopy } from "@/lib/console-translation";
 import { resolvePlanLimits, utcDayWindow } from "@/lib/plans";
@@ -43,7 +44,9 @@ export default async function BillingPage() {
   ]);
 
   return (
-    <BillingPanel
+    <>
+      {billingTestMode() && billingProviderReady() ? <BillingTestCards /> : null}
+      <BillingPanel
       plan={account.plan}
       status={account.status}
       usedToday={usedToday}
@@ -54,5 +57,6 @@ export default async function BillingPage() {
       invoices={invoices.map(serializeInvoice)}
       paymentsLive={billingProviderReady()}
     />
+    </>
   );
 }

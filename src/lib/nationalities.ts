@@ -1,9 +1,11 @@
 import { COUNTRY_CATALOG, type CountryRecord } from "./countries";
 import {
   countryDisplayName,
+  REGION_GROUP_META,
   regionEditorialRank,
   regionGroupForCode,
   regionGroupPriority,
+  type CountryRegionKey,
 } from "./supported-countries";
 
 export type NationalityOption = CountryRecord;
@@ -21,7 +23,7 @@ export const NATIONALITY_GROUPS = [
   {
     code: "AFRICA",
     slug: "africa",
-    label: "African communities",
+    label: "Africa",
     type: "region",
     countryCodes: ["EG", "ET", "SD", "NG", "KE", "MA", "TN", "DZ"],
   },
@@ -65,7 +67,15 @@ export function audienceCodesFromValue(value: string) {
   return [...value.matchAll(/\|([A-Z]{2})\|/g)].map((match) => match[1]);
 }
 
-/** Audience chips follow the same Gulf-first editorial order as the country picker. */
+const REGION_PICKER_ORDER = new Map<CountryRegionKey, number>(
+  REGION_GROUP_META.map((meta, index) => [meta.key, index]),
+);
+
+function regionPickerOrder(key: CountryRegionKey) {
+  return REGION_PICKER_ORDER.get(key) ?? 99;
+}
+
+/** Audience chips follow Gulf-first editorial order for article badges. */
 export function sortAudienceCodesByEditorialOrder(codes: string[]) {
   return [...new Set(codes.map((code) => code.toUpperCase()))].sort((a, b) => {
     const leftGroup = regionGroupForCode(a);
@@ -77,6 +87,27 @@ export function sortAudienceCodesByEditorialOrder(codes: string[]) {
     const rightRank = regionEditorialRank(rightGroup, b);
     if (leftRank !== rightRank) return leftRank - rightRank;
     return a.localeCompare(b);
+  });
+}
+
+/**
+ * Community-briefing picker order: browse buckets like the country filter,
+ * Gulf host-market nationals trailing within each region — not lead options.
+ */
+export function sortNationalityOptionsByEditorialOrder(options: NationalityOption[]) {
+  return [...options].sort((a, b) => {
+    const leftGroup = regionGroupForCode(a.code);
+    const rightGroup = regionGroupForCode(b.code);
+    const leftTier = regionPickerOrder(leftGroup);
+    const rightTier = regionPickerOrder(rightGroup);
+    if (leftTier !== rightTier) return leftTier - rightTier;
+    const leftHostLead = GCC_HOST_CODES.has(a.code) ? 1 : 0;
+    const rightHostLead = GCC_HOST_CODES.has(b.code) ? 1 : 0;
+    if (leftHostLead !== rightHostLead) return leftHostLead - rightHostLead;
+    const leftRank = regionEditorialRank(leftGroup, a.code);
+    const rightRank = regionEditorialRank(rightGroup, b.code);
+    if (leftRank !== rightRank) return leftRank - rightRank;
+    return a.code.localeCompare(b.code);
   });
 }
 
@@ -143,9 +174,10 @@ export function expatNationalityCodesForHost(hostCode?: string | null) {
 
 export function nationalityOptionsForHost(hostCode?: string | null) {
   const codes = expatNationalityCodesForHost(hostCode);
-  if (!codes) return NATIONALITY_OPTIONS;
-  const allowed = new Set(codes);
-  return NATIONALITY_OPTIONS.filter((option) => allowed.has(option.code));
+  const options = !codes
+    ? NATIONALITY_OPTIONS
+    : NATIONALITY_OPTIONS.filter((option) => codes.includes(option.code));
+  return sortNationalityOptionsByEditorialOrder(options);
 }
 
 export function nationalityGroupsForHost(hostCode?: string | null) {

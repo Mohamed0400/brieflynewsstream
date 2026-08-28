@@ -7,12 +7,19 @@ import {
   nationalityGroupsForHost,
   nationalityOptionsForHost,
   NATIONALITY_OPTIONS,
+  sortNationalityOptionsByEditorialOrder,
 } from "./nationalities";
 
 test("host country scopes expat nationality options", () => {
-  const allCodes = NATIONALITY_OPTIONS.map((option) => option.code);
-  assert.deepEqual(nationalityOptionsForHost(undefined).map((option) => option.code), allCodes);
-  assert.deepEqual(nationalityOptionsForHost(null).map((option) => option.code), allCodes);
+  const allCodes = new Set(NATIONALITY_OPTIONS.map((option) => option.code));
+  assert.deepEqual(
+    new Set(nationalityOptionsForHost(undefined).map((option) => option.code)),
+    allCodes,
+  );
+  assert.deepEqual(
+    new Set(nationalityOptionsForHost(null).map((option) => option.code)),
+    allCodes,
+  );
 
   const saOptions = nationalityOptionsForHost("SA").map((option) => option.code);
   assert.ok(saOptions.includes("PH"));
@@ -22,6 +29,25 @@ test("host country scopes expat nationality options", () => {
   const deOptions = nationalityOptionsForHost("DE").map((option) => option.code);
   assert.ok(deOptions.includes("TR"));
   assert.ok(!deOptions.includes("DE"));
+});
+
+test("community briefing order follows region browse buckets without Kuwaiti first", () => {
+  const ordered = nationalityOptionsForHost(undefined).map((option) => option.code);
+  assert.notEqual(ordered[0], "KW", "Kuwaiti should not lead the community picker");
+  assert.equal(ordered[0], "EG", "Middle East browse order leads, without Gulf host nationals first");
+  assert.ok(ordered.indexOf("EG") < ordered.indexOf("KW"), "Egypt precedes Kuwait within browse order");
+  assert.ok(ordered.indexOf("EG") < ordered.indexOf("IN"), "Middle East precedes Asia-Pacific");
+
+  const saOrdered = nationalityOptionsForHost("SA").map((option) => option.code);
+  assert.notEqual(saOrdered[0], "IN", "scoped list should not open with a hardcoded expat priority");
+  assert.equal(saOrdered[0], "EG", "Middle East precedes Asia-Pacific for host-scoped lists");
+});
+
+test("sortNationalityOptionsByEditorialOrder deprioritizes Gulf host nationals", () => {
+  const sample = sortNationalityOptionsByEditorialOrder(
+    NATIONALITY_OPTIONS.filter((option) => ["KW", "EG", "IN", "SA"].includes(option.code)),
+  ).map((option) => option.code);
+  assert.deepEqual(sample, ["EG", "KW", "SA", "IN"]);
 });
 
 test("Saudi host includes Filipino but not Saudi audience codes", () => {

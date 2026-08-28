@@ -8,7 +8,7 @@ const pageCopy = {
     heroLede:
       "Gulf, MENA, and global market news from the last 72 hours — ranked by impact so you see what moves markets first.",
     heroBody:
-      "Read in Arabic or English. Filter by country, category, or community when you need a local lens.",
+      "Read in Arabic or English. Filter by country, category, or regional lens when you need more context.",
     jumpToFeed: "Today's stories",
     developerLink: "API for developers",
     trustStripLabel: "Why readers use this brief",
@@ -107,14 +107,14 @@ const pageCopy = {
     paginationGoTo: (page: number) => `Go to page ${page}`,
     paginationStatus: (page: number, total: number) => `Page ${page} of ${total}`,
     communityBriefing: {
-      label: "Community briefing",
-      all: "All communities",
-      hintHost: (hostCode: string) => `Communities in ${hostCountryBriefingLabel(hostCode, "en")}`,
+      label: "Regional lens",
+      all: "All",
+      hintHost: (hostCode: string) => `In ${hostCountryBriefingLabel(hostCode, "en")} context`,
       show: "Show",
       loading: "Loading…",
       clear: "Clear",
-      pickCommunity: "Pick a community",
-      africaGroup: "African communities",
+      pickCommunity: "Choose a lens",
+      africaGroup: "Africa",
       selectedInHost: (community: string, hostCode: string) =>
         `${community} · ${hostCountryBriefingLabel(hostCode, "en")}`,
     },
@@ -126,7 +126,7 @@ const pageCopy = {
     heroLede:
       "أخبار الخليج والشرق الأوسط والعالم خلال آخر 72 ساعة — مرتّبة حسب الأثر لتقرأ ما يحرّك الأسواق أولاً.",
     heroBody:
-      "اقرأ بالعربية أو الإنجليزية. صفِّ حسب الدولة أو الفئة أو الجالية عندما تحتاج منظوراً محلياً.",
+      "اقرأ بالعربية أو الإنجليزية. صفِّ حسب الدولة أو الفئة أو المنظور الإقليمي عندما تحتاج سياقاً أوسع.",
     jumpToFeed: "قصص اليوم",
     developerLink: "واجهة المطوّرين",
     trustStripLabel: "لماذا يعتمد القرّاء على هذا الموجز",
@@ -225,14 +225,14 @@ const pageCopy = {
     paginationGoTo: (page: number) => `انتقل إلى الصفحة ${page}`,
     paginationStatus: (page: number, total: number) => `الصفحة ${page} من ${total}`,
     communityBriefing: {
-      label: "تغطية الجاليات",
-      all: "كل الجاليات",
-      hintHost: (hostCode: string) => `جاليات في ${hostCountryBriefingLabel(hostCode, "ar")}`,
+      label: "منظور إقليمي",
+      all: "الكل",
+      hintHost: (hostCode: string) => `في سياق ${hostCountryBriefingLabel(hostCode, "ar")}`,
       show: "عرض",
       loading: "جاري التحميل…",
       clear: "مسح",
-      pickCommunity: "اختر الجالية",
-      africaGroup: "الجاليات الأفريقية",
+      pickCommunity: "اختر منظوراً",
+      africaGroup: "أفريقيا",
       selectedInHost: (community: string, hostCode: string) =>
         `${community} · ${hostCountryBriefingLabel(hostCode, "ar")}`,
     },

@@ -16,3 +16,10 @@ test("confirmation links land on the app callback", () => {
     "https://www.brieflynewsstream.com/auth/confirm?next=%2Fconsole%2Foverview",
   );
 });
+
+test("password reset links land on reset-password via confirm", () => {
+  assert.equal(
+    consoleAuthCallbackUrl("https://www.brieflynewsstream.com", "/console/reset-password"),
+    "https://www.brieflynewsstream.com/auth/confirm?next=%2Fconsole%2Freset-password",
+  );
+});

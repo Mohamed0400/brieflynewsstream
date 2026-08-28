@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "@/lib/toast";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { withConsoleLang, type ConsoleLoginCopy } from "@/lib/console-translation";
 
@@ -18,8 +19,10 @@ export function ConsoleResetPasswordForm({ copy }: { copy: ConsoleLoginCopy }) {
     const supabase = createBrowserSupabaseClient();
     supabase.auth.getSession().then(({ data }) => {
       setReady(Boolean(data.session));
+    }).catch(() => {
+      setError(copy.networkError);
     });
-  }, []);
+  }, [copy.networkError]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -33,15 +36,21 @@ export function ConsoleResetPasswordForm({ copy }: { copy: ConsoleLoginCopy }) {
       return;
     }
     setLoading(true);
-    const supabase = createBrowserSupabaseClient();
-    const { error: updateError } = await supabase.auth.updateUser({ password });
-    setLoading(false);
-    if (updateError) {
-      setError(updateError.message || copy.authFailed);
-      return;
+    try {
+      const supabase = createBrowserSupabaseClient();
+      const { error: updateError } = await supabase.auth.updateUser({ password });
+      if (updateError) {
+        setError(updateError.message || copy.authFailed);
+        return;
+      }
+      router.push("/console/overview");
+      router.refresh();
+    } catch (requestError) {
+      setError(copy.networkError);
+      toast.exception(requestError, copy.networkError);
+    } finally {
+      setLoading(false);
     }
-    router.push("/console/overview");
-    router.refresh();
   }
 
   if (!ready) {

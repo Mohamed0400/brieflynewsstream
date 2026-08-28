@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { ConsoleAuthShell } from "@/components/console/ConsoleAuthShell";
 import { ConsoleLoginForm } from "@/components/console/ConsoleLoginForm";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { isConsoleAuthenticated } from "@/lib/console-auth";
+import { hasConsoleSession } from "@/lib/console-auth";
 import { getConsoleLoginLang } from "@/lib/console-lang";
 import { consoleLoginCopy } from "@/lib/console-translation";
 import {
@@ -43,7 +43,7 @@ export default async function ConsoleSignupPage({
 }: {
   searchParams: Promise<{ lang?: string }>;
 }) {
-  if (await isConsoleAuthenticated()) redirect("/console/overview");
+  if (await hasConsoleSession()) redirect("/console/overview");
 
   const lang = await getConsoleLoginLang((await searchParams).lang);
   const copy = consoleLoginCopy(lang);

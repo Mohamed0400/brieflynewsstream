@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { ConsoleAuthShell } from "@/components/console/ConsoleAuthShell";
 import { ConsoleLoginForm } from "@/components/console/ConsoleLoginForm";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { isConsoleAuthenticated } from "@/lib/console-auth";
+import { hasConsoleSession } from "@/lib/console-auth";
 import { getConsoleLoginLang } from "@/lib/console-lang";
 import { consoleLoginCopy } from "@/lib/console-translation";
 import {
@@ -41,12 +41,14 @@ export async function generateMetadata({
 export default async function ConsoleLoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ lang?: string }>;
+  searchParams: Promise<{ lang?: string; error?: string }>;
 }) {
-  if (await isConsoleAuthenticated()) redirect("/console/overview");
+  if (await hasConsoleSession()) redirect("/console/overview");
 
-  const lang = await getConsoleLoginLang((await searchParams).lang);
+  const params = await searchParams;
+  const lang = await getConsoleLoginLang(params.lang);
   const copy = consoleLoginCopy(lang);
+  const initialError = params.error === "account_status" ? copy.accountUnavailable : "";
   const isEn = lang === "en";
   const description = isEn
     ? "Sign in to the Briefly NewsStream developer console to manage API keys, explore bilingual market news, and access your workspace."
@@ -82,7 +84,7 @@ export default async function ConsoleLoginPage({
         title={copy.title}
         lede={copy.lede}
       >
-        <ConsoleLoginForm copy={copy} variant="signin" />
+        <ConsoleLoginForm copy={copy} variant="signin" initialError={initialError} />
       </ConsoleAuthShell>
     </>
   );

@@ -2,26 +2,11 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { ADMIN_APP_PATH, isAdminAppPath, isCustomerConsolePath } from "@/lib/admin-app";
 import { apiCorsHeaders, preflightApi } from "@/lib/api-cors";
+import {
+  isPublicConsoleApi,
+  skipsMiddlewareAuthRefresh,
+} from "@/lib/console-public-routes";
 import { updateSession } from "@/lib/supabase/middleware";
-
-const PUBLIC_CONSOLE_PATHS = new Set([
-  "/console/login",
-  "/console/signup",
-  "/console/reset-password",
-]);
-
-function isPublicConsoleApi(pathname: string) {
-  return (
-    pathname === "/api/console/session" ||
-    pathname === "/api/console/session/bridge"
-  );
-}
-
-function isPublicConsolePage(pathname: string) {
-  return [...PUBLIC_CONSOLE_PATHS].some(
-    (path) => pathname === path || pathname.startsWith(`${path}/`),
-  );
-}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -46,18 +31,9 @@ export async function middleware(request: NextRequest) {
 
   if (!needsAuthRefresh) return NextResponse.next();
 
-  // Do not touch auth cookies before the server exchanges the email token.
-  if (
-    pathname === "/auth/callback" ||
-    pathname === "/auth/confirm" ||
-    pathname === "/auth/error"
-  ) {
-    return NextResponse.next();
-  }
-
   // Public gate pages/API must not call Supabase Auth in middleware — getUser() can
   // exceed Vercel's middleware budget and 504 login/signup. Pages redirect if already signed in.
-  if (isPublicConsolePage(pathname) || isPublicConsoleApi(pathname)) {
+  if (skipsMiddlewareAuthRefresh(pathname)) {
     return NextResponse.next();
   }
 

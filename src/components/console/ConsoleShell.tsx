@@ -5,8 +5,10 @@ import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import {
   BookOpenText,
+  CheckCircle,
   Code,
   CreditCard,
+  GearSix,
   House,
   Key,
   MagnifyingGlass,
@@ -24,18 +26,21 @@ const customerNav = [
   { href: "/console/billing", key: "billing", Icon: CreditCard },
   { href: "/console/docs", key: "docs", Icon: BookOpenText },
   { href: "/console/docs/api", key: "apiDocs", Icon: Code },
+  { href: "/console/settings", key: "settings", Icon: GearSix },
 ] as const;
 
 export function ConsoleShell({
   children,
   lang,
   accountEmail,
+  accountDisplayName,
   accountPlan,
   maintenance,
 }: {
   children: ReactNode;
   lang: ConsoleLang;
   accountEmail: string;
+  accountDisplayName: string;
   accountPlan: string;
   maintenance: MaintenanceStatus;
 }) {
@@ -53,12 +58,7 @@ export function ConsoleShell({
     accountPlan === "PRO" ? "Pro"
     : accountPlan === "ENTERPRISE" ? "Enterprise"
     : copy.workspacePlan;
-  const isFree = accountPlan !== "PRO" && accountPlan !== "ENTERPRISE";
-  const upgradeLink = (
-    <Link href="/console/billing" className="console-app-upgrade">
-      {copy.switchToPro}
-    </Link>
-  );
+  const isPaid = accountPlan === "PRO" || accountPlan === "ENTERPRISE";
 
   return (
     <div className="console-shell console-app" lang={copy.lang} dir={copy.dir}>
@@ -84,43 +84,54 @@ export function ConsoleShell({
 
       <aside className="console-app-nav">
         <div className="console-app-account-block">
-          <p>{copy.workspace}</p>
-          <strong title={accountEmail}>{accountEmail}</strong>
-          <span>{planLabel}</span>
-          <span className="console-session-live">{copy.sessionActive}</span>
-          {isFree ? upgradeLink : null}
+          <strong title={accountDisplayName}>{accountDisplayName}</strong>
+          <span className="console-app-account-email" title={accountEmail}>
+            {accountEmail}
+          </span>
+          <span className="console-session-live">
+            <CheckCircle size={16} weight="fill" aria-hidden="true" />
+            {copy.activeAccount}
+          </span>
         </div>
         <nav className="console-app-links" aria-label={copy.navAria}>
           {customerNav.map((item) => {
-            const active = pathname === item.href;
+            const active =
+              item.key === "settings"
+                ? pathname === "/console/settings"
+                : item.key === "docs"
+                  ? pathname === "/console/docs"
+                  : item.key === "apiDocs"
+                    ? pathname.startsWith("/console/docs/api")
+                    : pathname === item.href ||
+                      (item.href !== "/console/overview" && pathname.startsWith(`${item.href}/`));
             return (
               <Link
-                key={item.href}
+                key={item.key}
                 href={item.href}
                 className="console-app-link"
                 aria-current={active ? "page" : undefined}
                 data-active={active ? "true" : "false"}
               >
-                <item.Icon size={18} weight="regular" aria-hidden="true" />
+                <item.Icon size={18} weight={active ? "fill" : "regular"} aria-hidden="true" />
                 {copy.nav[item.key]}
               </Link>
             );
           })}
         </nav>
-        <div className="console-app-extra">
-          <Link href={lang === "en" ? "/news?lang=en" : "/news"}>
-            {copy.newsFeed}
+        <div className="console-app-plan-card">
+          <p className="console-app-plan-kicker">{copy.currentPlan}</p>
+          <p className="console-app-plan-name">
+            {isPaid ? <CheckCircle size={18} weight="fill" aria-hidden="true" /> : null}
+            {planLabel}
+          </p>
+          <Link href="/console/billing" className="console-app-manage-plan">
+            {copy.managePlan}
           </Link>
         </div>
       </aside>
 
       <main id="console-main" className="console-app-main">
         <ConsoleMaintenanceBanner initial={maintenance} />
-        {isFree ? (
-          <Link href="/console/billing" className="console-app-upgrade console-app-upgrade-mobile">
-            {copy.switchToPro}
-          </Link>
-        ) : null}
         {children}
       </main>
     </div>

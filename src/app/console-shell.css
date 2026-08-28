@@ -4,24 +4,30 @@
 .console-app {
   --console-header-h: calc(4rem + env(safe-area-inset-top, 0px));
   --console-tab-h: 3.5rem;
-  --console-ink: #0b1422;
-  --console-text: #0b1422;
-  --console-paper: #f7f9fc;
-  --console-bg: #f7f9fc;
+  --console-sidebar-w: 16.5rem;
+  --console-ink: #111827;
+  --console-text: #111827;
+  --console-paper: #f4f5f7;
+  --console-bg: #f4f5f7;
   --console-surface: #ffffff;
-  --console-surface-strong: #e8eef4;
-  --console-muted: #3a4b5c;
-  --console-line: rgb(11 20 34 / 18%);
-  --console-border: rgb(11 20 34 / 18%);
-  --console-cyan: #5ec8dc;
-  --console-accent: #5ec8dc;
-  --console-accent-strong: #0b1422;
-  --console-accent-soft: rgb(94 200 220 / 0.16);
-  --console-on-dark: #f7f9fc;
-  --console-on-dark-muted: rgb(247 249 252 / 84%);
-  --console-placeholder: #526274;
+  --console-surface-strong: #eef0f4;
+  --console-muted: #6b7280;
+  --console-line: #e5e7eb;
+  --console-border: #e5e7eb;
+  --console-brand: #4338ca;
+  --console-brand-strong: #3730a3;
+  --console-brand-soft: rgb(67 56 202 / 0.1);
+  --console-success: #16a34a;
+  --console-cyan: #4338ca;
+  --console-accent: #4338ca;
+  --console-accent-strong: #3730a3;
+  --console-accent-soft: rgb(67 56 202 / 0.12);
+  --console-on-dark: #f8fafc;
+  --console-on-dark-muted: rgb(248 250 252 / 84%);
+  --console-placeholder: #9ca3af;
   --console-radius: 12px;
-  --console-control: 8px;
+  --console-control: 10px;
+  --console-shadow: 0 1px 3px rgb(17 24 39 / 0.06), 0 8px 24px rgb(17 24 39 / 0.04);
   --console-z-bar: 20;
   --console-z-skip: 30;
   color-scheme: light;
@@ -191,6 +197,7 @@
 
 .console-app-link svg {
   flex: 0 0 auto;
+  color: var(--console-brand);
 }
 
 .console-app-link:hover {
@@ -198,8 +205,13 @@
 }
 
 .console-app-link[data-active="true"] {
-  border-bottom-color: var(--console-cyan);
-  color: var(--console-ink);
+  border-bottom-color: var(--console-brand);
+  background: var(--console-brand-soft);
+  color: var(--console-brand-strong);
+}
+
+.console-app-link[data-active="true"] svg {
+  color: var(--console-brand-strong);
 }
 
 .console-app-link:focus-visible,
@@ -232,10 +244,10 @@
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  border: 1px solid var(--console-cyan);
+  border: 1px solid var(--console-brand);
   border-radius: var(--console-control);
-  background: var(--console-cyan);
-  color: var(--console-ink);
+  background: var(--console-brand);
+  color: #ffffff;
   cursor: pointer;
   font: inherit;
   font-size: 0.8125rem;
@@ -248,9 +260,9 @@
 }
 
 .console-app-upgrade:hover {
-  background: #7ad4e4;
-  border-color: #7ad4e4;
-  color: var(--console-ink);
+  background: var(--console-brand-strong);
+  border-color: var(--console-brand-strong);
+  color: #ffffff;
 }
 
 .console-app-upgrade:active {
@@ -267,36 +279,55 @@
 }
 
 .console-app .console-lang-switch button[aria-current="true"] {
-  background: var(--console-ink);
-  color: #f7f9fc;
+  background: var(--console-brand);
+  color: #ffffff;
 }
 
 .console-app .console-welcome {
   display: grid;
   min-width: 0;
-  gap: 0;
+  gap: 1.25rem;
   overflow: hidden;
   border: 1px solid var(--console-line);
   border-radius: var(--console-radius);
   background: var(--console-surface);
-  box-shadow: none;
+  box-shadow: var(--console-shadow);
+}
+
+.console-app .console-welcome-pro {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
 }
 
 .console-app .console-welcome-copy {
   display: grid;
   min-width: 0;
   align-content: start;
-  gap: 0.75rem;
-  padding: clamp(1.25rem, 3vw, 2rem);
+  gap: 0;
+  padding: clamp(1.25rem, 3vw, 1.75rem);
+}
+
+.console-app .console-welcome-brand-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.console-app .console-welcome-mark-inline {
+  display: block;
+  width: 3rem;
+  height: auto;
+  flex: 0 0 auto;
 }
 
 .console-app .console-welcome-copy h1 {
   margin: 0;
   color: var(--console-ink);
-  font-size: clamp(1.65rem, 3.4vw, 2.15rem);
+  font-size: clamp(1.35rem, 2.8vw, 1.75rem);
   font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.2;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
 }
 
 .console-app[lang="ar"] .console-welcome-copy h1 {
@@ -305,8 +336,183 @@
 }
 
 .console-app .console-welcome-copy .console-page-description {
+  margin: 0.35rem 0 0;
+  max-width: 52ch;
+  font-size: 0.9375rem;
+}
+
+.console-app .console-welcome-plan-card {
+  display: grid;
+  align-content: center;
+  gap: 0.35rem;
+  padding: clamp(1.25rem, 3vw, 1.75rem);
+  border-top: 1px solid var(--console-line);
+  background: var(--console-surface-strong);
+}
+
+.console-app .console-welcome-plan-label {
   margin: 0;
-  max-width: 46ch;
+  color: var(--console-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.console-app .console-welcome-plan-name {
+  margin: 0;
+  color: var(--console-brand);
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.console-app .console-welcome-plan-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.25rem 0 0;
+  color: var(--console-success);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.console-app .console-welcome-plan-status-free {
+  color: var(--console-muted);
+}
+
+.console-app .console-overview-heading h2 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.console-app .console-overview-metrics {
+  grid-template-columns: 1fr;
+}
+
+.console-app .console-overview-metric {
+  position: relative;
+  min-height: 7.5rem;
+  border-radius: var(--console-radius);
+  box-shadow: var(--console-shadow);
+}
+
+.console-app .console-overview-metric-icon {
+  position: absolute;
+  top: 1rem;
+  inset-inline-end: 1rem;
+  color: var(--console-brand);
+}
+
+.console-app .console-overview-metric strong {
+  font-size: clamp(1.5rem, 4vw, 2rem);
+}
+
+.console-app .console-usage-counter {
+  display: flex;
+  align-items: baseline;
+  gap: 0.15rem;
+  margin: 1rem 0 0.5rem;
+}
+
+.console-app .console-usage-counter strong {
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.console-app .console-usage-counter span {
+  color: var(--console-muted);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.console-app .console-quick-links {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.console-app .console-quick-link {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.85rem;
+  min-height: 4.5rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--console-line);
+  border-radius: var(--console-control);
+  background: var(--console-surface-strong);
+  color: inherit;
+  text-decoration: none;
+  transition: background 180ms ease, border-color 180ms ease, transform 120ms ease;
+}
+
+.console-app .console-quick-link:hover {
+  background: var(--console-brand-soft);
+  border-color: rgb(67 56 202 / 22%);
+}
+
+.console-app .console-quick-link:active {
+  transform: scale(0.99);
+}
+
+.console-app .console-quick-link-copy {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.console-app .console-quick-link-copy strong {
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.console-app .console-quick-link-copy span {
+  color: var(--console-muted);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.console-app .console-quick-link-arrow {
+  color: var(--console-muted);
+}
+
+.console-app .console-quick-link-icon {
+  color: var(--console-brand);
+}
+
+.console-app .console-settings-rows {
+  display: grid;
+  gap: 0;
+}
+
+.console-app .console-settings-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--console-line);
+}
+
+.console-app .console-settings-row:last-child {
+  border-bottom: 0;
+}
+
+.console-app .console-settings-row span {
+  color: var(--console-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.console-app .console-settings-row strong {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  text-align: end;
 }
 
 .console-app .console-welcome .console-inline-actions {
@@ -397,6 +603,24 @@
     align-items: stretch;
   }
 
+  .console-app .console-welcome-pro {
+    grid-template-columns: minmax(0, 1.15fr) minmax(12rem, 0.85fr);
+  }
+
+  .console-app .console-welcome-pro .console-welcome-plan-card {
+    border-top: 0;
+    border-inline-start: 1px solid var(--console-line);
+  }
+
+  .console-app[dir="rtl"] .console-welcome-pro .console-welcome-plan-card {
+    border-inline-start: 0;
+    border-inline-end: 1px solid var(--console-line);
+  }
+
+  .console-app .console-overview-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .console-app .console-welcome-visual {
     aspect-ratio: auto;
     min-height: 14rem;
@@ -409,7 +633,7 @@
 
 @media (min-width: 64rem) {
   .console-app {
-    grid-template-columns: 15.5rem minmax(0, 1fr);
+    grid-template-columns: var(--console-sidebar-w) minmax(0, 1fr);
     grid-template-rows: var(--console-header-h) minmax(0, 1fr);
   }
 
@@ -423,57 +647,105 @@
     overflow: auto;
     border-bottom: 0;
     border-inline-end: 1px solid var(--console-line);
+    background: var(--console-surface-strong);
     padding: 1.25rem 0.85rem 1.5rem;
   }
 
   .console-app-account-block {
     display: grid;
-    gap: 0.35rem;
+    gap: 0.25rem;
     margin: 0 0.65rem 1.35rem;
     min-width: 0;
   }
 
-  .console-app-account-block p {
+  .console-app-account-block strong {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .console-app-account-email {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--console-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .console-app-account-block .console-session-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    width: fit-content;
+    margin-top: 0.5rem;
+    border-radius: 999px;
+    padding: 0.25rem 0.65rem;
+    background: var(--console-brand);
+    color: #ffffff !important;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .console-app-plan-card {
+    display: grid;
+    gap: 0.35rem;
+    margin-top: auto;
+    padding: 1rem 0.75rem 0;
+    border-top: 1px solid var(--console-line);
+  }
+
+  .console-app-plan-kicker {
     margin: 0;
     color: var(--console-muted);
     font-size: 0.75rem;
     font-weight: 600;
   }
 
-  .console-app-account-block strong {
-    min-width: 0;
-    overflow: hidden;
-    font-size: 0.875rem;
-    font-weight: 600;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .console-app-account-block span {
-    color: var(--console-muted);
-    font-size: 0.75rem;
-    font-weight: 600;
-  }
-
-  .console-app-account-block .console-session-live {
+  .console-app-plan-name {
     display: inline-flex;
-    width: fit-content;
-    margin-top: 0.35rem;
-    border-radius: 999px;
-    padding: 0.15rem 0.55rem;
-    background: var(--console-cyan);
-    color: var(--console-ink) !important;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--console-ink);
   }
 
-  .console-app-account-block .console-app-upgrade {
-    width: 100%;
-    margin-top: 0.55rem;
+  .console-app-plan-name svg {
+    color: var(--console-success);
+  }
+
+  .console-app-manage-plan {
+    display: inline-flex;
+    min-height: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0.35rem;
+    border: 1px solid var(--console-line);
+    border-radius: var(--console-control);
+    background: var(--console-surface);
+    color: var(--console-ink);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    padding-inline: 0.85rem;
+    text-decoration: none;
+    transition: background 180ms ease, border-color 180ms ease;
+  }
+
+  .console-app-manage-plan:hover {
+    background: var(--console-brand-soft);
+    border-color: rgb(67 56 202 / 22%);
   }
 
   .console-app-links {
     display: grid;
     height: auto;
-    gap: 0.15rem;
+    gap: 0.2rem;
     padding-inline: 0;
   }
 
@@ -485,41 +757,23 @@
   }
 
   .console-app-link[data-active="true"] {
-    background: rgb(94 200 220 / 0.32);
-    color: var(--console-ink);
-    box-shadow: inset 3px 0 0 var(--console-cyan);
+    background: var(--console-brand);
+    color: #ffffff;
+    box-shadow: none;
   }
 
-  .console-app[dir="rtl"] .console-app-link[data-active="true"] {
-    box-shadow: inset -3px 0 0 var(--console-cyan);
-  }
-
-  .console-app-extra {
-    display: grid;
-    gap: 0.15rem;
-    margin-top: auto;
-    padding-top: 1.25rem;
-  }
-
-  .console-app-extra a {
-    display: inline-flex;
-    min-height: 2.75rem;
-    align-items: center;
-    color: var(--console-muted);
-    font-size: 0.8125rem;
-    font-weight: 600;
-    padding-inline: 0.75rem;
-    text-decoration: none;
-  }
-
-  .console-app-extra a:hover {
-    color: var(--console-ink);
+  .console-app-link[data-active="true"] svg {
+    color: #ffffff;
   }
 
   .console-app-main {
     grid-row: 2;
     grid-column: 2;
     padding-inline: clamp(1.5rem, 3.5vw, 3rem);
+  }
+
+  .console-app .console-overview-metrics {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 
   .console-app-upgrade-mobile {
@@ -791,9 +1045,15 @@
 }
 
 .console-app .console-primary-button {
-  background: var(--console-cyan);
-  border-color: var(--console-cyan);
-  color: var(--console-ink);
+  background: var(--console-brand);
+  border-color: var(--console-brand);
+  color: #ffffff;
+}
+
+.console-app .console-primary-button:hover {
+  background: var(--console-brand-strong);
+  border-color: var(--console-brand-strong);
+  color: #ffffff;
 }
 
 .console-app .console-input,
@@ -863,9 +1123,18 @@
   color: var(--console-muted);
 }
 
-.console-app .console-app-link:hover,
-.console-app .console-app-link[data-active="true"] {
+.console-app .console-app-link:hover {
   color: var(--console-ink);
+}
+
+.console-app .console-app-link[data-active="true"] {
+  color: #ffffff;
+}
+
+@media (max-width: 63.99rem) {
+  .console-app .console-app-link[data-active="true"] {
+    color: var(--console-brand-strong);
+  }
 }
 
 .console-app .console-app-extra a {

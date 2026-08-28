@@ -19,3 +19,15 @@ export function isCustomerConsolePath(pathname: string) {
 export function adminNavHref(path: string, lang: "ar" | "en") {
   return lang === "en" ? `${path}?lang=en` : path;
 }
+
+/** Overview lives at /operations — match exactly so child routes do not stay highlighted. */
+export function isOpsNavActive(pathname: string, href: string) {
+  const current = pathname.split("?")[0].replace(/\/$/, "") || "/";
+  const target = href.replace(/\/$/, "") || "/";
+
+  if (target === ADMIN_OVERVIEW_PATH) {
+    return current === target;
+  }
+
+  return current === target || current.startsWith(`${target}/`);
+}

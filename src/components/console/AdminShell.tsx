@@ -16,6 +16,7 @@ import {
   ADMIN_SCHEDULE_PATH,
   ADMIN_SETTINGS_PATH,
   adminNavHref,
+  isOpsNavActive,
 } from "@/lib/admin-app";
 import type { ConsoleLang } from "@/lib/console-translation";
 
@@ -79,7 +80,7 @@ export function AdminShell({
           </div>
           <nav className="console-navigation" aria-label={copy.opsNavAria}>
             {navigation.map((item) => {
-              const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+              const active = isOpsNavActive(pathname, item.href);
               const label = copy.opsNav[item.key];
               return (
                 <Link

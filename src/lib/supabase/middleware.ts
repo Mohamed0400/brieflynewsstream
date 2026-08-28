@@ -1,6 +1,27 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import type { User } from "@supabase/supabase-js";
 import { supabaseAnonKey, supabaseUrl } from "./env";
+
+const AUTH_MIDDLEWARE_TIMEOUT_MS = 8_000;
+
+async function getUserWithTimeout(
+  supabase: ReturnType<typeof createServerClient>,
+): Promise<User | null> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<{ data: { user: null } }>((resolve) => {
+    timeoutId = setTimeout(() => resolve({ data: { user: null } }), AUTH_MIDDLEWARE_TIMEOUT_MS);
+  });
+
+  try {
+    const result = await Promise.race([supabase.auth.getUser(), timeout]);
+    return result.data.user ?? null;
+  } catch {
+    return null;
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -23,9 +44,7 @@ export async function updateSession(request: NextRequest) {
   });
 
   // Validate JWT with Auth server — do not use getSession() here.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUserWithTimeout(supabase);
 
   return { supabase, user, supabaseResponse };
 }

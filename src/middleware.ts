@@ -17,6 +17,12 @@ function isPublicConsoleApi(pathname: string) {
   );
 }
 
+function isPublicConsolePage(pathname: string) {
+  return [...PUBLIC_CONSOLE_PATHS].some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`),
+  );
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -41,7 +47,17 @@ export async function middleware(request: NextRequest) {
   if (!needsAuthRefresh) return NextResponse.next();
 
   // Do not touch auth cookies before the server exchanges the email token.
-  if (pathname === "/auth/callback" || pathname === "/auth/confirm") {
+  if (
+    pathname === "/auth/callback" ||
+    pathname === "/auth/confirm" ||
+    pathname === "/auth/error"
+  ) {
+    return NextResponse.next();
+  }
+
+  // Public gate pages/API must not call Supabase Auth in middleware — getUser() can
+  // exceed Vercel's middleware budget and 504 login/signup. Pages redirect if already signed in.
+  if (isPublicConsolePage(pathname) || isPublicConsoleApi(pathname)) {
     return NextResponse.next();
   }
 
@@ -70,16 +86,13 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isCustomerConsolePath(pathname)) {
-    const isPublic = [...PUBLIC_CONSOLE_PATHS].some(
-      (path) => pathname === path || pathname.startsWith(`${path}/`),
-    );
-    if (!user && !isPublic) {
+    if (!user) {
       const login = request.nextUrl.clone();
       login.pathname = "/console/login";
       login.searchParams.set("next", pathname);
       return NextResponse.redirect(login);
     }
-    if (user && (pathname === "/console/login" || pathname === "/console/signup" || pathname === "/console")) {
+    if (user && pathname === "/console") {
       const overview = request.nextUrl.clone();
       overview.pathname = "/console/overview";
       overview.search = "";

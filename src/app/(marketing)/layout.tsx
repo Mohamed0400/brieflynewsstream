@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { MarketingShell } from "@/components/marketing/MarketingChrome";
+import MarketingLoading from "./loading";
 import { getPublicSiteSettings } from "@/lib/ops-settings";
 import "../marketing.css";
 
@@ -11,15 +12,7 @@ export default async function MarketingLayout({
   const siteSettings = await getPublicSiteSettings();
 
   return (
-    <Suspense
-      fallback={
-        <div className="mkt">
-          <main id="mkt-main" className="mkt-main">
-            {children}
-          </main>
-        </div>
-      }
-    >
+    <Suspense fallback={<MarketingLoading />}>
       <MarketingShell siteSettings={siteSettings}>
         <main id="mkt-main" className="mkt-main">
           {children}

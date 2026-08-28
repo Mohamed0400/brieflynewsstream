@@ -1031,8 +1031,11 @@
 }
 
 .mkt-manifesto-visual {
-  background: #050608;
-  border: 1px solid color-mix(in srgb, var(--mkt-ink) 10%, transparent);
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  overflow: visible;
+  border-radius: 0;
 }
 
 .mkt-manifesto-visual img {

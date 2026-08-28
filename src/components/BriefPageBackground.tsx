@@ -16,8 +16,8 @@ export function BriefPageBackground() {
           className="mkt-brief-bg__img"
           src={sources.mobile}
           alt=""
-          width={768}
-          height={768}
+          width={1599}
+          height={984}
           decoding="async"
           fetchPriority="low"
           loading="lazy"

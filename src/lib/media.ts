@@ -133,11 +133,10 @@ export function briefBackgroundSources() {
 
   const base = `https://res.cloudinary.com/${cloudName}/image/upload`;
   return {
-    /** Full width on phones — limit scale, moderate quality (≈115KB WebP). */
+    /** Scale down without crop — preserve full globe glow. */
     mobile: `${base}/f_auto,q_60,w_640,c_limit,dpr_auto/${publicId}`,
-    /** Crop to east (globe) on tablet+ — avoids shipping empty black pixels. */
-    tablet: `${base}/f_auto,q_70,w_720,c_fill,g_east,dpr_auto/${publicId}`,
-    desktop: `${base}/f_auto,q_75,w_960,c_fill,g_east,dpr_auto/${publicId}`,
+    tablet: `${base}/f_auto,q_70,w_900,c_limit,dpr_auto/${publicId}`,
+    desktop: `${base}/f_auto,q_75,w_1200,c_limit,dpr_auto/${publicId}`,
     fallback,
   };
 }

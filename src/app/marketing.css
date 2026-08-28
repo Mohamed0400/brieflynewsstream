@@ -2667,24 +2667,25 @@
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
-  contain: strict;
-}
-
-.mkt-brief-bg__picture,
-.mkt-brief-bg__img {
-  display: block;
-  width: 100%;
-  height: 100%;
 }
 
 .mkt-brief-bg__picture {
   position: absolute;
   inset: 0;
+  display: flex;
+  justify-content: right;
+  align-items: center;
+  width: 100%;
+  height: 100%;
 }
 
 .mkt-brief-bg__img {
+  display: block;
+  width: auto;
+  height: 100%;
+  max-width: min(62vw, 1000px);
   object-fit: contain;
-  object-position: right 10%;
+  object-position: right center;
   opacity: 0.22;
   mix-blend-mode: multiply;
   filter: saturate(1.15);
@@ -2692,13 +2693,8 @@
 
 @media (min-width: 640px) {
   .mkt-brief-bg__img {
-    object-position: 92% 20%;
-    max-width: min(52vw, 780px);
-    margin-inline-start: auto;
-    width: 100%;
-    height: auto;
-    min-height: 100%;
     opacity: 0.28;
+    max-width: min(58vw, 1100px);
   }
 }
 

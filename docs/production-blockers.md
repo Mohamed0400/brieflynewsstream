@@ -1,6 +1,6 @@
 # Production blockers — Briefly NewsStream
 
-Last updated: 2026-08-20  
+Last updated: 2026-08-28  
 Domain target: `https://brieflynewsstream.com`  
 Repo: https://github.com/Mohamed0400/brieflynewsstream
 
@@ -27,6 +27,7 @@ Required groups:
 | Database | `DATABASE_URL`, `DIRECT_URL` |
 | Supabase Auth | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` |
 | Site | `NEXT_PUBLIC_SITE_URL=https://www.brieflynewsstream.com`, `NEXT_PUBLIC_APP_ENV=live` |
+| Billing (Lemon Squeezy) | `BILLING_PROVIDER=lemonsqueezy`, `LEMONSQUEEZY_API_KEY`, `LEMONSQUEEZY_STORE_ID`, `LEMONSQUEEZY_VARIANT_ID`, `LEMONSQUEEZY_ENTERPRISE_VARIANT_ID`, `LEMONSQUEEZY_WEBHOOK_SECRET`; set `LEMONSQUEEZY_TEST_MODE=false` in Production (use test keys + `true` only for staging) |
 | API / console | `API_KEY`, `ADMIN_API_KEY`, `CONSOLE_SESSION_SECRET`, `SUPER_ADMIN_EMAILS` |
 | Cloudinary | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `CLOUDINARY_URL`, optional `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` (static CDN; also in `src/lib/media-cloud.json`) |
 | Optional AI | `GOOGLE_API_KEY`, `GOOGLE_GROUNDED_SEARCH_ENABLED`, `GOOGLE_EDITORIAL_ENABLED`, `GEMINI_MODEL` |
@@ -77,9 +78,51 @@ App can boot; product or ops still incomplete.
 GitHub Actions runs a single `verify` job: `prisma generate` → `typecheck` → `unit tests` → `next build`.  
 Playwright e2e is **not** in CI (Postgres-only schema; run locally with `npm run test:e2e` when needed).
 
-### 7. Payment provider not wired
+### 7. Lemon Squeezy billing (production keys)
 
-Intentional. Free / Pro ($70 list) / Enterprise invoices already live in Billing with Open / Void / Paid and PDF receipts. Checkout stays off until a provider is chosen. Set `BILLING_PROVIDER=manual` until then. Webhook slot: `POST /api/webhooks/billing/[provider]`.
+Billing is wired for **Lemon Squeezy** checkout, webhooks, PDF receipts, and super-admin invoice controls.
+
+| Plan | List price |
+| --- | --- |
+| Free | $0 |
+| Pro | **$80 / month** |
+| Enterprise | $150 / month |
+
+**Production env (Vercel):**
+
+```bash
+BILLING_PROVIDER=lemonsqueezy
+LEMONSQUEEZY_TEST_MODE=false
+LEMONSQUEEZY_API_KEY=          # Live API key (Lemon Squeezy dashboard, Test mode OFF)
+LEMONSQUEEZY_STORE_ID=
+LEMONSQUEEZY_VARIANT_ID=       # Live Pro variant ($80/month in Lemon Squeezy)
+LEMONSQUEEZY_ENTERPRISE_VARIANT_ID=
+LEMONSQUEEZY_WEBHOOK_SECRET=   # Live webhook signing secret
+```
+
+**Webhook URL (must include `https://`):**  
+`https://www.brieflynewsstream.com/api/webhooks/billing/lemonsqueezy`
+
+**Webhook events to enable (only these three — the app ignores all others):**
+
+| Event | Why |
+| --- | --- |
+| `order_created` | One-time / first checkout paid |
+| `subscription_created` | Subscription checkout started |
+| `subscription_payment_success` | Recurring subscription payment |
+
+You do **not** need `order_refunded`, `subscription_cancelled`, `subscription_payment_failed`, license-key events, etc. — they are not handled yet (the endpoint returns `ignored` and does not change plans).
+
+**Store ID:** Required in Vercel for checkout to show as live (`paymentsLive`). Lemon Squeezy → Settings → Stores → copy the numeric store ID into `LEMONSQUEEZY_STORE_ID`. (Checkout can auto-discover the store at runtime, but the billing page treats payments as live only when this env var is set.)
+
+**Variant IDs (Production):** set in env, not in code:
+
+```bash
+LEMONSQUEEZY_VARIANT_ID=              # Pro $80/month variant
+LEMONSQUEEZY_ENTERPRISE_VARIANT_ID=   # Enterprise $150/month variant
+```
+
+After updating env vars, **redeploy Production** and smoke-test: `/console/billing` → upgrade → checkout → webhook → plan active.
 
 ### 8. Legal stubs
 
@@ -95,7 +138,7 @@ Contact CTAs use `hello@brieflynewsstream.com`. Mailbox / DNS for that address m
 
 - Code on GitHub `main` (no secrets committed)
 - Marketing landing at `/` + newsroom at `/news`
-- Plans / quotas / billing UI without Stripe
+- Plans / quotas / billing UI with Lemon Squeezy checkout (`BILLING_PROVIDER=lemonsqueezy`)
 - Local env files remain gitignored (`.env*`)
 - Edge middleware no longer pulls `node:crypto` (CORS lives in `src/lib/api-cors.ts`)
 - Build script includes `prisma generate`

@@ -31,7 +31,7 @@ export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
   PRO: {
     tier: "PRO",
     label: "Pro",
-    listPriceMonthlyUsd: 70,
+    listPriceMonthlyUsd: 80,
     dailyRequests: 500,
     maxKeys: 10,
     commercialUse: true,

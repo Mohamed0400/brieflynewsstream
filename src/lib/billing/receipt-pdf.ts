@@ -184,6 +184,6 @@ export const EXAMPLE_RECEIPT: ReceiptPdfInput = {
   description: "Pro plan, monthly",
   issuedAt: new Date("2026-07-01T00:00:00.000Z"),
   paidAt: new Date("2026-07-03T00:00:00.000Z"),
-  totalCents: 7000,
-  amountPaidCents: 7000,
+  totalCents: 8000,
+  amountPaidCents: 8000,
 };

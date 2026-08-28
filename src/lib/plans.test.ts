@@ -13,13 +13,13 @@ test("published plans match the production quota and key gates", () => {
   assert.equal(PLAN_DEFINITIONS.PRO.dailyRequests, 500);
   assert.equal(PLAN_DEFINITIONS.PRO.maxKeys, 10);
   assert.equal(PLAN_DEFINITIONS.PRO.commercialUse, true);
-  assert.equal(PLAN_DEFINITIONS.PRO.listPriceMonthlyUsd, 70);
+  assert.equal(PLAN_DEFINITIONS.PRO.listPriceMonthlyUsd, 80);
 
   assert.equal(PLAN_DEFINITIONS.ENTERPRISE.dailyRequests, 20_000);
   assert.equal(PLAN_DEFINITIONS.ENTERPRISE.maxKeys, 100);
   assert.equal(PLAN_DEFINITIONS.ENTERPRISE.commercialUse, true);
   assert.equal(PLAN_DEFINITIONS.ENTERPRISE.listPriceMonthlyUsd, 150);
-  assert.equal(planPriceCents("PRO"), 7000);
+  assert.equal(planPriceCents("PRO"), 8000);
   assert.equal(planPriceCents("ENTERPRISE"), 15000);
   assert.equal(planPriceCents("FREE"), 0);
 });

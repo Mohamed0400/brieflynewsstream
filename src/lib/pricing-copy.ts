@@ -74,8 +74,8 @@ const en = {
   startStep3: "Send a request to /api/v1/market-news",
   compareHref: "Full plan details",
   ctaStart: "Start free",
-  ctaPro: "Start with Pro",
-  ctaEnterprise: "Start with Enterprise",
+  ctaPro: "Subscribe to Pro",
+  ctaEnterprise: "Subscribe to Enterprise",
   faqTitle: "Plan questions",
   faqRequestQ: "What counts as an API request?",
   faqRequestA:
@@ -172,8 +172,8 @@ const ar = {
   startStep3: "أرسل طلباً إلى /api/v1/market-news",
   compareHref: "تفاصيل الخطط",
   ctaStart: "ابدأ مجاناً",
-  ctaPro: "ابدأ مع Pro",
-  ctaEnterprise: "ابدأ مع Enterprise",
+  ctaPro: "اشترك في Pro",
+  ctaEnterprise: "اشترك في Enterprise",
   faqTitle: "أسئلة الخطط",
   faqRequestQ: "ما الذي يُحتسب كطلب API؟",
   faqRequestA:

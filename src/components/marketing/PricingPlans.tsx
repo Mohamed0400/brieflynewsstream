@@ -128,15 +128,9 @@ export function PricingPlans({
             <span>{copy.periodMonth}</span>
           </p>
           <div className="mkt-plan-cta">
-            {variant === "compact" ? (
-              <Link href={signupHref} className="mkt-btn mkt-btn-primary">
-                {copy.ctaStart}
-              </Link>
-            ) : (
-              <Link href={signupHref} className="mkt-btn mkt-btn-primary">
-                {copy.ctaPro}
-              </Link>
-            )}
+            <Link href={signupHref} className="mkt-btn mkt-btn-primary">
+              {copy.ctaPro}
+            </Link>
           </div>
           <PlanMeters
             copy={copy}

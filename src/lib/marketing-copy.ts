@@ -7,7 +7,7 @@ const copy = {
     lang: "en" as const,
     dir: "ltr" as const,
     brand: "Briefly NewsStream",
-    productLine: "Market Intelligence API",
+    productLine: "Market news data ready for integration",
     navProduct: "Product",
     navHome: "Home",
     navDevelopers: "Developers",
@@ -16,10 +16,10 @@ const copy = {
     navArchive: "Archive",
     navConsole: "Console",
     navLogin: "Log in",
-    heroHeadline: "Know what news matters to markets",
+    heroHeadline: "Track the news that moves markets",
     heroHeadlineEm: "",
     heroLede:
-      "Structured market news with impact scores, ready for AI and financial products.",
+      "Structured market news data, classified by impact and linked to related companies, assets, sectors, and events, ready for analysis and to power your apps via API.",
     manifestoTitle:
       "Market intelligence API for products that need to understand what news matters to markets.",
     manifestoLede:
@@ -31,7 +31,7 @@ const copy = {
     contrastBrieflyAfter: " per news item.",
     definitionAnswer:
       "A market intelligence API delivers structured market news with impact scores and bilingual fields so products can decide which stories matter, not only list more headlines.",
-    heroProof: `No credit card. ${PLAN_DEFINITIONS.FREE.dailyRequests} requests a day. Arabic and English.`,
+    heroProof: `No credit card · ${PLAN_DEFINITIONS.FREE.dailyRequests} requests a day · Arabic and English support`,
     heroLangSupport: "Arabic + English",
     heroSearchLabel: "Search live market data",
     heroSearchPlaceholder: "Search oil, rates, markets…",
@@ -308,7 +308,7 @@ const copy = {
     lang: "ar" as const,
     dir: "rtl" as const,
     brand: "Briefly NewsStream",
-    productLine: "واجهة ذكاء أسواق",
+    productLine: "بيانات أخبار الأسواق جاهزة للدمج",
     navProduct: "المنتج",
     navHome: "الرئيسية",
     navDevelopers: "للمطوّرين",
@@ -317,10 +317,10 @@ const copy = {
     navArchive: "الأرشيف",
     navConsole: "اللوحة",
     navLogin: "تسجيل الدخول",
-    heroHeadline: "اعرف أي خبر يهم الأسواق",
+    heroHeadline: "تابع الأخبار التي تحرّك الأسواق",
     heroHeadlineEm: "",
     heroLede:
-      "أخبار أسواق منظمة بدرجة تأثير، جاهزة لمنتجات الذكاء الاصطناعي والمالية.",
+      "بيانات أخبار الأسواق منظّمة ومصنّفة حسب التأثير، وتربط كل خبر بالشركات والأصول والقطاعات والأحداث ذات الصلة، جاهزة للتحليل وبناء تطبيقاتك عبر API.",
     manifestoTitle:
       "واجهة ذكاء أسواق للمنتجات التي تحتاج أن تفهم أي خبر يهم الأسواق.",
     manifestoLede: "أخبار أسواق لحظية بدرجة تأثير وحقول منظمة جاهزة لمنتجك.",
@@ -331,7 +331,7 @@ const copy = {
     contrastBrieflyAfter: " لكل خبر.",
     definitionAnswer:
       "واجهة ذكاء الأسواق تقدّم أخبار أسواق منظمة بدرجات أثر وحقول ثنائية اللغة، حتى تقرر المنتجات أي خبر يستحق الانتباه، لا أن تعرض المزيد من العناوين فقط.",
-    heroProof: `لا تحتاج إلى بطاقة ائتمانية. ${PLAN_DEFINITIONS.FREE.dailyRequests} طلبات يومياً. دعم العربية والإنجليزية.`,
+    heroProof: `لا تحتاج إلى بطاقة ائتمانية · ${PLAN_DEFINITIONS.FREE.dailyRequests} طلبات يومياً · دعم العربية والإنجليزية`,
     heroLangSupport: "العربية والإنجليزية",
     heroSearchLabel: "ابحث في بيانات الأسواق",
     heroSearchPlaceholder: "ابحث عن نفط، فائدة، أسواق…",

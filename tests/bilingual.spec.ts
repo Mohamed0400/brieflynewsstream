@@ -106,7 +106,7 @@ test("homepage icon tags use stable favicon URLs", async ({ request }) => {
 
 test("landing market-intelligence copy is native in Arabic and English", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "اعرف أي خبر يهم الأسواق" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "تابع الأخبار التي تحرّك الأسواق" })).toBeVisible();
   await expect(
     page.getByRole("heading", {
       name: "واجهة ذكاء أسواق للمنتجات التي تحتاج أن تفهم أي خبر يهم الأسواق.",
@@ -115,7 +115,7 @@ test("landing market-intelligence copy is native in Arabic and English", async (
   await expect(page.getByRole("heading", { name: "مصمّم لذكاء الأسواق" })).toBeVisible();
 
   await page.goto("/?lang=en");
-  await expect(page.getByRole("heading", { name: "Know what news matters to markets" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Track the news that moves markets" })).toBeVisible();
   await expect(
     page.getByRole("heading", {
       name: "Market intelligence API for products that need to understand what news matters to markets.",

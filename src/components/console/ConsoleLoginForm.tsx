@@ -10,8 +10,8 @@ import {
   type ConsoleLoginCopy,
 } from "@/lib/console-translation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
-import { withAuthTimeout } from "@/lib/supabase/auth-timeout";
-import { establishConsoleSessionClient, AuthTimeoutError } from "@/lib/account-client";
+import { AUTH_TIMEOUT_MS, isAuthTimeoutError, withAuthTimeout } from "@/lib/supabase/auth-timeout";
+import { establishConsoleSessionClient, type SessionTokens } from "@/lib/account-client";
 import { ADMIN_OPERATIONS_PATH } from "@/lib/admin-app";
 import { consoleAuthCallbackUrl } from "@/lib/auth-redirect";
 import {
@@ -70,8 +70,8 @@ export function ConsoleLoginForm({
     setInfo("");
   }
 
-  async function afterAuthenticated() {
-    const payload = await establishConsoleSessionClient();
+  async function afterAuthenticated(tokens?: SessionTokens) {
+    const payload = await establishConsoleSessionClient(tokens);
     if (isBlockedAccountStatus(payload.account.status)) {
       const supabase = createBrowserSupabaseClient();
       await supabase.auth.signOut();
@@ -103,19 +103,23 @@ export function ConsoleLoginForm({
 
     try {
       if (mode === "signin") {
-        const { error: signInError } = await withAuthTimeout(
+        const { data, error: signInError } = await withAuthTimeout(
           supabase.auth.signInWithPassword({
             email: normalizedEmail,
             password,
           }),
-          12_000,
+          AUTH_TIMEOUT_MS.signIn,
         );
         if (signInError) {
           setError(signInError.message || copy.authFailed);
           emailRef.current?.focus();
           return;
         }
-        await afterAuthenticated();
+        await afterAuthenticated(
+          data.session
+            ? { access_token: data.session.access_token, refresh_token: data.session.refresh_token }
+            : undefined,
+        );
         return;
       }
 
@@ -135,7 +139,7 @@ export function ConsoleLoginForm({
               data: parsed.profile,
             },
           }),
-          12_000,
+          AUTH_TIMEOUT_MS.signUp,
         );
         if (signUpError) {
           setError(
@@ -152,7 +156,10 @@ export function ConsoleLoginForm({
           return;
         }
         if (data.session) {
-          await afterAuthenticated();
+          await afterAuthenticated({
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+          });
           return;
         }
         setInfo(copy.confirmSent);
@@ -167,7 +174,7 @@ export function ConsoleLoginForm({
             normalizedEmail,
             { redirectTo: consoleAuthCallbackUrl(origin, "/console/reset-password") },
           ),
-          12_000,
+          AUTH_TIMEOUT_MS.resetEmail,
         );
         if (resetError) {
           setError(resetError.message || copy.authFailed);
@@ -179,9 +186,7 @@ export function ConsoleLoginForm({
       }
     } catch (requestError) {
       const networkMessage = mode === "signup" ? copy.signupNetworkError : copy.networkError;
-      setError(
-        requestError instanceof AuthTimeoutError ? networkMessage : networkMessage,
-      );
+      setError(networkMessage);
       toast.exception(requestError, networkMessage);
       emailRef.current?.focus();
     } finally {

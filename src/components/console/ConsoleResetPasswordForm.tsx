@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
-import { AuthTimeoutError, withAuthTimeout } from "@/lib/supabase/auth-timeout";
+import { AUTH_TIMEOUT_MS, isAuthTimeoutError, withAuthTimeout } from "@/lib/supabase/auth-timeout";
 import { withConsoleLang, type ConsoleLoginCopy } from "@/lib/console-translation";
 import { BrandLoader } from "@/components/media/BrandLoader";
 
@@ -30,16 +30,14 @@ export function ConsoleResetPasswordForm({ copy }: { copy: ConsoleLoginCopy }) {
       }
     });
 
-    void withAuthTimeout(supabase.auth.getSession(), 8_000)
+    void withAuthTimeout(supabase.auth.getSession(), AUTH_TIMEOUT_MS.sessionRead)
       .then(({ data }) => {
         if (cancelled) return;
         setPhase(data.session ? "ready" : "need-link");
       })
       .catch((requestError) => {
         if (cancelled) return;
-        setError(
-          requestError instanceof AuthTimeoutError ? copy.networkError : copy.networkError,
-        );
+        if (isAuthTimeoutError(requestError)) setError(copy.networkError);
         setPhase("need-link");
       });
 
@@ -65,7 +63,7 @@ export function ConsoleResetPasswordForm({ copy }: { copy: ConsoleLoginCopy }) {
       const supabase = createBrowserSupabaseClient();
       const { error: updateError } = await withAuthTimeout(
         supabase.auth.updateUser({ password }),
-        12_000,
+        AUTH_TIMEOUT_MS.passwordUpdate,
       );
       if (updateError) {
         setError(updateError.message || copy.authFailed);

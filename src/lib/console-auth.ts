@@ -1,5 +1,5 @@
 import { getSessionUser } from "./account";
-import { withAuthTimeout } from "./supabase/auth-timeout";
+import { AUTH_TIMEOUT_MS, withAuthTimeout } from "./supabase/auth-timeout";
 import { createServerSupabaseClient } from "./supabase/server";
 
 /** @deprecated Cookie name kept only for clearing legacy sessions on logout. */
@@ -9,7 +9,7 @@ export const CONSOLE_SESSION_COOKIE = "market_news_console";
 export async function hasConsoleSession() {
   const supabase = await createServerSupabaseClient();
   try {
-    const { data } = await withAuthTimeout(supabase.auth.getUser(), 5_000);
+    const { data } = await withAuthTimeout(supabase.auth.getUser(), AUTH_TIMEOUT_MS.gateSessionCheck);
     return Boolean(data.user);
   } catch {
     return false;

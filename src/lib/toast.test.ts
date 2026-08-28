@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { AuthTimeoutError } from "./supabase/auth-timeout";
 import { clearToasts, getServerToasts, getToasts, toast } from "./toast";
 
 test("toast store records errors, alerts, and exceptions", () => {
@@ -35,6 +36,15 @@ test("toast exceptions hide Prisma and database hosts", () => {
 test("server toast snapshot is a cached empty array", () => {
   assert.equal(getServerToasts(), getServerToasts());
   assert.deepEqual(getServerToasts(), []);
+});
+
+test("toast exceptions map auth timeouts to fallback copy", () => {
+  clearToasts();
+  toast.exception(new AuthTimeoutError(), "تعذر الدخول. تحقق من الاتصال وحاول مرة أخرى.");
+  const item = getToasts()[0];
+  assert.equal(item.message, "تعذر الدخول. تحقق من الاتصال وحاول مرة أخرى.");
+  assert.doesNotMatch(item.message, /auth_timeout/i);
+  clearToasts();
 });
 
 test("duplicate toasts refresh instead of stacking", () => {

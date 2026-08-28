@@ -3,6 +3,8 @@ import { getOrCreateAccount, getSessionUser } from "@/lib/account";
 import { isTrustedConsoleOrigin } from "@/lib/console-auth";
 import { profileFromAuthMetadata } from "@/lib/signup-profile";
 
+export const maxDuration = 30;
+
 export async function POST(request: Request) {
   if (!isTrustedConsoleOrigin(request)) {
     return NextResponse.json({ error: "invalid_origin" }, { status: 403 });

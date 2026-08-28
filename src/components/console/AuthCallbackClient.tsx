@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BrandLoader } from "@/components/media/BrandLoader";
-import { establishConsoleSessionClient, AuthTimeoutError } from "@/lib/account-client";
+import { establishConsoleSessionClient } from "@/lib/account-client";
 import { isBlockedAccountStatus } from "@/lib/console-signup-auth";
 import { safeAppPath } from "@/lib/auth-redirect";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
-import { withAuthTimeout } from "@/lib/supabase/auth-timeout";
+import { AUTH_TIMEOUT_MS, isAuthTimeoutError, withAuthTimeout } from "@/lib/supabase/auth-timeout";
 
 export function AuthCallbackClient() {
   const router = useRouter();
@@ -42,11 +42,17 @@ export function AuthCallbackClient() {
 
       try {
         const supabase = createBrowserSupabaseClient();
-        const { data } = await withAuthTimeout(supabase.auth.getSession(), 8_000);
+        const { data } = await withAuthTimeout(
+          supabase.auth.getSession(),
+          AUTH_TIMEOUT_MS.sessionRead,
+        );
         if (!data.session) {
           throw new Error("This confirmation link is invalid or has expired.");
         }
-        const payload = await establishConsoleSessionClient();
+        const payload = await establishConsoleSessionClient({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        });
         if (isBlockedAccountStatus(payload.account.status)) {
           await supabase.auth.signOut();
           window.location.replace("/console/login?error=account_status");
@@ -54,7 +60,7 @@ export function AuthCallbackClient() {
         }
         if (!cancelled) router.replace(next);
       } catch (error) {
-        if (error instanceof AuthTimeoutError) {
+        if (isAuthTimeoutError(error)) {
           window.location.replace(
             `/auth/error?message=${encodeURIComponent("Unable to confirm this email link. Check the connection and try again.")}`,
           );

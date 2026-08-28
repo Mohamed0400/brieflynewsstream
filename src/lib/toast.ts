@@ -1,4 +1,5 @@
 import { publicErrorMessage } from "./public-error";
+import { isAuthTimeoutError } from "./supabase/auth-timeout";
 
 export type ToastKind = "error" | "success" | "warning" | "info";
 
@@ -120,6 +121,7 @@ export function pushToast(input: ToastInput) {
 }
 
 export function toastMessage(error: unknown, fallback: string) {
+  if (isAuthTimeoutError(error)) return fallback;
   return publicErrorMessage(error, fallback);
 }
 

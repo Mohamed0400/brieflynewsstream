@@ -4,6 +4,8 @@ import { isTrustedConsoleOrigin } from "@/lib/console-auth";
 import { profileFromAuthMetadata } from "@/lib/signup-profile";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
+export const maxDuration = 30;
+
 /**
  * Node smoke / tooling helper: accept tokens from Supabase Auth and set SSR cookies.
  * Not used by the browser login form (that uses the client SDK directly).

@@ -7,7 +7,7 @@ import { safeAppPath } from "@/lib/auth-redirect";
 import { isBlockedAccountStatus } from "@/lib/console-signup-auth";
 import { profileFromAuthMetadata } from "@/lib/signup-profile";
 import { supabaseAnonKey, supabaseUrl } from "@/lib/supabase/env";
-import { withAuthTimeout } from "@/lib/supabase/auth-timeout";
+import { AUTH_TIMEOUT_MS, withAuthTimeout } from "@/lib/supabase/auth-timeout";
 
 function otpType(raw: string | null): EmailOtpType {
   if (
@@ -70,10 +70,10 @@ export async function completeEmailAuth(request: Request) {
   });
 
   const result = code
-    ? await withAuthTimeout(supabase.auth.exchangeCodeForSession(code), 12_000)
+    ? await withAuthTimeout(supabase.auth.exchangeCodeForSession(code), AUTH_TIMEOUT_MS.confirmExchange)
     : await withAuthTimeout(
         supabase.auth.verifyOtp({ type, token_hash: tokenHash! }),
-        12_000,
+        AUTH_TIMEOUT_MS.confirmExchange,
       );
 
   if (result.error || !result.data.user?.email) {

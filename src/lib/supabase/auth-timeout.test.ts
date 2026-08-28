@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { AuthTimeoutError, withAuthTimeout } from "./auth-timeout";
+import { AuthTimeoutError, isAuthTimeoutError, withAuthTimeout } from "./auth-timeout";
 
 describe("withAuthTimeout", () => {
   it("resolves when the promise completes in time", async () => {
@@ -13,5 +13,13 @@ describe("withAuthTimeout", () => {
       () => withAuthTimeout(new Promise(() => {}), 20),
       AuthTimeoutError,
     );
+  });
+});
+
+describe("isAuthTimeoutError", () => {
+  it("detects AuthTimeoutError instances", () => {
+    assert.equal(isAuthTimeoutError(new AuthTimeoutError()), true);
+    assert.equal(isAuthTimeoutError(new Error("auth_timeout")), true);
+    assert.equal(isAuthTimeoutError(new Error("network")), false);
   });
 });

@@ -524,6 +524,9 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  /* Room for search focus outline (2px + offset) so it is not clipped at scroll top */
+  padding-block-start: 0.5rem;
+  scroll-padding-block-start: 0.5rem;
 }
 
 .mkt-nav-sheet-links {

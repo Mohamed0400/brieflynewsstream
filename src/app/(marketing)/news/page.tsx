@@ -33,6 +33,7 @@ import {
 } from "@/lib/seo";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ArrowSquareOut } from "@phosphor-icons/react/ssr";
 
 export const dynamic = "force-dynamic";
 
@@ -275,8 +276,9 @@ export default async function Home({
           <Link href="#homepage-feed" className="mkt-brief-tabs__item is-active">
             {copy.jumpToFeed}
           </Link>
-          <Link href={developerHref} className="mkt-brief-tabs__item">
+          <Link href={developerHref} className="mkt-brief-tabs__external">
             {copy.developerLink}
+            <ArrowSquareOut size={14} weight="regular" aria-hidden />
           </Link>
         </nav>
 

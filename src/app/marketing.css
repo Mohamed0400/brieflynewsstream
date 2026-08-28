@@ -2907,6 +2907,7 @@
 .mkt-brief-tabs {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 1.25rem;
   margin: 0 0 1rem;
   padding: 0 0 0.35rem;
@@ -2941,6 +2942,36 @@
 }
 
 .mkt-brief-tabs__item:focus-visible {
+  outline: 2px solid var(--mkt-cyan);
+  outline-offset: 4px;
+}
+
+.mkt-brief-tabs__external {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-inline-start: auto;
+  padding: 0.35rem 0;
+  color: var(--mkt-muted);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.mkt-brief-tabs__external:hover {
+  color: var(--mkt-ink);
+}
+
+.mkt-brief-tabs__external svg {
+  flex-shrink: 0;
+  opacity: 0.72;
+}
+
+.mkt-brief-tabs__external:hover svg {
+  opacity: 1;
+}
+
+.mkt-brief-tabs__external:focus-visible {
   outline: 2px solid var(--mkt-cyan);
   outline-offset: 4px;
 }

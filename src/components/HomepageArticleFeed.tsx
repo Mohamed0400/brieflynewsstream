@@ -1,23 +1,13 @@
 import Link from "next/link";
+import { CaretRight, Lightning } from "@phosphor-icons/react/ssr";
 import type { Category, Region } from "@prisma/client";
 import { articleLocalizedText } from "@/lib/article-translation";
-import {
-  audienceCodesFromValue,
-  optionForCode,
-  sortAudienceCodesByEditorialOrder,
-} from "@/lib/nationalities";
-import { categoryToCode, regionToCode } from "@/lib/market";
-import { publicSourceName } from "@/lib/public-source";
+import { countryRecord } from "@/lib/countries";
+import { CATEGORY_META, REGION_META } from "@/lib/market";
 import { landingCopy } from "@/lib/landing-translation";
 import { BrandLoader } from "@/components/media/BrandLoader";
 import { ImpactBadge } from "@/components/ImpactBadge";
 import type { ArticleImpactScore } from "@/lib/impact-display";
-
-const timeFormat = new Intl.DateTimeFormat("en", {
-  dateStyle: "medium",
-  timeStyle: "short",
-  timeZone: "Asia/Kuwait",
-});
 
 type FeedArticle = {
   id: string;
@@ -79,6 +69,39 @@ function feedHref(params: {
   return value ? `/news?${value}` : "/news";
 }
 
+function categoryLabel(category: Category, lang: string) {
+  const meta = CATEGORY_META.find((item) => item.value === category);
+  if (!meta) return category;
+  return lang === "ar" ? meta.labelAr : meta.label;
+}
+
+function locationLabel(article: FeedArticle, lang: string) {
+  const country = countryRecord(article.country);
+  if (country) return lang === "ar" ? country.nameAr : country.country;
+  const region = REGION_META.find((item) => item.value === article.region);
+  if (!region) return article.country;
+  return lang === "ar" ? region.labelAr : region.label;
+}
+
+function relativePublishedAt(date: Date, lang: string) {
+  const copy = landingCopy(lang);
+  const diffMs = Date.now() - date.getTime();
+  const minutes = Math.floor(diffMs / 60_000);
+  const hours = Math.floor(diffMs / 3_600_000);
+  const days = Math.floor(diffMs / 86_400_000);
+
+  if (minutes < 1) return copy.relativeJustNow;
+  if (minutes < 60) return copy.relativeMinutes(minutes);
+  if (hours < 24) return copy.relativeHours(hours);
+  if (days < 7) return copy.relativeDays(days);
+
+  return new Intl.DateTimeFormat(lang === "en" ? "en" : "ar", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Kuwait",
+  }).format(date);
+}
+
 export function HomepageArticleFeed({
   lang,
   q,
@@ -109,99 +132,82 @@ export function HomepageArticleFeed({
   articles: FeedArticle[];
 }) {
   const copy = landingCopy(lang);
-  const rangeStart = matchedCount ? offset + 1 : 0;
-  const rangeEnd = Math.min(offset + articles.length, matchedCount);
   const filterState = { lang, q, category, country, nationality, sort, from, to };
+  const articleHref = (id: string) => (lang === "en" ? `/news/${id}?lang=en` : `/news/${id}`);
 
   return (
-    <section id="homepage-feed" className="homepage-feed grid gap-4 pb-16" aria-live="polite">
-      <div className="homepage-feed-searching" aria-hidden="true">
+    <section id="homepage-feed" className="mkt-brief-feed" aria-live="polite">
+      <div className="homepage-feed-searching mkt-brief-feed__searching" aria-hidden="true">
         <BrandLoader size="md" label={copy.searching} showLabel />
       </div>
-      {matchedCount > 0 && (
-        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-900/10 pb-4">
-          <div>
-            <h2 className="text-sm font-semibold tracking-wider text-slate-600">{copy.liveFeed}</h2>
-            <p className="mt-1 text-sm text-slate-600">
-              {copy.showing} {rangeStart}-{rangeEnd} / {matchedCount.toLocaleString("en")} {copy.matchingArticles}
-            </p>
+
+      <div className="mkt-brief-feed-card">
+        <header className="mkt-brief-feed-card__head">
+          <div className="mkt-brief-feed-card__title">
+            <span className="mkt-brief-feed-card__icon" aria-hidden="true">
+              <Lightning size={18} weight="fill" />
+            </span>
+            <div>
+              <h2>{copy.topStoriesTitle}</h2>
+              <p>{copy.topStoriesSubtitle}</p>
+            </div>
           </div>
-          {totalPages > 1 && (
-            <p className="font-mono text-xs uppercase tracking-wider text-slate-500">
-              {copy.page} {page} / {totalPages}
-            </p>
-          )}
-        </div>
-      )}
-      {articles.length === 0 ? (
-        <div
-          id="homepage-first-article"
-          className="border border-dashed border-slate-400 bg-white/50 p-8 text-center text-slate-600"
-        >
-          {copy.noMatches}
-        </div>
-      ) : articles.map((article, index) => {
-        const localized = articleLocalizedText(article, lang);
-        return (
-          <article
-            key={article.id}
-            id={index === 0 ? "homepage-first-article" : undefined}
-            className="mkt-news-article"
-          >
-            <div className="mkt-news-article-rail" aria-hidden="false">
-              <span className="mkt-news-article-index">{String(offset + index + 1).padStart(2, "0")}</span>
-            </div>
-            <div className="mkt-news-article-body">
-              <div className="mkt-news-article-head">
-                <ImpactBadge score={article.score} lang={lang} />
-                {article.score ? (
-                  <span
-                    className="mkt-news-article-score-num"
-                    aria-label={`${copy.impact}: ${Math.round(article.score.finalScore)}`}
+          <Link href="#homepage-feed" className="mkt-brief-feed-card__view-all">
+            {copy.viewAllStories}
+          </Link>
+        </header>
+
+        {articles.length === 0 ? (
+          <div id="homepage-first-article" className="mkt-brief-feed-empty">
+            {copy.noMatches}
+          </div>
+        ) : (
+          <ol className="mkt-brief-feed-list">
+            {articles.map((article, index) => {
+              const localized = articleLocalizedText(article, lang);
+              const rank = String(offset + index + 1).padStart(2, "0");
+              const meta = `${locationLabel(article, lang)} • ${categoryLabel(article.category, lang)}`;
+
+              return (
+                <li key={article.id}>
+                  <article
+                    id={index === 0 ? "homepage-first-article" : undefined}
+                    className="mkt-brief-feed-row"
                   >
-                    {Math.round(article.score.finalScore)}
-                  </span>
-                ) : null}
-              </div>
-              {article.audienceCodes && (
-                <div className="mkt-news-article-audiences">
-                  {sortAudienceCodesByEditorialOrder(audienceCodesFromValue(article.audienceCodes)).map((code) => {
-                    const option = optionForCode(code);
-                    return option ? (
-                      <span key={code} className="mkt-news-article-audience">
-                        {option.flag} {option.nationality}
-                      </span>
-                    ) : null;
-                  })}
-                </div>
-              )}
-              <div className="mkt-news-article-meta">
-                <span className="mkt-news-article-cat">{categoryToCode(article.category)}</span>
-                <span aria-hidden="true">/</span>
-                <span>{article.country} | {regionToCode(article.region)}</span>
-              </div>
-              <h2>
-                <Link href={lang === "en" ? `/news/${article.id}?lang=en` : `/news/${article.id}`}>
-                  {localized.title}
-                </Link>
-              </h2>
-              {localized.summary && (
-                <p className="mkt-news-article-summary">
-                  {localized.summary}
-                </p>
-              )}
-              <p className="mkt-news-article-source">
-                <a href={article.url} target="_blank" rel="noopener noreferrer">
-                  {publicSourceName(article.publisher || article.source.name)}
-                </a>
-                {" | "}{timeFormat.format(article.publishedAt)}
-              </p>
-            </div>
-          </article>
-        );
-      })}
+                    <span className="mkt-brief-feed-row__rank" aria-hidden="true">
+                      {rank}
+                    </span>
+                    <div className="mkt-brief-feed-row__body">
+                      <div className="mkt-brief-feed-row__title-row">
+                        <ImpactBadge score={article.score} lang={lang} feedVariant />
+                        <h3>
+                          <Link href={articleHref(article.id)}>{localized.title}</Link>
+                        </h3>
+                      </div>
+                      <p className="mkt-brief-feed-row__meta">{meta}</p>
+                    </div>
+                    <div className="mkt-brief-feed-row__aside">
+                      <time dateTime={article.publishedAt.toISOString()}>
+                        {relativePublishedAt(article.publishedAt, lang)}
+                      </time>
+                      <Link
+                        href={articleHref(article.id)}
+                        className="mkt-brief-feed-row__chevron"
+                        aria-label={localized.title}
+                      >
+                        <CaretRight size={18} weight="bold" aria-hidden="true" />
+                      </Link>
+                    </div>
+                  </article>
+                </li>
+              );
+            })}
+          </ol>
+        )}
+      </div>
+
       {totalPages > 1 && (
-        <nav className="feed-pagination" aria-label="Feed pages">
+        <nav className="feed-pagination mkt-brief-feed-pagination" aria-label="Feed pages">
           {page > 1 ? (
             <Link href={feedHref({ ...filterState, page: page - 1 })} className="feed-pagination-link" rel="prev">
               {copy.paginationPrev}
@@ -211,9 +217,11 @@ export function HomepageArticleFeed({
           )}
           <div className="feed-pagination-center">
             <div className="feed-pagination-pages">
-              {paginationItems(page, totalPages).map((item) => (
+              {paginationItems(page, totalPages).map((item) =>
                 item.page === null ? (
-                  <span key={item.key} className="feed-pagination-gap" aria-hidden="true">...</span>
+                  <span key={item.key} className="feed-pagination-gap" aria-hidden="true">
+                    ...
+                  </span>
                 ) : item.page === page ? (
                   <span key={item.key} className="feed-pagination-page is-current" aria-current="page">
                     {item.page}
@@ -227,8 +235,8 @@ export function HomepageArticleFeed({
                   >
                     {item.page}
                   </Link>
-                )
-              ))}
+                ),
+              )}
             </div>
             <p className="feed-pagination-status" aria-live="polite">
               {copy.paginationStatus(page, totalPages)}

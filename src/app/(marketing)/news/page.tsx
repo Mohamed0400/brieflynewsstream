@@ -1,10 +1,14 @@
+import { BriefPageBackground } from "@/components/BriefPageBackground";
+import { BriefHero } from "@/components/BriefHero";
+import { BriefMetricsDashboard } from "@/components/BriefMetricsDashboard";
+import { BriefTrustFooter } from "@/components/BriefTrustFooter";
+import { BriefTrustPills } from "@/components/BriefTrustPills";
 import { HomepageArticleFeed } from "@/components/HomepageArticleFeed";
 import { HomepageSearchBar } from "@/components/HomepageSearchBar";
 import { CommunityBriefingFilter } from "@/components/CommunityBriefingFilter";
 import { articleListOrderBy, listDedupedArticles, parseQuery } from "@/lib/api";
 import { CATEGORY_META } from "@/lib/market";
 import { limits } from "@/lib/limits";
-import { HomepageDataOverview } from "@/components/HomepageDataOverview";
 import { SupportedCountriesScreen } from "@/components/SupportedCountriesScreen";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { landingCopy } from "@/lib/landing-translation";
@@ -231,7 +235,7 @@ export default async function Home({
       name: lang === "en" ? "Market briefing" : "موجز أخبار الأسواق",
       description: `${copy.heroLede} ${copy.heroBody}`,
       path: "/news",
-      speakableCssSelectors: [".mkt-news-hero h1", ".mkt-news-hero p", "[data-aeo-answer]"],
+      speakableCssSelectors: [".mkt-brief-hero h1", ".mkt-brief-hero__lede", "[data-aeo-answer]"],
     }),
     collectionPageJsonLd({
       name: lang === "en" ? "Market briefing" : "موجز أخبار الأسواق",
@@ -246,107 +250,31 @@ export default async function Home({
   ];
 
   return (
-    <div className="mkt-page mkt-news-page" lang={copy.lang} dir={copy.dir}>
+    <div className="mkt-page mkt-news-page mkt-brief-page" lang={copy.lang} dir={copy.dir}>
+      <BriefPageBackground />
       <JsonLd data={structuredData} />
       <div className="mkt-section">
-        <div className="mkt-section-head mkt-news-hero">
-          <h1>{copy.heroTitle}</h1>
-          <p data-aeo-answer>{copy.heroLede}</p>
-          <p>{copy.heroBody}</p>
-          <div className="mkt-news-hero-foot">
-            <p className="mkt-news-refresh">
-              {copy.refreshLine(articleCount, liveFreshnessHours, lastSourceRefresh)}
-            </p>
-            <div className="mkt-news-hero-actions">
-              <Link href="#homepage-feed" className="mkt-news-hero-link mkt-news-hero-link--primary">
-                {copy.jumpToFeed}
-              </Link>
-              <Link href={developerHref} className="mkt-news-hero-link">
-                {copy.developerLink}
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        <ul
-          className="mkt-news-trust-strip"
-          aria-label={copy.trustStripLabel}
-          dir={copy.dir}
-          lang={copy.lang}
-        >
-          {copy.trustItems.map((item) => (
-            <li key={item.id} className="mkt-news-trust-item">
-              {item.label}
-            </li>
-          ))}
-        </ul>
-
-      <HomepageDataOverview
+        <BriefHero
           lang={lang}
+          editionItemCount={editionItemCount}
           countriesCovered={COUNTRY_CATALOG.length}
-        />
-        <section
-          className="homepage-metrics"
-          aria-label={lang === "ar" ? "مؤشرات التغطية" : "Coverage metrics"}
-          dir={copy.dir}
-          lang={copy.lang}
-        >
-          <p className="homepage-metrics-note">{copy.metricsNote}</p>
-          <dl>
-            {operationalMetrics.map((metric) => (
-              <div key={metric.id} className="homepage-metric">
-                <dt>
-                  <span>{metric.label}</span>
-                  <button
-                    type="button"
-                    className="homepage-metric-hint"
-                    aria-describedby={`metric-tip-${metric.id}`}
-                    aria-label={copy.metricHintLabel}
-                  >
-                    i
-                  </button>
-                </dt>
-                <dd className="homepage-hero-metric-value">{metric.value}</dd>
-                <dd className="homepage-hero-metric-detail">{metric.detail}</dd>
-                <p id={`metric-tip-${metric.id}`} className="homepage-metric-tooltip" role="tooltip">
-                  {metric.hint}
-                </p>
-              </div>
-            ))}
-          </dl>
-        </section>
-
-        <SupportedCountriesScreen
-          title={copy.supportedCountries}
-          liveLabel={copy.liveInFeed}
-          catalogLabel={copy.supportedCountries}
-          searchPlaceholder={copy.countrySearchPlaceholder}
-          searchLabel={copy.countrySearchLabel}
-          emptyLabel={copy.countrySearchEmpty}
-          groupFilterLabel={copy.countryGroupLabel}
-          groupFilterAll={copy.countryGroupAll}
-          dir={copy.dir}
-          lang={lang}
-          groups={countryGroups.map((group) => ({
-            key: group.key,
-            label: group.label,
-            items: group.items.map((item) => {
-              const live = liveCountrySet.has(item.code);
-              const active = country === item.code;
-              return {
-                code: item.code,
-                name: item.name,
-                label: item.label,
-                href: feedHref({ ...filterState, country: active ? undefined : item.code, page: 1 }),
-                live,
-                active,
-              };
-            }),
-          }))}
+          lastUpdated={lastSourceRefresh}
         />
 
-        <section className="mkt-news-filters" aria-labelledby="filters-title">
-          <h2 id="filters-title">{copy.filtersTitle}</h2>
+        <nav className="mkt-brief-tabs" aria-label={lang === "ar" ? "تنقل الموجز" : "Brief navigation"}>
+          <Link href="#homepage-feed" className="mkt-brief-tabs__item is-active">
+            {copy.jumpToFeed}
+          </Link>
+          <Link href={developerHref} className="mkt-brief-tabs__item">
+            {copy.developerLink}
+          </Link>
+        </nav>
+
+        <BriefTrustPills lang={lang} />
+
+        <details className="mkt-brief-filters-details">
+          <summary className="mkt-brief-filters-details__summary">{copy.filtersTitle}</summary>
+          <section className="mkt-news-filters mkt-brief-filters" aria-label={copy.filtersTitle}>
           <HomepageSearchBar
             initialQuery={q}
             searchPlaceholder={copy.searchPlaceholder}
@@ -459,7 +387,36 @@ export default async function Home({
             from={from}
             to={to}
           />
-        </section>
+          <SupportedCountriesScreen
+            title={copy.supportedCountries}
+            liveLabel={copy.liveInFeed}
+            catalogLabel={copy.supportedCountries}
+            searchPlaceholder={copy.countrySearchPlaceholder}
+            searchLabel={copy.countrySearchLabel}
+            emptyLabel={copy.countrySearchEmpty}
+            groupFilterLabel={copy.countryGroupLabel}
+            groupFilterAll={copy.countryGroupAll}
+            dir={copy.dir}
+            lang={lang}
+            groups={countryGroups.map((group) => ({
+              key: group.key,
+              label: group.label,
+              items: group.items.map((item) => {
+                const live = liveCountrySet.has(item.code);
+                const active = country === item.code;
+                return {
+                  code: item.code,
+                  name: item.name,
+                  label: item.label,
+                  href: feedHref({ ...filterState, country: active ? undefined : item.code, page: 1 }),
+                  live,
+                  active,
+                };
+              }),
+            }))}
+          />
+          </section>
+        </details>
 
         <HomepageArticleFeed
           lang={lang}
@@ -476,6 +433,10 @@ export default async function Home({
           totalPages={totalPages}
           articles={articles}
         />
+
+        <BriefMetricsDashboard lang={lang} metrics={operationalMetrics} />
+
+        <BriefTrustFooter lang={lang} />
       </div>
     </div>
   );

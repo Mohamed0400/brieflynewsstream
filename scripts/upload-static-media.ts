@@ -26,6 +26,7 @@ const ASSETS: { file: string; publicId: string }[] = [
   { file: "concepts/concept-bento-coverage.jpg", publicId: MEDIA.conceptBentoCoverage },
   { file: "concepts/concept-bilingual-pro.jpg", publicId: MEDIA.conceptBilingualPro },
   { file: "concepts/concept-stream-icons.jpg", publicId: MEDIA.conceptStreamIcons },
+  { file: "marketing/bg-brief.png", publicId: MEDIA.briefBackground },
 ];
 
 async function main() {

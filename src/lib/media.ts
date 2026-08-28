@@ -25,6 +25,8 @@ export const MEDIA = {
   conceptBentoCoverage: `${MEDIA_FOLDER}/concepts/concept-bento-coverage`,
   conceptBilingualPro: `${MEDIA_FOLDER}/concepts/concept-bilingual-pro`,
   conceptStreamIcons: `${MEDIA_FOLDER}/concepts/concept-stream-icons`,
+  /** Brief page fixed globe background — upload via `npm run media:upload`. */
+  briefBackground: `${MEDIA_FOLDER}/marketing/bg-brief`,
 } as const;
 
 /** Cloudinary public id for the branded platform brief (raw PDF). */
@@ -109,8 +111,35 @@ function localFallback(key: MediaKey): string {
     conceptBentoCoverage: "/concepts/concept-bento-coverage.jpg",
     conceptBilingualPro: "/concepts/concept-bilingual-pro.jpg",
     conceptStreamIcons: "/concepts/concept-stream-icons.jpg",
+    briefBackground: "/marketing/bg-brief.png",
   };
   return map[key];
+}
+
+/** Responsive Cloudinary URLs for the brief page background (decorative, right-aligned globe). */
+export function briefBackgroundSources() {
+  const cloudName = publicCloudinaryCloudName();
+  const publicId = MEDIA.briefBackground;
+  const fallback = localFallback("briefBackground");
+
+  if (!cloudName) {
+    return {
+      mobile: fallback,
+      tablet: fallback,
+      desktop: fallback,
+      fallback,
+    };
+  }
+
+  const base = `https://res.cloudinary.com/${cloudName}/image/upload`;
+  return {
+    /** Full width on phones — limit scale, moderate quality (≈115KB WebP). */
+    mobile: `${base}/f_auto,q_60,w_640,c_limit,dpr_auto/${publicId}`,
+    /** Crop to east (globe) on tablet+ — avoids shipping empty black pixels. */
+    tablet: `${base}/f_auto,q_70,w_720,c_fill,g_east,dpr_auto/${publicId}`,
+    desktop: `${base}/f_auto,q_75,w_960,c_fill,g_east,dpr_auto/${publicId}`,
+    fallback,
+  };
 }
 
 /** next/image loader that keeps transforms on Cloudinary (avoids double-processing). */

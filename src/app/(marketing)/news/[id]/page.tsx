@@ -1,9 +1,14 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { BriefPageBackground } from "@/components/BriefPageBackground";
+import { ImpactBadge } from "@/components/ImpactBadge";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { serializeArticle } from "@/lib/api";
 import { isBlockedArticle } from "@/lib/content-safety";
+import { countryRecord } from "@/lib/countries";
+import { CATEGORY_META } from "@/lib/market";
+import { landingCopy } from "@/lib/landing-translation";
 import { prisma } from "@/lib/prisma";
 import {
   breadcrumbJsonLd,
@@ -52,6 +57,12 @@ export async function generateMetadata({
   });
 }
 
+function categoryLabel(code: string, lang: "ar" | "en") {
+  const meta = CATEGORY_META.find((item) => item.code === code);
+  if (!meta) return code;
+  return lang === "ar" ? meta.labelAr : meta.label;
+}
+
 export default async function NewsStoryPage({
   params,
   searchParams,
@@ -62,15 +73,27 @@ export default async function NewsStoryPage({
   const { id } = await params;
   const lang = (await searchParams).lang === "en" ? "en" : "ar";
   const isEn = lang === "en";
+  const copy = landingCopy(lang);
   const article = await loadArticle(id);
   if (!article) notFound();
 
   const story = serializeArticle(article, undefined, lang);
   const feedHref = isEn ? "/news?lang=en" : "/news";
   const sourceHref = story.url;
+  const country = countryRecord(story.country);
+  const countryName = country ? (isEn ? country.country : country.nameAr) : story.country;
+  const impactScore = article.score
+    ? {
+        finalScore: article.score.finalScore,
+        oilImpact: article.score.oilImpact,
+        ratesImpact: article.score.ratesImpact,
+        marketImpact: article.score.marketImpact,
+      }
+    : null;
 
   return (
-    <div className="mkt-page" lang={isEn ? "en" : "ar"} dir={isEn ? "ltr" : "rtl"}>
+    <div className="mkt-page mkt-news-page mkt-brief-page" lang={isEn ? "en" : "ar"} dir={isEn ? "ltr" : "rtl"}>
+      <BriefPageBackground />
       <JsonLd
         data={[
           organizationJsonLd(),
@@ -92,23 +115,22 @@ export default async function NewsStoryPage({
           ]),
         ]}
       />
-      <article className="mkt-section mkt-story">
-        <p className="mkt-story-meta">
-          <span>{story.source}</span>
-          <span>{story.country}</span>
-          <span>{story.category}</span>
+      <article className="mkt-section mkt-story mkt-brief-story">
+        <Link href={feedHref} className="mkt-brief-story__back">
+          {isEn ? "Back to briefing" : "العودة إلى الموجز"}
+        </Link>
+        <div className="mkt-brief-story__meta">
+          <ImpactBadge score={impactScore} lang={lang} />
+          <span>{countryName}</span>
+          <span>{categoryLabel(story.category, lang)}</span>
           <time dateTime={story.publishedAt}>
             {new Date(story.publishedAt).toLocaleString(isEn ? "en" : "ar", {
               dateStyle: "medium",
               timeStyle: "short",
+              timeZone: "Asia/Kuwait",
             })}
           </time>
-          {story.scores?.final != null ? (
-            <span className="mkt-impact-pill">
-              {isEn ? "Impact" : "أثر"} {story.scores.final}
-            </span>
-          ) : null}
-        </p>
+        </div>
         <h1>{story.title}</h1>
         <p className="mkt-story-summary" data-aeo-answer>
           {story.summary}
@@ -150,7 +172,7 @@ export default async function NewsStoryPage({
             {isEn ? "Read original source" : "اقرأ المصدر الأصلي"}
           </a>
           <Link href={feedHref} className="mkt-btn mkt-btn-ghost">
-            {isEn ? "Back to briefing" : "العودة إلى الموجز"}
+            {copy.jumpToFeed}
           </Link>
         </div>
       </article>

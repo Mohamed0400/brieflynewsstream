@@ -3,6 +3,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { Geist, Geist_Mono, IBM_Plex_Sans_Arabic } from "next/font/google";
 import { RouteScrollRestoration } from "@/components/RouteScrollRestoration";
 import { Toaster } from "@/components/Toaster";
+import { isPublicCloudinaryReady } from "@/lib/media";
 import {
   SITE_NAME,
   SEO_DESCRIPTION_AR,
@@ -121,6 +122,11 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${plexArabic.variable} h-full antialiased`}
     >
+      <head>
+        {isPublicCloudinaryReady() ? (
+          <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
+        ) : null}
+      </head>
       <body className="min-h-[100dvh] flex flex-col">
         <RouteScrollRestoration />
         {children}

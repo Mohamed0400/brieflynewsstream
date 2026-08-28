@@ -21,10 +21,12 @@ export function ImpactBadge({
   score,
   lang,
   className = "",
+  feedVariant = false,
 }: {
   score: ArticleImpactScore | null;
   lang: string;
   className?: string;
+  feedVariant?: boolean;
 }) {
   const copy = landingCopy(lang);
   const [open, setOpen] = useState(false);
@@ -47,12 +49,20 @@ export function ImpactBadge({
   const tier = impactTierFromArticle(score);
   const TierIcon = tierIcons[tier];
   const rows = marketImpactRows(score);
+  const tierLabels = feedVariant ? copy.impactTierFeed : copy.impactTier;
 
   return (
     <>
       <button
         type="button"
-        className={["mkt-impact-badge", `mkt-impact-badge--${tier}`, className].filter(Boolean).join(" ")}
+        className={[
+          "mkt-impact-badge",
+          `mkt-impact-badge--${tier}`,
+          feedVariant ? "mkt-impact-badge--feed" : "",
+          className,
+        ]
+          .filter(Boolean)
+          .join(" ")}
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         aria-expanded={open}
@@ -61,7 +71,7 @@ export function ImpactBadge({
         <span className="mkt-impact-badge-icon" aria-hidden="true">
           <TierIcon size={14} weight="fill" />
         </span>
-        <span className="mkt-impact-badge-label">{copy.impactTier[tier]}</span>
+        <span className="mkt-impact-badge-label">{tierLabels[tier]}</span>
       </button>
 
       {open ? (

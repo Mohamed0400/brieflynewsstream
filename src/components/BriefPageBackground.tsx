@@ -1,7 +1,7 @@
 import { briefBackgroundSources } from "@/lib/media";
 
 /**
- * Subtle fixed globe glow on the right edge — light page shell stays dominant.
+ * Hero-scoped globe glow on the right edge — does not repeat behind the feed.
  * Cloudinary f_auto + width caps keep AVIF/WebP delivery under ~150KB typical.
  */
 export function BriefPageBackground() {

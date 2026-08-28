@@ -2802,9 +2802,26 @@
   contain: layout style;
 }
 
+/* Subtle dot wash below hero — replaces repeated globe in feed zone */
+.mkt-brief-page::after {
+  content: "";
+  position: absolute;
+  top: clamp(20rem, 48vh, 34rem);
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 40% at 50% 0%, rgb(94 200 220 / 3.5%), transparent 65%),
+    radial-gradient(circle at 1px 1px, rgb(11 20 34 / 2.2%) 0.55px, transparent 0);
+  background-size: auto, 22px 22px;
+}
+
 .mkt-brief-bg {
-  position: fixed;
-  inset: 0;
+  position: absolute;
+  top: 0;
+  inset-inline: 0;
+  height: clamp(20rem, 48vh, 34rem);
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
@@ -2815,7 +2832,7 @@
   inset: 0;
   display: flex;
   justify-content: right;
-  align-items: center;
+  align-items: flex-end;
   width: 100%;
   height: 100%;
 }
@@ -2826,7 +2843,7 @@
   height: 100%;
   max-width: min(62vw, 1000px);
   object-fit: contain;
-  object-position: right center;
+  object-position: right bottom;
   opacity: 0.22;
   mix-blend-mode: multiply;
   filter: saturate(1.15);
@@ -2876,31 +2893,6 @@
     grid-template-columns: minmax(0, 1fr) min(20rem, 32vw);
     gap: 2rem;
     align-items: start;
-  }
-}
-
-.mkt-brief-hero__globe {
-  position: absolute;
-  inset-block: -1rem 0;
-  inset-inline-end: -1rem;
-  width: min(58vw, 28rem);
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.55;
-}
-
-.mkt-brief-hero__globe-img {
-  width: 100%;
-  height: auto;
-  object-fit: contain;
-  object-position: right center;
-}
-
-@media (max-width: 899px) {
-  .mkt-brief-hero__globe {
-    width: min(72vw, 20rem);
-    inset-block-start: 0;
-    opacity: 0.35;
   }
 }
 

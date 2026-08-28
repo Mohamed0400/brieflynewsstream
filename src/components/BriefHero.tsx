@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { Clock, Globe, Pulse, Translate } from "@phosphor-icons/react/ssr";
 import { landingCopy } from "@/lib/landing-translation";
 import { newsFeedHref } from "@/lib/feed-view";
@@ -30,17 +29,6 @@ export function BriefHero({
 
   return (
     <header className="mkt-brief-hero" dir={copy.dir} lang={copy.lang}>
-      <div className="mkt-brief-hero__globe" aria-hidden="true">
-        <Image
-          src="/marketing/dot-world.webp"
-          alt=""
-          width={640}
-          height={640}
-          priority
-          className="mkt-brief-hero__globe-img"
-        />
-      </div>
-
       <div className="mkt-brief-hero__copy">
         <p className="mkt-brief-live-badge">
           <span className="mkt-brief-live-badge__dot" aria-hidden="true" />

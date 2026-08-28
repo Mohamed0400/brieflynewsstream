@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { Category, Prisma, Region, type Source } from "@prisma/client";
 import { prisma } from "./prisma";
 import { collectSource, isTrustedGroundedUrl } from "./adapters";
-import { translatePendingArticles, seedBilingualFields, isArabicText } from "./article-translation";
+import { translatePendingArticles, drainPendingTranslations, seedBilingualFields, isArabicText } from "./article-translation";
 import { editorializeArticles } from "./editorial";
 import {
   calculateScores,
@@ -14,6 +14,7 @@ import {
 import {
   allLiveCountrySources,
   countriesNeedingArticles,
+  googleNewsCountryWideQuery,
   googleNewsRssUrl,
 } from "./country-sources";
 import { catalogCountryCodes } from "./countries";
@@ -46,7 +47,13 @@ export type PipelineResult = {
 };
 
 /** Safety cap on repeated translate batches per run; each pass covers TRANSLATE_BATCH_SIZE articles. */
-export const MAX_TRANSLATION_PASSES = 10;
+export const MAX_TRANSLATION_PASSES = limits.translateMaxPasses;
+
+async function drainTranslations(result: PipelineResult, maxPasses = limits.translateMaxPasses) {
+  const drained = await drainPendingTranslations(maxPasses);
+  result.translated += drained.translated;
+  return drained.pending;
+}
 
 function contentHash(title: string) {
   const normalized = title.toLowerCase().replace(/[^a-z0-9\u0600-\u06ff]+/g, " ").trim();
@@ -279,7 +286,7 @@ async function fillThinCountries(result: PipelineResult, deadline = Number.POSIT
       return;
     }
     const code = `GNEWS_${country}_WIDE`;
-    const url = googleNewsRssUrl(`${country} (economy OR business OR markets OR bank OR government OR oil)`);
+    const url = googleNewsRssUrl(googleNewsCountryWideQuery(country));
     const template = allLiveCountrySources().find((source) => source.country === country);
     const source = await prisma.source.upsert({
       where: { code },
@@ -475,13 +482,43 @@ async function abandonStaleRawArticles() {
   return abandoned.count;
 }
 
+export async function countPendingRawArticles() {
+  return prisma.rawArticle.count({ where: { processedAt: null } });
+}
+
+export async function drainRawBacklog(
+  result: PipelineResult,
+  options: { skipTranslation?: boolean; maxPasses?: number } = {},
+) {
+  const before = await countPendingRawArticles();
+  if (before === 0) {
+    return { pending: 0, normalized: 0, passes: 0 };
+  }
+  const passes = options.maxPasses
+    ?? (before > limits.normalizeBatch ? limits.normalizeBacklogPasses : limits.normalizePasses);
+  await normalizePending(result, passes, options);
+  const pending = await countPendingRawArticles();
+  return {
+    pending,
+    normalized: Math.max(0, before - pending),
+    passes,
+  };
+}
+
 async function normalizePending(
   result: PipelineResult,
   maxPasses = limits.normalizePasses,
+  options: { skipTranslation?: boolean } = {},
 ) {
   const passes = Math.max(0, maxPasses);
   for (let pass = 0; pass < passes; pass += 1) {
     const processed = await normalizePendingBatch(result);
+    if (!options.skipTranslation && processed > 0) {
+      const translation = await translatePendingArticles({
+        limit: Math.min(processed, limits.translateBatch),
+      });
+      result.translated += translation.translated;
+    }
     if (processed === 0) break;
     if (limits.normalizeBatch <= 0) break;
     if (processed < limits.normalizeBatch) break;
@@ -525,10 +562,12 @@ async function refreshExistingScores() {
       continue;
     }
     const audienceCountry = article.audienceCodes.match(/\|([A-Z]{2})\|/)?.[1];
-    const country = detectCountry(
-      `${article.title} ${article.summary}`,
-      audienceCountry || article.source.country,
-    );
+    const country = article.source.country !== "GLOBAL"
+      ? article.source.country
+      : detectCountry(
+        `${article.title} ${article.summary}`,
+        audienceCountry || article.source.country,
+      );
     const region = regionForCountry(country, article.source.region);
     const relevance = nationalityNews ? Math.max(45, classified.relevance) : classified.relevance;
     const scores = calculateScores({
@@ -687,28 +726,33 @@ export async function runPipeline(options: {
   if (abandoned > 0) {
     console.log(`Abandoned ${abandoned} stale raw articles outside the ${limits.newsMaxAgeHours}h news window.`);
   }
-  await normalizePending(result, limits.normalizePreCollectPasses);
+  const rawBacklog = await countPendingRawArticles();
+  if (rawBacklog > limits.normalizeBatch) {
+    console.log(`Draining ${rawBacklog} pending raw articles before collect.`);
+    await drainRawBacklog(result, options);
+  } else {
+    await normalizePending(result, limits.normalizePreCollectPasses, options);
+  }
   if (!options.skipCollect) {
     const deadline = collectDeadline(Date.now(), limits.collectBudgetMs);
     await collectAll(result, options.forceCollect, deadline);
-    await normalizePending(result);
+    await normalizePending(result, limits.normalizePasses, options);
     if (shouldStartAnotherFetch(Date.now(), deadline)) {
       await fillThinCountries(result, deadline);
     }
     if (result.deferred) {
       console.log(`Collect budget reached; deferred ${result.deferred} sources to the next run.`);
     }
-    await normalizePending(result);
+    await normalizePending(result, limits.normalizePasses, options);
   }
   await fillMissingStoryKeys();
   await refreshExistingScores();
+  if (!options.skipTranslation) {
+    await drainTranslations(result);
+  }
   result.editionItems = await buildDailyEdition(kuwaitDate(), { force: options.forceEdition });
   if (!options.skipTranslation) {
-    for (let pass = 0; pass < MAX_TRANSLATION_PASSES; pass += 1) {
-      const translation = await translatePendingArticles();
-      result.translated += translation.translated;
-      if (translation.pending === 0 || translation.translated === 0) break;
-    }
+    await drainTranslations(result, Math.min(5, limits.translateMaxPasses));
   }
   return result;
 }

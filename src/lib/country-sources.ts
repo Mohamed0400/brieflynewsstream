@@ -1,5 +1,5 @@
 import { Category, Region } from "@prisma/client";
-import { COUNTRY_CATALOG } from "./countries";
+import { COUNTRY_CATALOG, countryRecord } from "./countries";
 import { regionForCountry } from "./classify";
 import { CORE_SOURCE_LOCK } from "./sources/core-lock";
 import { COUNTRY_PUBLISHERS } from "./sources/country-publishers";
@@ -29,6 +29,8 @@ export const RETIRED_COUNTRY_SOURCE_CODES = [
   "HOY_PY",
   "BUSINESS_NEWS_TN",
   "TAP_TN",
+  "KUWAIT_TIMES_KW",
+  "KUWAIT_LOCAL_KW",
 ] as const;
 
 /** Supplemental country coverage where a local publisher feed is unavailable. */
@@ -609,6 +611,11 @@ const ARABIC_GOOGLE_NEWS_COUNTRIES = new Set([
 ]);
 
 const MIN_SOURCES_PER_COUNTRY = 8;
+
+export function googleNewsCountryWideQuery(countryCode: string) {
+  const name = countryRecord(countryCode.trim().toUpperCase())?.country ?? countryCode;
+  return `${name} (economy OR business OR markets OR bank OR government OR oil)`;
+}
 
 export function googleNewsRssUrl(query: string, locale: "en" | "ar" = "en") {
   const hl = locale === "ar" ? "ar" : "en-US";

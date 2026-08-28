@@ -8,7 +8,7 @@ async function main() {
   let totalTranslated = 0;
   let runs = 0;
 
-  const maxRuns = allPending ? 50 : 1;
+  const maxRuns = allPending ? 100 : 1;
   do {
     const result = await translatePendingArticles(allPending ? { limit: 0 } : undefined);
     runs += 1;

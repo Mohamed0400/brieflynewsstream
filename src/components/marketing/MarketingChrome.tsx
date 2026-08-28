@@ -254,11 +254,6 @@ function MarketingNav({
               onSubmit={() => setOpen(false)}
             />
 
-            <p className="mkt-nav-sheet-search-hint">
-              <MagnifyingGlass weight="bold" aria-hidden="true" />
-              <span>{copy.heroSearchLabel}</span>
-            </p>
-
             <nav className="mkt-nav-sheet-links" aria-label={copy.navAria}>
               {navItems.map((item) => {
                 const active = marketingPathActive(pathname, item.match);

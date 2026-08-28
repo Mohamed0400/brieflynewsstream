@@ -7,6 +7,7 @@ import {
   countriesNeedingArticles,
   countrySourceCoverage,
   generatedCountrySources,
+  googleNewsCountryWideQuery,
   googleNewsRssUrl,
   RETIRED_COUNTRY_SOURCE_CODES,
 } from "./country-sources";
@@ -16,6 +17,12 @@ test("Google News RSS URLs encode the query", () => {
   assert.equal(url.startsWith("https://news.google.com/rss/search?q="), true);
   assert.equal(url.includes("Kuwait"), true);
   assert.equal(url.includes("hl=en-US"), true);
+});
+
+test("wide country backfill queries use catalog country names", () => {
+  assert.match(googleNewsCountryWideQuery("KW"), /^Kuwait /);
+  assert.match(googleNewsCountryWideQuery("QA"), /^Qatar /);
+  assert.match(googleNewsRssUrl(googleNewsCountryWideQuery("KW")), /Kuwait/);
 });
 
 test("every catalog country has at least eight live sources", () => {

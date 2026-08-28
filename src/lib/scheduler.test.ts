@@ -17,6 +17,7 @@ import {
   shouldRunStaleCollect,
   STALE_COLLECT_MAX_AGE_MS,
   TRANSLATE_PRESETS,
+  jobLockMs,
 } from "./scheduler";
 
 test("default schedule presets are valid five-field cron", () => {
@@ -74,14 +75,26 @@ test("isLockExpired is true only when lockedUntil is at or before now", () => {
   assert.equal(isLockExpired(now, now), true);
 });
 
-test("shouldClearStaleLock never steals a live lock because lastRunAt is old", () => {
+test("job-specific lock windows keep short jobs from inheriting collect duration", () => {
+  assert.ok(jobLockMs(JOB_COLLECT) >= LOCK_MS);
+  assert.ok(jobLockMs(JOB_TRANSLATE) < jobLockMs(JOB_COLLECT));
+});
+
+test("shouldClearStaleLock releases zombie translate locks even when lockedUntil is renewed", () => {
   const now = new Date("2026-08-25T09:00:00.000Z");
-  const daysAgo = new Date("2026-08-23T14:37:59.000Z");
   const futureLock = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+  const staleTranslateStart = new Date(now.getTime() - jobLockMs(JOB_TRANSLATE) - 1);
   assert.equal(shouldClearStaleLock({
+    key: JOB_TRANSLATE,
     lastStatus: "running",
     lockedUntil: futureLock,
-    lastRunAt: daysAgo,
+    lastRunAt: staleTranslateStart,
+  }, now), true);
+  assert.equal(shouldClearStaleLock({
+    key: JOB_COLLECT,
+    lastStatus: "running",
+    lockedUntil: futureLock,
+    lastRunAt: new Date(now.getTime() - 30 * 60 * 1000),
   }, now), false);
 });
 
@@ -91,26 +104,31 @@ test("shouldClearStaleLock releases only expired or lockless-stale running claim
   const recentStart = new Date("2026-08-25T08:30:00.000Z");
   const staleStart = new Date(now.getTime() - LOCK_MS - 1);
   assert.equal(shouldClearStaleLock({
+    key: JOB_COLLECT,
     lastStatus: "running",
     lockedUntil: expired,
     lastRunAt: recentStart,
   }, now), true);
   assert.equal(shouldClearStaleLock({
+    key: JOB_COLLECT,
     lastStatus: "running",
     lockedUntil: null,
     lastRunAt: staleStart,
   }, now), true);
   assert.equal(shouldClearStaleLock({
+    key: JOB_COLLECT,
     lastStatus: "running",
     lockedUntil: null,
     lastRunAt: null,
   }, now), true);
   assert.equal(shouldClearStaleLock({
+    key: JOB_COLLECT,
     lastStatus: "running",
     lockedUntil: null,
     lastRunAt: recentStart,
   }, now), false);
   assert.equal(shouldClearStaleLock({
+    key: JOB_COLLECT,
     lastStatus: "ok",
     lockedUntil: expired,
     lastRunAt: staleStart,

@@ -6,6 +6,7 @@ export const ADMIN_SCHEDULE_PATH = `${ADMIN_OPERATIONS_PATH}/schedule`;
 export const ADMIN_AUDIT_PATH = `${ADMIN_OPERATIONS_PATH}/audit`;
 export const ADMIN_ANALYTICS_PATH = `${ADMIN_OPERATIONS_PATH}/analytics`;
 export const ADMIN_SETTINGS_PATH = `${ADMIN_OPERATIONS_PATH}/settings`;
+export const ADMIN_RECOVERY_PATH = `${ADMIN_OPERATIONS_PATH}/recovery`;
 
 export function isAdminAppPath(pathname: string) {
   return pathname === ADMIN_APP_PATH || pathname.startsWith(`${ADMIN_APP_PATH}/`);

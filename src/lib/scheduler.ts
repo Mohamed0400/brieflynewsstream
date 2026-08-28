@@ -3,6 +3,7 @@ import { prisma } from "./prisma";
 import { describeQueryFailure } from "./api";
 import { kuwaitDate } from "./market";
 import { buildDailyEdition, MAX_TRANSLATION_PASSES, runPipeline } from "./pipeline";
+import { limits } from "./limits";
 
 export const JOB_COLLECT = "collect";
 export const JOB_PUBLISH = "publish-daily";
@@ -13,6 +14,13 @@ const HEARTBEAT_ID = "default";
 const HEARTBEAT_MS = 30_000;
 /** At least the GitHub Actions collect timeout (180m); extra hour covers SIGTERM unwind. */
 export const LOCK_MS = 4 * 60 * 60 * 1000;
+/** Per-job lock windows — short jobs must not inherit the 4h collect lock. */
+export const JOB_LOCK_MS: Record<string, number> = {
+  [JOB_COLLECT]: LOCK_MS,
+  [JOB_TRANSLATE]: 20 * 60 * 1000,
+  [JOB_PUBLISH]: 20 * 60 * 1000,
+  [JOB_ARCHIVE]: 45 * 60 * 1000,
+};
 /** Extend a live lock about once a minute so health polls cannot treat it as expired. */
 export const LOCK_HEARTBEAT_MS = 60_000;
 /** `--if-stale` collect no-ops when the last successful run is newer than this. */
@@ -27,12 +35,18 @@ export function isCurrentlyLocked(lockedUntil: Date | null | undefined, now: Dat
   return lockedUntil != null && lockedUntil.getTime() > now.getTime();
 }
 
+export function jobLockMs(key: string) {
+  return JOB_LOCK_MS[key] ?? 30 * 60 * 1000;
+}
+
 /**
  * A live claim always has lockedUntil in the future. Never treat previous-run
  * lastRunAt as a reason to steal that lock (health polls used to do exactly that).
+ * Serverless timeouts leave locks renewed in the DB — cap runtime per job type.
  */
 export function shouldClearStaleLock(
   job: {
+    key?: string;
     lastStatus: string | null;
     lockedUntil: Date | null;
     lastRunAt: Date | null;
@@ -40,9 +54,13 @@ export function shouldClearStaleLock(
   now: Date,
 ) {
   if (job.lastStatus !== "running") return false;
+  const maxRuntime = jobLockMs(job.key ?? JOB_COLLECT);
+  if (job.lastRunAt != null && now.getTime() - job.lastRunAt.getTime() >= maxRuntime) {
+    return true;
+  }
   if (job.lockedUntil != null) return isLockExpired(job.lockedUntil, now);
   if (job.lastRunAt == null) return true;
-  return now.getTime() - job.lastRunAt.getTime() >= LOCK_MS;
+  return now.getTime() - job.lastRunAt.getTime() >= maxRuntime;
 }
 
 /** Watchdog: run collect when the last result is bad, old, or missing — not while locked. */
@@ -169,7 +187,7 @@ export async function clearStaleJobLocks() {
   const staleKeys = running
     .filter((job) => shouldClearStaleLock(job, now))
     .map((job) => job.key);
-  if (staleKeys.length === 0) return;
+  if (staleKeys.length === 0) return [];
   await prisma.scheduledJob.updateMany({
     where: { key: { in: staleKeys } },
     data: {
@@ -178,6 +196,7 @@ export async function clearStaleJobLocks() {
       lastError: "Previous run was interrupted before completion.",
     },
   });
+  return staleKeys;
 }
 
 export async function releaseJobLock(key: string) {
@@ -217,18 +236,34 @@ async function executeJob(key: string) {
     return `Published ${itemCount} stories for ${date}`;
   }
   if (key === JOB_TRANSLATE) {
-    const { translatePendingArticles } = await import("./article-translation");
-    let translated = 0;
-    let pending = 0;
-    for (let pass = 0; pass < MAX_TRANSLATION_PASSES; pass += 1) {
-      const result = await translatePendingArticles();
-      translated += result.translated;
-      pending = result.pending;
-      if (result.pending === 0 || result.translated === 0) break;
+    const { drainPendingTranslations } = await import("./article-translation");
+    const { countPendingRawArticles, drainRawBacklog } = await import("./pipeline");
+    const backlog = await countPendingRawArticles();
+    let normalizeSummary = "normalize skipped";
+    if (backlog > 0) {
+      const drained = await drainRawBacklog({
+        sourcesOk: 0,
+        sourcesFailed: 0,
+        deferred: 0,
+        rawCollected: 0,
+        articlesCreated: 0,
+        rejected: 0,
+        translated: 0,
+        editionItems: 0,
+        errors: [],
+      }, {
+        maxPasses: Math.min(6, limits.normalizeBacklogPasses),
+      });
+      normalizeSummary = `${drained.normalized} normalized, ${drained.pending} raw pending`;
     }
-    return pending
-      ? `${translated} articles translated, ${pending} still pending`
-      : `${translated} articles translated`;
+    const translatePasses = process.env.VERCEL
+      ? Math.min(MAX_TRANSLATION_PASSES, 8)
+      : MAX_TRANSLATION_PASSES;
+    const { translated, pending } = await drainPendingTranslations(translatePasses);
+    const translateSummary = pending
+      ? `${translated} translated, ${pending} still pending`
+      : `${translated} translated`;
+    return `${normalizeSummary}; ${translateSummary}`;
   }
   if (key === JOB_ARCHIVE) {
     const { runArchiveAndPrune } = await import("./archive/export");
@@ -255,25 +290,32 @@ export async function runScheduledJob(key: string, options?: { force?: boolean }
     },
     data: {
       lastRunAt: now,
-      lockedUntil: new Date(now.getTime() + LOCK_MS),
+      lockedUntil: new Date(now.getTime() + jobLockMs(key)),
       lastStatus: "running",
       lastError: null,
     },
   });
   if (claimed.count === 0) {
+    const busy = await prisma.scheduledJob.findFirst({
+      where: { key, lastStatus: "running" },
+      select: { key: true, lastRunAt: true, lockedUntil: true },
+    });
     return {
       ok: false,
       skipped: true,
       message: options?.force
         ? "Could not start the job. Try Release lock, then Force run again."
-        : "A collect or publish job is already running. Use Force run or Release lock in Operations → Schedule.",
+        : busy
+          ? `${key} is already running${busy.lastRunAt ? ` since ${busy.lastRunAt.toISOString()}` : ""}. Use Force run or Release lock in Operations → Schedule.`
+          : "Could not claim the job lock.",
     };
   }
 
+  const lockMs = jobLockMs(key);
   const renewLock = setInterval(() => {
     void prisma.scheduledJob.updateMany({
       where: { key, lastStatus: "running" },
-      data: { lockedUntil: new Date(Date.now() + LOCK_MS) },
+      data: { lockedUntil: new Date(Date.now() + lockMs) },
     }).catch((error) => {
       console.error("scheduled job lock renew failed", key, error);
     });

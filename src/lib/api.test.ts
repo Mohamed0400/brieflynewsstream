@@ -184,6 +184,19 @@ test("Arabic display language prefers stored Arabic titles", () => {
     titleAr: "Gold prices rise in Kuwait",
   }, "ar");
   assert.equal(englishPoisoned.title, "");
+
+  const englishOnly = articleLocalizedText({
+    language: "en",
+    title: "Kuwait markets steady",
+    summary: "Trading held firm in early sessions.",
+    displayTitle: "Kuwait markets steady",
+    displaySummary: "Trading held firm in early sessions.",
+    titleEn: "Kuwait markets steady",
+    summaryEn: "Trading held firm in early sessions.",
+    titleAr: null,
+    summaryAr: null,
+  }, "ar");
+  assert.equal(englishOnly.title, "");
 });
 
 test("source language seeds only that side of the bilingual pair", () => {

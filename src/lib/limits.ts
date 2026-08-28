@@ -57,6 +57,11 @@ export const limits = {
   /** Max normalize passes per collect run (each pass takes normalizeBatch rows). */
   normalizePasses: Math.max(1, intEnv("NORMALIZE_PASSES", 8)),
   /**
+   * Extra normalize passes when a rawArticle backlog exists (processedAt is null).
+   * 32 passes × 2500 batch ≈ 80k rows per recovery-oriented run.
+   */
+  normalizeBacklogPasses: Math.max(1, intEnv("NORMALIZE_BACKLOG_PASSES", 32)),
+  /**
    * Normalize passes before RSS fetch. Keep this small so a huge backlog cannot
    * burn the whole GitHub job before sources are refreshed.
    */
@@ -74,7 +79,13 @@ export const limits = {
   /** Homepage feed page size (paginated). */
   dashboard: intEnv("DASHBOARD_LIMIT", 50),
   /** Max articles translated per pipeline or translate job run. 0 = all pending. */
-  translateBatch: intEnv("TRANSLATE_BATCH_SIZE", 40),
+  translateBatch: intEnv("TRANSLATE_BATCH_SIZE", 80),
+  /** Articles per Gemini translation request. */
+  translateItemBatch: Math.max(1, intEnv("TRANSLATE_ITEM_BATCH_SIZE", 12)),
+  /** Parallel Gemini translation requests per direction. */
+  translateConcurrency: Math.max(1, intEnv("TRANSLATE_CONCURRENCY", 4)),
+  /** Max translate drain loops per collect or translate job. */
+  translateMaxPasses: Math.max(1, intEnv("TRANSLATE_MAX_PASSES", 25)),
   /** Editions list page size default. */
   editionsList: intEnv("EDITIONS_LIST_LIMIT", 90),
 };

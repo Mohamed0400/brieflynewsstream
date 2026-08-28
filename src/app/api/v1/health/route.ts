@@ -1,7 +1,9 @@
 import { kuwaitDate } from "@/lib/market";
 import { limits } from "@/lib/limits";
+import { countPendingRawArticles } from "@/lib/pipeline";
 import { getBilingualCoverage } from "@/lib/article-translation";
 import {
+  clearStaleJobLocks,
   DEFAULT_SCHEDULED_JOBS,
   embeddedSchedulerEnabled,
   getScheduleSnapshot,
@@ -17,10 +19,12 @@ export async function GET(request: Request) {
   const today = kuwaitDate();
 
   try {
-    const [snapshot, todayCoverage, freshCoverage] = await Promise.all([
+    const clearedLocks = await clearStaleJobLocks();
+    const [snapshot, todayCoverage, freshCoverage, pendingRaw] = await Promise.all([
       getScheduleSnapshot(),
       getBilingualCoverage(new Date(`${today}T00:00:00+03:00`)),
       getBilingualCoverage(new Date(Date.now() - freshnessHours * 60 * 60 * 1000)),
+      countPendingRawArticles(),
     ]);
 
     const requiredKeys = DEFAULT_SCHEDULED_JOBS.map((job) => job.key);
@@ -36,7 +40,8 @@ export async function GET(request: Request) {
     }));
     const missingJobs = requiredKeys.filter((key) => !jobs.some((job) => job.key === key));
     const disabledJobs = jobs.filter((job) => requiredKeySet.has(job.key) && !job.enabled).map((job) => job.key);
-    const jobsOk = missingJobs.length === 0 && disabledJobs.length === 0;
+    const stuckJobs = jobs.filter((job) => job.running).map((job) => job.key);
+    const jobsOk = missingJobs.length === 0 && disabledJobs.length === 0 && stuckJobs.length === 0;
     const bilingualOk = todayCoverage.ok && freshCoverage.ok;
     const embeddedSchedulerRequired = embeddedSchedulerEnabled();
     const schedulerOk = snapshot.scheduler.online || !embeddedSchedulerRequired;
@@ -71,6 +76,12 @@ export async function GET(request: Request) {
         freshArticles: freshCoverage.scanned,
         todaysArticles: todayCoverage.scanned,
         bilingualComplete: freshCoverage.complete,
+        pendingRawArticles: pendingRaw,
+        clearedStaleLocks: clearedLocks.length,
+      },
+      backlog: {
+        pendingRawArticles: pendingRaw,
+        stuckJobs,
       },
       latencyMs: Date.now() - startedAt,
     }, { status: healthy ? 200 : 503 }, origin);

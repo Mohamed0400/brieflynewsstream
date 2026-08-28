@@ -1,6 +1,6 @@
 import { Category, Prisma } from "@prisma/client";
 import { categoryFromCode, categoryToCode, regionFromCode, regionToCode } from "./market";
-import { articleLocalizedText, hasArabicDisplay, isArabicText, isBilingualComplete, isEnglishText } from "./article-translation";
+import { articleLocalizedText, hasLocalizedDisplay, isArabicText, isBilingualComplete, isEnglishText } from "./article-translation";
 import { optimizedFetchUrl } from "./cloudinary";
 import { dedupeArticles } from "./dedupe";
 import { limits } from "./limits";
@@ -36,9 +36,10 @@ export async function listDedupedArticles(
   offset: number,
   options: { lang?: string } = {},
 ): Promise<{ count: number; items: ListedArticle[] }> {
+  const lang = options.lang === "en" ? "en" : "ar";
   const take = Math.min(
     DEDUPE_MAX_SCAN,
-    Math.max(120, (Math.max(0, offset) + Math.max(1, limit)) * (options.lang === "ar" ? 6 : 3)),
+    Math.max(120, (Math.max(0, offset) + Math.max(1, limit)) * 8),
   );
   const rows = await prisma.article.findMany({
     where,
@@ -47,9 +48,7 @@ export async function listDedupedArticles(
     take,
   });
   const unique = dedupeArticles(rows);
-  const filtered = options.lang === "ar"
-    ? unique.filter((article) => hasArabicDisplay(article))
-    : unique;
+  const filtered = unique.filter((article) => hasLocalizedDisplay(article, lang));
   return {
     count: filtered.length,
     items: filtered.slice(offset, offset + limit),

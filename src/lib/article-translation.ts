@@ -3,7 +3,29 @@ import { prisma } from "./prisma";
 import { limits } from "./limits";
 
 const ARABIC_TEXT = /[\u0600-\u06ff]/;
-const BATCH_SIZE = 8;
+
+/** Lower rank = translated first. Kuwait and Gulf core markets lead. */
+const TRANSLATION_PRIORITY = new Map<string, number>([
+  ["KW", 0],
+  ["SA", 1],
+  ["AE", 2],
+  ["QA", 3],
+  ["BH", 4],
+  ["OM", 5],
+  ["EG", 6],
+  ["JO", 7],
+  ["IQ", 8],
+  ["LB", 9],
+  ["PS", 10],
+  ["YE", 11],
+  ["SY", 12],
+  ["LY", 13],
+  ["MA", 14],
+  ["TN", 15],
+  ["DZ", 16],
+  ["SD", 17],
+  ["EU", 18],
+]);
 
 const articleTranslationSchema = z.object({
   articles: z.array(z.object({
@@ -285,10 +307,10 @@ async function translateBatch(
   if (!key || !items.length) return new Map<string, { title: string; summary: string }>();
 
   const attempts: Array<() => Promise<z.infer<typeof articleTranslationSchema>>> = [
-    () => translateViaInteractions(items, direction, key),
     ...modelCandidates().map((model) => (
       () => translateViaGenerateContent(items, direction, key, model)
     )),
+    () => translateViaInteractions(items, direction, key),
   ];
 
   let lastError = "Translation request failed.";
@@ -307,29 +329,45 @@ async function translateBatch(
   return new Map<string, { title: string; summary: string }>();
 }
 
+function acceptTranslatedItem(
+  translated: Map<string, { title: string; summary: string }>,
+  item: TranslationInput,
+  direction: "to-ar" | "to-en",
+  translatedItem: { title: string; summary: string } | undefined,
+) {
+  if (!translatedItem) return;
+  if (direction === "to-ar" && !isArabicText(translatedItem.title)) return;
+  if (direction === "to-en" && !isEnglishText(translatedItem.title)) return;
+  translated.set(item.id, translatedItem);
+}
+
 async function translateDirection(
   items: TranslationInput[],
   direction: "to-ar" | "to-en",
 ) {
   const translated = new Map<string, { title: string; summary: string }>();
+  const batchSize = Math.max(1, limits.translateItemBatch);
+  const concurrency = Math.max(1, limits.translateConcurrency);
   const batches: TranslationInput[][] = [];
-  for (let index = 0; index < items.length; index += BATCH_SIZE) {
-    batches.push(items.slice(index, index + BATCH_SIZE));
+  for (let index = 0; index < items.length; index += batchSize) {
+    batches.push(items.slice(index, index + batchSize));
   }
-  for (let index = 0; index < batches.length; index += 2) {
+  for (let index = 0; index < batches.length; index += concurrency) {
     const maps = await Promise.all(
-      batches.slice(index, index + 2).map((batch) => translateBatch(batch, direction)),
+      batches.slice(index, index + concurrency).map((batch) => translateBatch(batch, direction)),
     );
     for (const [batchIndex, batchMap] of maps.entries()) {
       const batch = batches[index + batchIndex];
       for (const item of batch) {
-        const translatedItem = batchMap.get(item.id);
-        if (!translatedItem) continue;
-        if (direction === "to-ar" && !isArabicText(translatedItem.title)) continue;
-        if (direction === "to-en" && !isEnglishText(translatedItem.title)) continue;
-        translated.set(item.id, translatedItem);
+        acceptTranslatedItem(translated, item, direction, batchMap.get(item.id));
       }
     }
+  }
+
+  const missing = items.filter((item) => !translated.has(item.id));
+  for (const item of missing) {
+    const single = await translateBatch([item], direction);
+    acceptTranslatedItem(translated, item, direction, single.get(item.id));
   }
   return translated;
 }
@@ -338,6 +376,31 @@ export function hasArabicDisplay(
   article: Parameters<typeof articleLocalizedText>[0],
 ) {
   return Boolean(articleLocalizedText(article, "ar").title.trim());
+}
+
+export function hasEnglishDisplay(
+  article: Parameters<typeof articleLocalizedText>[0],
+) {
+  return Boolean(articleLocalizedText(article, "en").title.trim());
+}
+
+export function hasLocalizedDisplay(
+  article: Parameters<typeof articleLocalizedText>[0],
+  lang: string,
+) {
+  return lang === "en" ? hasEnglishDisplay(article) : hasArabicDisplay(article);
+}
+
+export function translationPriority(country: string) {
+  return TRANSLATION_PRIORITY.get(country.trim().toUpperCase()) ?? 100;
+}
+
+export function sortArticlesForTranslation<T extends { country: string; publishedAt: Date }>(articles: T[]) {
+  return [...articles].sort((left, right) => {
+    const priorityDelta = translationPriority(left.country) - translationPriority(right.country);
+    if (priorityDelta !== 0) return priorityDelta;
+    return right.publishedAt.getTime() - left.publishedAt.getTime();
+  });
 }
 
 export function articleLocalizedText(
@@ -371,15 +434,11 @@ export function articleLocalizedText(
     title: (isEnglishText(article.titleEn) ? article.titleEn : null)
       || (isEnglishText(article.displayTitle) ? article.displayTitle : null)
       || (isEnglishText(article.title) ? article.title : null)
-      || article.titleEn
-      || article.displayTitle
-      || article.title,
+      || "",
     summary: (isEnglishText(article.summaryEn) ? article.summaryEn : null)
       || (isEnglishText(article.displaySummary) ? article.displaySummary : null)
       || (isEnglishText(summary) ? summary : null)
-      || article.summaryEn
-      || article.displaySummary
-      || summary,
+      || "",
   };
 }
 
@@ -420,19 +479,24 @@ function canonicalArabic(article: BilingualArticle) {
   };
 }
 
-export async function translatePendingArticles(options: { limit?: number } = {}) {
+export async function translatePendingArticles(options: { limit?: number; countries?: string[] } = {}) {
   const freshnessCutoff = new Date(
     Date.now() - Math.max(1, limits.newsMaxAgeHours) * 60 * 60 * 1000,
   );
   const unlimited = options.limit === 0 || (options.limit === undefined && limits.translateBatch === 0);
   const take = unlimited ? undefined : (options.limit ?? Math.max(1, limits.translateBatch));
+  const countryFilter = options.countries?.map((code) => code.trim().toUpperCase()).filter(Boolean);
   const pool = await prisma.article.findMany({
-    where: { publishedAt: { gte: freshnessCutoff } },
+    where: {
+      publishedAt: { gte: freshnessCutoff },
+      ...(countryFilter?.length ? { country: { in: countryFilter } } : {}),
+    },
     orderBy: { publishedAt: "desc" },
+    ...(take ? { take: Math.min(Math.max(take * 6, take), 3000) } : {}),
   });
-  const allPending = pool.filter((article) => !isBilingualComplete(article));
+  const allPending = sortArticlesForTranslation(pool.filter((article) => !isBilingualComplete(article)));
   const pending = allPending.slice(0, take || allPending.length);
-  if (!pending.length) return { translated: 0, pending: 0 };
+  if (!pending.length) return { translated: 0, pending: allPending.length };
 
   const needsArabic: TranslationInput[] = [];
   const needsEnglish: TranslationInput[] = [];
@@ -495,7 +559,20 @@ export async function translatePendingArticles(options: { limit?: number } = {})
     })];
   });
   if (updates.length) await prisma.$transaction(updates);
-  return { translated, pending: allPending.length - translated };
+  const remaining = allPending.length - translated;
+  return { translated, pending: remaining > 0 ? remaining : 0 };
+}
+
+export async function drainPendingTranslations(maxPasses = limits.translateMaxPasses) {
+  let translated = 0;
+  let pending = 0;
+  for (let pass = 0; pass < maxPasses; pass += 1) {
+    const result = await translatePendingArticles();
+    translated += result.translated;
+    pending = result.pending;
+    if (result.pending === 0 || result.translated === 0) break;
+  }
+  return { translated, pending };
 }
 
 export async function localizeFetchedArticles<T extends BilingualArticle>(

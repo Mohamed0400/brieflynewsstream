@@ -209,7 +209,7 @@ export function MarketingLanding({
           </div>
           <figure className="mkt-split-visual mkt-manifesto-visual">
             <Image
-              src="/marketing/section-home.png"
+              src="/marketing/brief-news-stream.png"
               alt={copy.manifestoVisualAlt}
               width={1536}
               height={1024}

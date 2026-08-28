@@ -196,7 +196,7 @@ test("stores audience codes as exact, multi-value tokens", () => {
 
 test("audience chips follow Gulf-first editorial order", () => {
   const sorted = sortAudienceCodesByEditorialOrder(["QA", "PH", "KW", "SA", "AE"]);
-  assert.deepEqual(sorted, ["KW", "SA", "AE", "QA", "PH"]);
+  assert.deepEqual(sorted, ["SA", "AE", "QA", "KW", "PH"]);
 });
 
 test("display headlines never retain truncation marks", () => {

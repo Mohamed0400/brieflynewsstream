@@ -77,7 +77,7 @@ export const REGION_GROUP_META: ReadonlyArray<{
 
 const REGION_MEMBERS: Record<CountryRegionKey, string[]> = {
   middle_east: [
-    "KW", "SA", "AE", "QA", "BH", "OM",
+    "SA", "AE", "QA", "KW", "BH", "OM",
     "EG", "JO", "LB", "SY", "PS", "IQ", "IR", "YE", "TR",
     "IL",
   ],
@@ -164,7 +164,7 @@ export type CountryRegionGroup = {
 
 /**
  * Groups supported country codes into browse buckets, each sorted by the
- * editorial region order (Gulf-first in Middle East) with alphabetical tail
+ * editorial region order (GCC: SA, AE, QA, KW, then BH/OM) with alphabetical tail
  * for codes outside the curated list. Empty regions are dropped.
  */
 export function groupCountryCodesByRegion(

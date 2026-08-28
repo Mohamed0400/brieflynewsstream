@@ -3187,23 +3187,35 @@
     scroll-snap-align: start;
   }
 
-  /* Filter dropdowns — single horizontal scroll row */
+  /* Filter dropdowns — stacked full-width controls (no horizontal clip) */
+  .mkt-news-page .mkt-news-filter-strip {
+    margin-inline: 0;
+  }
+
+  .mkt-news-page .mkt-news-filter-strip::before,
+  .mkt-news-page .mkt-news-filter-strip::after {
+    display: none;
+  }
+
   .mkt-news-page .mkt-news-filter-strip .homepage-filter-bar {
-    display: flex;
-    flex-wrap: nowrap;
-    align-items: end;
-    gap: 0.625rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 0.5rem;
     margin-top: 0.5rem;
-    padding: 0.625rem 0;
-    border: 0;
-    background: transparent;
+    padding: 0.75rem;
+    border: 1px solid var(--mkt-line);
+    border-radius: var(--mkt-radius);
+    background: var(--mkt-surface);
     overflow-x: visible;
+    width: 100%;
+    min-width: 0;
   }
 
   .mkt-news-page .mkt-news-filter-strip .homepage-filter-field {
-    flex: 0 0 auto;
-    width: auto;
-    min-width: 8.75rem;
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
   }
 
   .mkt-news-page .mkt-news-filter-strip .homepage-filter-field > span {
@@ -3212,6 +3224,7 @@
 
   .mkt-news-page .mkt-news-filter-strip .homepage-filter-field input,
   .mkt-news-page .mkt-news-filter-strip .homepage-filter-field select {
+    width: 100%;
     min-height: 2.75rem;
     font-size: max(16px, 1rem);
     border-radius: var(--mkt-control);
@@ -3220,11 +3233,9 @@
   }
 
   .mkt-news-page .mkt-news-filter-strip .homepage-filter-button {
-    flex: 0 0 auto;
-    width: auto;
-    min-width: 5.5rem;
+    width: 100%;
     min-height: 2.75rem;
-    align-self: end;
+    align-self: stretch;
   }
 
   /* Community briefing — inline horizontal controls */

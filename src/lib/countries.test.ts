@@ -118,7 +118,7 @@ test("region grouping preserves order, drops empty groups, and uses editorial me
   }
 
   const middleEast = groups.find((group) => group.key === "middle_east");
-  assert.equal(middleEast?.items[0]?.code, "KW", "Middle East should lead with Kuwait");
+  assert.equal(middleEast?.items[0]?.code, "SA", "Middle East should lead with Saudi Arabia");
 
   const total = groups.reduce((sum, group) => sum + group.items.length, 0);
   assert.equal(total, supportedCountryCodes().length, "every code should land in a group");

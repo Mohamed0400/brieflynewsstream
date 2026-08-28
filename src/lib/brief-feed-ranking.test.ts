@@ -27,7 +27,7 @@ test("global and EU stories rank before country-specific markets", () => {
   assert.ok(compareArticlesForBriefFeed(global, philippines) < 0);
 });
 
-test("Gulf editorial order puts Kuwait ahead of Saudi, UAE, and Qatar", () => {
+test("Gulf editorial order puts Saudi, UAE, and Qatar ahead of Kuwait", () => {
   const kuwait = {
     country: "KW",
     region: Region.MIDDLE_EAST,
@@ -53,9 +53,9 @@ test("Gulf editorial order puts Kuwait ahead of Saudi, UAE, and Qatar", () => {
     score: { finalScore: 86 },
   };
   const sorted = sortArticlesForBriefFeed([qatar, uae, saudi, kuwait]);
-  assert.deepEqual(sorted.map((item) => item.country), ["KW", "SA", "AE", "QA"]);
-  assert.equal(articleBriefPriority(kuwait).memberRank, 0);
-  assert.ok(articleBriefPriority(kuwait).memberRank < articleBriefPriority(saudi).memberRank);
+  assert.deepEqual(sorted.map((item) => item.country), ["SA", "AE", "QA", "KW"]);
+  assert.equal(articleBriefPriority(saudi).memberRank, 0);
+  assert.ok(articleBriefPriority(saudi).memberRank < articleBriefPriority(kuwait).memberRank);
 });
 
 test("brief ranking applies only on the unfiltered impact feed", () => {

@@ -10,9 +10,15 @@ import {
   type ConsoleLoginCopy,
 } from "@/lib/console-translation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
-import { getOrCreateAccountClient } from "@/lib/account-client";
+import { withAuthTimeout } from "@/lib/supabase/auth-timeout";
+import { establishConsoleSessionClient, AuthTimeoutError } from "@/lib/account-client";
 import { ADMIN_OPERATIONS_PATH } from "@/lib/admin-app";
 import { consoleAuthCallbackUrl } from "@/lib/auth-redirect";
+import {
+  isBlockedAccountStatus,
+  isDuplicateSignupError,
+  isDuplicateSignupUser,
+} from "@/lib/console-signup-auth";
 import { COUNTRY_CATALOG } from "@/lib/countries";
 import { normalizeSignupProfile } from "@/lib/signup-profile";
 import { BrandLoader } from "@/components/media/BrandLoader";
@@ -24,15 +30,17 @@ export function ConsoleLoginForm({
   variant,
   audience = "customer",
   initialError = "",
+  initialMode,
 }: {
   copy: ConsoleLoginCopy;
   variant: "signin" | "signup";
   audience?: "customer" | "ops";
   initialError?: string;
+  initialMode?: Mode;
 }) {
   const router = useRouter();
   const emailRef = useRef<HTMLInputElement>(null);
-  const [mode, setMode] = useState<Mode>(variant);
+  const [mode, setMode] = useState<Mode>(initialMode || variant);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [country, setCountry] = useState("");
@@ -63,7 +71,13 @@ export function ConsoleLoginForm({
   }
 
   async function afterAuthenticated() {
-    const payload = await getOrCreateAccountClient();
+    const payload = await establishConsoleSessionClient();
+    if (isBlockedAccountStatus(payload.account.status)) {
+      const supabase = createBrowserSupabaseClient();
+      await supabase.auth.signOut();
+      setError(copy.accountUnavailable);
+      return;
+    }
     if (isOps) {
       if (payload.account.role !== "SUPER_ADMIN") {
         const supabase = createBrowserSupabaseClient();
@@ -89,10 +103,13 @@ export function ConsoleLoginForm({
 
     try {
       if (mode === "signin") {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: normalizedEmail,
-          password,
-        });
+        const { error: signInError } = await withAuthTimeout(
+          supabase.auth.signInWithPassword({
+            email: normalizedEmail,
+            password,
+          }),
+          12_000,
+        );
         if (signInError) {
           setError(signInError.message || copy.authFailed);
           emailRef.current?.focus();
@@ -109,16 +126,28 @@ export function ConsoleLoginForm({
           return;
         }
         const origin = window.location.origin;
-        const { data, error: signUpError } = await supabase.auth.signUp({
-          email: normalizedEmail,
-          password,
-          options: {
-            emailRedirectTo: consoleAuthCallbackUrl(origin),
-            data: parsed.profile,
-          },
-        });
+        const { data, error: signUpError } = await withAuthTimeout(
+          supabase.auth.signUp({
+            email: normalizedEmail,
+            password,
+            options: {
+              emailRedirectTo: consoleAuthCallbackUrl(origin),
+              data: parsed.profile,
+            },
+          }),
+          12_000,
+        );
         if (signUpError) {
-          setError(signUpError.message || copy.authFailed);
+          setError(
+            isDuplicateSignupError(signUpError.message)
+              ? copy.emailAlreadyRegistered
+              : signUpError.message || copy.authFailed,
+          );
+          emailRef.current?.focus();
+          return;
+        }
+        if (isDuplicateSignupUser(data.user)) {
+          setError(copy.emailAlreadyRegistered);
           emailRef.current?.focus();
           return;
         }
@@ -133,9 +162,12 @@ export function ConsoleLoginForm({
 
       if (mode === "forgot") {
         const origin = window.location.origin;
-        const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-          normalizedEmail,
-          { redirectTo: consoleAuthCallbackUrl(origin, "/console/reset-password") },
+        const { error: resetError } = await withAuthTimeout(
+          supabase.auth.resetPasswordForEmail(
+            normalizedEmail,
+            { redirectTo: consoleAuthCallbackUrl(origin, "/console/reset-password") },
+          ),
+          12_000,
         );
         if (resetError) {
           setError(resetError.message || copy.authFailed);
@@ -146,8 +178,11 @@ export function ConsoleLoginForm({
         return;
       }
     } catch (requestError) {
-      setError(copy.networkError);
-      toast.exception(requestError, copy.networkError);
+      const networkMessage = mode === "signup" ? copy.signupNetworkError : copy.networkError;
+      setError(
+        requestError instanceof AuthTimeoutError ? networkMessage : networkMessage,
+      );
+      toast.exception(requestError, networkMessage);
       emailRef.current?.focus();
     } finally {
       setLoading(false);

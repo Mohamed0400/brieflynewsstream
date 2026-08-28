@@ -41,12 +41,14 @@ export async function generateMetadata({
 export default async function ConsoleSignupPage({
   searchParams,
 }: {
-  searchParams: Promise<{ lang?: string }>;
+  searchParams: Promise<{ lang?: string; error?: string }>;
 }) {
   if (await hasConsoleSession()) redirect("/console/overview");
 
-  const lang = await getConsoleLoginLang((await searchParams).lang);
+  const params = await searchParams;
+  const lang = await getConsoleLoginLang(params.lang);
   const copy = consoleLoginCopy(lang);
+  const initialError = params.error === "account_status" ? copy.accountUnavailable : "";
   const isEn = lang === "en";
   const description = isEn
     ? "Register for a free Briefly NewsStream account with email and password. Then mint an API key for bilingual market news."
@@ -82,7 +84,7 @@ export default async function ConsoleSignupPage({
         title={copy.signupPageTitle}
         lede={copy.signupPageLede}
       >
-        <ConsoleLoginForm copy={copy} variant="signup" />
+        <ConsoleLoginForm copy={copy} variant="signup" initialError={initialError} />
       </ConsoleAuthShell>
     </>
   );

@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BrandLoader } from "@/components/media/BrandLoader";
-import { getOrCreateAccountClient } from "@/lib/account-client";
+import { establishConsoleSessionClient, AuthTimeoutError } from "@/lib/account-client";
+import { isBlockedAccountStatus } from "@/lib/console-signup-auth";
 import { safeAppPath } from "@/lib/auth-redirect";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import { withAuthTimeout } from "@/lib/supabase/auth-timeout";
 
 export function AuthCallbackClient() {
   const router = useRouter();
@@ -40,13 +42,24 @@ export function AuthCallbackClient() {
 
       try {
         const supabase = createBrowserSupabaseClient();
-        const { data } = await supabase.auth.getSession();
+        const { data } = await withAuthTimeout(supabase.auth.getSession(), 8_000);
         if (!data.session) {
           throw new Error("This confirmation link is invalid or has expired.");
         }
-        await getOrCreateAccountClient();
+        const payload = await establishConsoleSessionClient();
+        if (isBlockedAccountStatus(payload.account.status)) {
+          await supabase.auth.signOut();
+          window.location.replace("/console/login?error=account_status");
+          return;
+        }
         if (!cancelled) router.replace(next);
       } catch (error) {
+        if (error instanceof AuthTimeoutError) {
+          window.location.replace(
+            `/auth/error?message=${encodeURIComponent("Unable to confirm this email link. Check the connection and try again.")}`,
+          );
+          return;
+        }
         const text = error instanceof Error ? error.message : "Could not confirm this email link.";
         window.location.replace(`/auth/error?message=${encodeURIComponent(text)}`);
       }

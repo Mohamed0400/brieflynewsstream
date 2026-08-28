@@ -10,15 +10,7 @@ export function isTopEditionFeedView(params: {
   from?: string;
   to?: string;
 }) {
-  if (params.view === "all") return false;
-  if (params.view === "top") return true;
-  return !params.q
-    && !params.category
-    && !params.country
-    && !params.nationality
-    && params.sort !== "date"
-    && !params.from
-    && !params.to;
+  return params.view === "top";
 }
 
 export function newsFeedHref(params: {

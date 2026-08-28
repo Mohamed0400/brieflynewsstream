@@ -444,7 +444,7 @@ export default async function Home({
           topEditionView={topEditionView}
           editionItemCount={editionItemCount}
           catalogCount={catalogCount}
-          view={params.view === "all" ? "all" : params.view === "top" ? "top" : undefined}
+          view={params.view === "top" ? "top" : undefined}
         />
 
         <BriefMetricsDashboard lang={lang} metrics={operationalMetrics} />

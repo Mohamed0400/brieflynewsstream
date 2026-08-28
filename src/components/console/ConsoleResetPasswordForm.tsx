@@ -5,7 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import { AuthTimeoutError, withAuthTimeout } from "@/lib/supabase/auth-timeout";
 import { withConsoleLang, type ConsoleLoginCopy } from "@/lib/console-translation";
+import { BrandLoader } from "@/components/media/BrandLoader";
+
+type ResetPhase = "checking" | "ready" | "need-link";
 
 export function ConsoleResetPasswordForm({ copy }: { copy: ConsoleLoginCopy }) {
   const router = useRouter();
@@ -13,15 +17,36 @@ export function ConsoleResetPasswordForm({ copy }: { copy: ConsoleLoginCopy }) {
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [ready, setReady] = useState(false);
+  const [phase, setPhase] = useState<ResetPhase>("checking");
 
   useEffect(() => {
+    let cancelled = false;
     const supabase = createBrowserSupabaseClient();
-    supabase.auth.getSession().then(({ data }) => {
-      setReady(Boolean(data.session));
-    }).catch(() => {
-      setError(copy.networkError);
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (cancelled || !session) return;
+      if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+        setPhase("ready");
+      }
     });
+
+    void withAuthTimeout(supabase.auth.getSession(), 8_000)
+      .then(({ data }) => {
+        if (cancelled) return;
+        setPhase(data.session ? "ready" : "need-link");
+      })
+      .catch((requestError) => {
+        if (cancelled) return;
+        setError(
+          requestError instanceof AuthTimeoutError ? copy.networkError : copy.networkError,
+        );
+        setPhase("need-link");
+      });
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, [copy.networkError]);
 
   async function submit(event: FormEvent) {
@@ -38,7 +63,10 @@ export function ConsoleResetPasswordForm({ copy }: { copy: ConsoleLoginCopy }) {
     setLoading(true);
     try {
       const supabase = createBrowserSupabaseClient();
-      const { error: updateError } = await supabase.auth.updateUser({ password });
+      const { error: updateError } = await withAuthTimeout(
+        supabase.auth.updateUser({ password }),
+        12_000,
+      );
       if (updateError) {
         setError(updateError.message || copy.authFailed);
         return;
@@ -53,8 +81,31 @@ export function ConsoleResetPasswordForm({ copy }: { copy: ConsoleLoginCopy }) {
     }
   }
 
-  if (!ready) {
-    return <p className="console-gate-help">{copy.resetNeedLink}</p>;
+  if (phase === "checking") {
+    return (
+      <div className="console-gate-form console-gate-confirm" role="status">
+        <BrandLoader size="sm" label={copy.resetChecking} showLabel />
+      </div>
+    );
+  }
+
+  if (phase === "need-link") {
+    return (
+      <div className="console-gate-form console-gate-confirm" role="status">
+        <p className="console-gate-help">{copy.resetNeedLink}</p>
+        {error ? (
+          <p role="alert" className="console-gate-error">
+            {error}
+          </p>
+        ) : null}
+        <Link href={withConsoleLang("/console/login?forgot=1", copy.lang)} className="console-gate-link">
+          {copy.forgotSubmit}
+        </Link>
+        <Link href={withConsoleLang("/console/login", copy.lang)} className="console-gate-link">
+          {copy.backToSignIn}
+        </Link>
+      </div>
+    );
   }
 
   return (

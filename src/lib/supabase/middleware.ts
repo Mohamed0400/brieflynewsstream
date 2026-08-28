@@ -15,9 +15,14 @@ async function getUserWithTimeout(
 
   try {
     const result = await Promise.race([supabase.auth.getUser(), timeout]);
-    return result.data.user ?? null;
+    if (result.data.user) return result.data.user;
+
+    // Auth server slow — use cookie session so valid sign-ins are not bounced to login.
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.user ?? null;
   } catch {
-    return null;
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.user ?? null;
   } finally {
     if (timeoutId) clearTimeout(timeoutId);
   }

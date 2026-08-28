@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getOrCreateAccount } from "@/lib/account";
 import { isTrustedConsoleOrigin } from "@/lib/console-auth";
+import { profileFromAuthMetadata } from "@/lib/signup-profile";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 /**
@@ -38,6 +39,7 @@ export async function POST(request: Request) {
   const account = await getOrCreateAccount({
     authUserId: data.user.id,
     email: data.user.email,
+    profile: profileFromAuthMetadata(data.user.user_metadata),
   });
 
   return NextResponse.json({
@@ -47,6 +49,7 @@ export async function POST(request: Request) {
       email: account.email,
       role: account.role,
       plan: account.plan,
+      status: account.status,
     },
   });
 }

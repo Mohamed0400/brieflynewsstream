@@ -1,16 +1,19 @@
 import { getSessionUser } from "./account";
+import { withAuthTimeout } from "./supabase/auth-timeout";
 import { createServerSupabaseClient } from "./supabase/server";
 
 /** @deprecated Cookie name kept only for clearing legacy sessions on logout. */
 export const CONSOLE_SESSION_COOKIE = "market_news_console";
 
-/** Cookie-only check for public gate pages — avoids blocking SSR on Auth server. */
+/** Validates JWT with Auth server; bounded so gate pages do not hang SSR. */
 export async function hasConsoleSession() {
   const supabase = await createServerSupabaseClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  return Boolean(session);
+  try {
+    const { data } = await withAuthTimeout(supabase.auth.getUser(), 5_000);
+    return Boolean(data.user);
+  } catch {
+    return false;
+  }
 }
 
 export async function isConsoleAuthenticated() {

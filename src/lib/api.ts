@@ -20,7 +20,7 @@ import { searchWords, countryCodesForSearchWord } from "./search";
 import { PUBLIC_SERVER_ERROR, isInternalError, publicErrorMessage } from "./public-error";
 import { publicSourceName } from "./public-source";
 
-const DEDUPE_MAX_SCAN = 400;
+const DEDUPE_MAX_SCAN = limits.feedDedupeMaxScan;
 
 const articleListInclude = { source: true, score: true } as const;
 type ListedArticle = Prisma.ArticleGetPayload<{ include: typeof articleListInclude }>;
@@ -43,10 +43,8 @@ export async function listDedupedArticles(
   options: { lang?: string; applyBriefRanking?: boolean } = {},
 ): Promise<{ count: number; items: ListedArticle[] }> {
   const lang = options.lang === "en" ? "en" : "ar";
-  const take = Math.min(
-    DEDUPE_MAX_SCAN,
-    Math.max(120, (Math.max(0, offset) + Math.max(1, limit)) * 8),
-  );
+  const totalInWindow = await prisma.article.count({ where });
+  const take = Math.min(DEDUPE_MAX_SCAN, totalInWindow);
   const rows = await prisma.article.findMany({
     where,
     include: articleListInclude,
@@ -57,8 +55,9 @@ export async function listDedupedArticles(
   const filtered = unique.filter((article) => hasLocalizedDisplay(article, lang));
   const safe = filtered.filter((article) => !isBlockedArticle(article));
   const ranked = options.applyBriefRanking ? sortArticlesForBriefFeed(safe) : safe;
+  const fullScan = take >= totalInWindow;
   return {
-    count: ranked.length,
+    count: fullScan ? ranked.length : totalInWindow,
     items: ranked.slice(offset, offset + limit),
   };
 }

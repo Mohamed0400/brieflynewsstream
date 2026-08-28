@@ -41,11 +41,12 @@ export async function generateMetadata({
 export default async function ConsoleLoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ lang?: string; error?: string }>;
+  searchParams: Promise<{ lang?: string; error?: string; forgot?: string }>;
 }) {
-  if (await hasConsoleSession()) redirect("/console/overview");
-
   const params = await searchParams;
+  const forgotMode = params.forgot === "1";
+  if (!forgotMode && (await hasConsoleSession())) redirect("/console/overview");
+
   const lang = await getConsoleLoginLang(params.lang);
   const copy = consoleLoginCopy(lang);
   const initialError = params.error === "account_status" ? copy.accountUnavailable : "";
@@ -84,7 +85,12 @@ export default async function ConsoleLoginPage({
         title={copy.title}
         lede={copy.lede}
       >
-        <ConsoleLoginForm copy={copy} variant="signin" initialError={initialError} />
+        <ConsoleLoginForm
+          copy={copy}
+          variant="signin"
+          initialError={initialError}
+          initialMode={forgotMode ? "forgot" : undefined}
+        />
       </ConsoleAuthShell>
     </>
   );

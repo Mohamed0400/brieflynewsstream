@@ -4,8 +4,10 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { getOrCreateAccount } from "@/lib/account";
 import { safeAppPath } from "@/lib/auth-redirect";
+import { isBlockedAccountStatus } from "@/lib/console-signup-auth";
 import { profileFromAuthMetadata } from "@/lib/signup-profile";
 import { supabaseAnonKey, supabaseUrl } from "@/lib/supabase/env";
+import { withAuthTimeout } from "@/lib/supabase/auth-timeout";
 
 function otpType(raw: string | null): EmailOtpType {
   if (
@@ -68,8 +70,11 @@ export async function completeEmailAuth(request: Request) {
   });
 
   const result = code
-    ? await supabase.auth.exchangeCodeForSession(code)
-    : await supabase.auth.verifyOtp({ type, token_hash: tokenHash! });
+    ? await withAuthTimeout(supabase.auth.exchangeCodeForSession(code), 12_000)
+    : await withAuthTimeout(
+        supabase.auth.verifyOtp({ type, token_hash: tokenHash! }),
+        12_000,
+      );
 
   if (result.error || !result.data.user?.email) {
     return authErrorRedirect(
@@ -78,11 +83,16 @@ export async function completeEmailAuth(request: Request) {
     );
   }
 
-  await getOrCreateAccount({
+  const account = await getOrCreateAccount({
     authUserId: result.data.user.id,
     email: result.data.user.email,
     profile: profileFromAuthMetadata(result.data.user.user_metadata),
   });
+  if (isBlockedAccountStatus(account.status)) {
+    const login = new URL("/console/login", origin);
+    login.searchParams.set("error", "account_status");
+    return NextResponse.redirect(login);
+  }
 
   return redirectTo;
 }

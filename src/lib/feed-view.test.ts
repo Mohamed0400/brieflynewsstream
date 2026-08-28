@@ -3,19 +3,18 @@ import { describe, it } from "node:test";
 import { isTopEditionFeedView, newsFeedHref } from "./feed-view";
 
 describe("isTopEditionFeedView", () => {
-  it("defaults to top edition when no filters", () => {
-    assert.equal(isTopEditionFeedView({}), true);
+  it("defaults to full catalog when no view param", () => {
+    assert.equal(isTopEditionFeedView({}), false);
   });
 
-  it("honors explicit view=top", () => {
+  it("honors explicit view=top even with filters", () => {
+    assert.equal(isTopEditionFeedView({ view: "top" }), true);
     assert.equal(isTopEditionFeedView({ view: "top", country: "KW" }), true);
+    assert.equal(isTopEditionFeedView({ view: "top", category: "oil", q: "gold" }), true);
   });
 
-  it("honors explicit view=all", () => {
+  it("uses full catalog for view=all and filtered views without view=top", () => {
     assert.equal(isTopEditionFeedView({ view: "all" }), false);
-  });
-
-  it("switches to full feed when filters are active", () => {
     assert.equal(isTopEditionFeedView({ category: "oil" }), false);
     assert.equal(isTopEditionFeedView({ country: "KW" }), false);
     assert.equal(isTopEditionFeedView({ q: "gold" }), false);

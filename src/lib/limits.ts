@@ -78,6 +78,8 @@ export const limits = {
   apiMax: intEnv("API_MAX_LIMIT", 500),
   /** Homepage feed page size (paginated). */
   dashboard: intEnv("DASHBOARD_LIMIT", 50),
+  /** Max articles scanned for deduped homepage/API feeds (must cover the freshness window). */
+  feedDedupeMaxScan: intEnv("FEED_DEDUPE_MAX_SCAN", 5000),
   /** Max articles translated per pipeline or translate job run. 0 = all pending. */
   translateBatch: intEnv("TRANSLATE_BATCH_SIZE", 80),
   /** Articles per Gemini translation request. */

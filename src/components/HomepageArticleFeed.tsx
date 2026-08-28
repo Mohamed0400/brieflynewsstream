@@ -141,24 +141,22 @@ export function HomepageArticleFeed({
     sort,
     from,
     to,
-    view: view === "all" ? "all" as const : undefined,
+    view: view === "top" ? "top" as const : undefined,
   };
   const articleHref = (id: string) => (lang === "en" ? `/news/${id}?lang=en` : `/news/${id}`);
   const topCount = topEditionView ? (editionItemCount || matchedCount) : 0;
   const showLoadFullBriefing = topEditionView && catalogCount > matchedCount;
-  const fullCatalogView =
-    view === "all"
-    && !q
-    && !category
-    && !country
-    && !nationality
-    && sort !== "date"
-    && !from
-    && !to;
+  const hasFilters = Boolean(
+    q || category || country || nationality || sort === "date" || from || to,
+  );
+  const fullCatalogView = !topEditionView && !hasFilters;
   const feedSubtitle = topEditionView
     ? copy.topEditionIndicator(topCount)
     : fullCatalogView
-      ? copy.fullCatalogSubtitle
+      ? [
+          copy.fullCatalogSubtitle(matchedCount),
+          totalPages > 1 ? copy.paginationStatus(page, totalPages) : null,
+        ].filter(Boolean).join(" · ")
       : copy.topStoriesSubtitle;
   const ChevronIcon = copy.dir === "rtl" ? CaretLeft : CaretRight;
 
@@ -237,10 +235,10 @@ export function HomepageArticleFeed({
         {showLoadFullBriefing ? (
           <div className="mkt-brief-feed-card__footer">
             <Link
-              href={feedHref({ ...filterState, view: "all", hash: "#homepage-feed" })}
+              href={feedHref({ lang, hash: "#homepage-feed" })}
               className="mkt-brief-feed-card__load-more"
             >
-              {copy.loadFullBriefing}
+              {copy.loadFullBriefing(catalogCount)}
             </Link>
           </div>
         ) : null}

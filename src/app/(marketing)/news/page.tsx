@@ -323,6 +323,8 @@ export default async function Home({
           searchPlaceholder={copy.countrySearchPlaceholder}
           searchLabel={copy.countrySearchLabel}
           emptyLabel={copy.countrySearchEmpty}
+          groupFilterLabel={copy.countryGroupLabel}
+          groupFilterAll={copy.countryGroupAll}
           dir={copy.dir}
           lang={lang}
           groups={countryGroups.map((group) => ({

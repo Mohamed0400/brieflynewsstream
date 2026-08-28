@@ -199,11 +199,24 @@ export function MarketingLanding({
       </section>
 
       <MarketingReveal as="section" className="mkt-manifesto" aria-labelledby="mkt-manifesto-title">
-        <h2 id="mkt-manifesto-title">{copy.manifestoTitle}</h2>
-        <p className="mkt-manifesto-lede">{copy.manifestoLede}</p>
-        <p className="mkt-definition" data-aeo-answer>
-          {copy.definitionAnswer}
-        </p>
+        <div className="mkt-split-block">
+          <div className="mkt-split-copy">
+            <h2 id="mkt-manifesto-title">{copy.manifestoTitle}</h2>
+            <p className="mkt-manifesto-lede">{copy.manifestoLede}</p>
+            <p className="mkt-definition" data-aeo-answer>
+              {copy.definitionAnswer}
+            </p>
+          </div>
+          <figure className="mkt-split-visual mkt-manifesto-visual">
+            <Image
+              src="/marketing/section-home.png"
+              alt={copy.manifestoVisualAlt}
+              width={1536}
+              height={1024}
+              loading="lazy"
+            />
+          </figure>
+        </div>
       </MarketingReveal>
 
       <section className="mkt-contrast" aria-labelledby="mkt-contrast-title">

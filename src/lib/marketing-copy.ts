@@ -24,6 +24,8 @@ const copy = {
       "Market intelligence API for products that need to understand what news matters to markets.",
     manifestoLede:
       "Real-time market news with impact scores and structured fields, ready for your product.",
+    manifestoVisualAlt:
+      "Market intelligence interface with a digital globe, bilingual EN and AR widgets, impact scores, sector panels, and a high-impact news card.",
     contrastOther: "Other news API providers = more news.",
     contrastBrand: "Briefly",
     contrastBrieflyBefore: " = more ",
@@ -324,6 +326,8 @@ const copy = {
     manifestoTitle:
       "واجهة ذكاء أسواق للمنتجات التي تحتاج أن تفهم أي خبر يهم الأسواق.",
     manifestoLede: "أخبار أسواق لحظية بدرجة تأثير وحقول منظمة جاهزة لمنتجك.",
+    manifestoVisualAlt:
+      "واجهة ذكاء أسواق بكرة أرضية رقمية وعناصر ثنائية اللغة ودرجات تأثير وأقسام قطاعات وبطاقة خبر عالي التأثير.",
     contrastOther: "واجهات الأخبار الأخرى = المزيد من العناوين.",
     contrastBrand: "Briefly",
     contrastBrieflyBefore: " = ",

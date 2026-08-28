@@ -1013,7 +1013,7 @@
   padding: clamp(3.5rem, 8vw, 6.5rem) clamp(1.25rem, 4vw, 2rem);
 }
 
-.mkt-manifesto h2 {
+.mkt-manifesto .mkt-split-copy h2 {
   margin: 0;
   max-width: 18ch;
   color: var(--mkt-ink);
@@ -1024,10 +1024,20 @@
   text-wrap: balance;
 }
 
-.mkt[lang="ar"] .mkt-manifesto h2 {
+.mkt[lang="ar"] .mkt-manifesto .mkt-split-copy h2 {
   max-width: 22ch;
   letter-spacing: 0;
   line-height: 1.35;
+}
+
+.mkt-manifesto-visual {
+  background: #050608;
+  border: 1px solid color-mix(in srgb, var(--mkt-ink) 10%, transparent);
+}
+
+.mkt-manifesto-visual img {
+  object-fit: contain;
+  aspect-ratio: 3 / 2;
 }
 
 .mkt-manifesto-lede {

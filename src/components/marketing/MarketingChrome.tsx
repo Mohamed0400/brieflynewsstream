@@ -2,15 +2,30 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { MagnifyingGlass, X } from "@phosphor-icons/react";
-import { useEffect, useState, type ReactNode } from "react";
+import type { Icon } from "@phosphor-icons/react";
+import {
+  Archive,
+  Code,
+  House,
+  List,
+  MagnifyingGlass,
+  Newspaper,
+  RocketLaunch,
+  Tag,
+  User,
+  X,
+} from "@phosphor-icons/react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { BrandLogo } from "@/components/media/BrandLogo";
+import { AttributionCapture } from "@/components/analytics/AttributionCapture";
+import { PageViewBeacon } from "@/components/analytics/PageViewBeacon";
 import { marketingCopy, type MarketingLang } from "@/lib/marketing-copy";
 import {
   marketingLangHref,
   marketingPathActive,
   withMarketingLang,
 } from "@/lib/marketing-nav";
+import type { PublicSiteSettings } from "@/lib/ops-settings";
 
 function useMarketingLocation() {
   const routePath = usePathname() || "/";
@@ -67,6 +82,7 @@ function MarketingNav({
   const withLang = (path: string) => withMarketingLang(path, lang);
   const langHref = (nextLang: MarketingLang) => marketingLangHref(pathname, search, nextLang);
   const [open, setOpen] = useState(false);
+  const closeRef = useRef<HTMLButtonElement>(null);
   const loginHref = withLang("/console/login");
   const signupHref = withLang("/console/signup");
 
@@ -84,6 +100,7 @@ function MarketingNav({
 
   useEffect(() => {
     if (!open) return;
+    closeRef.current?.focus();
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
     };
@@ -110,6 +127,21 @@ function MarketingNav({
     { href: withLang("/pricing"), label: copy.navPricing, match: "/pricing" },
   ];
 
+  const navIconFor = (match: string): Icon => {
+    switch (match) {
+      case "/news":
+        return Newspaper;
+      case "/archive":
+        return Archive;
+      case "/developers":
+        return Code;
+      case "/pricing":
+        return Tag;
+      default:
+        return House;
+    }
+  };
+
   return (
     <>
       <a className="mkt-skip" href="#mkt-main">
@@ -117,15 +149,6 @@ function MarketingNav({
       </a>
 
       <header className="mkt-nav">
-        {open ? (
-          <button
-            type="button"
-            className="mkt-nav-scrim"
-            aria-label={copy.menuClose}
-            onClick={() => setOpen(false)}
-          />
-        ) : null}
-
         <div className="mkt-nav-inner">
           <Link href={withLang("/")} className="mkt-brand" aria-label={copy.brand}>
             <BrandLogo className="mkt-brand-wordmark" priority />
@@ -169,55 +192,113 @@ function MarketingNav({
           <div className="mkt-nav-drawer">
             <button
               type="button"
-              className="mkt-nav-drawer-btn"
+              className="mkt-nav-menu-trigger"
               aria-expanded={open}
               aria-controls="mkt-nav-menu"
-              onClick={() => setOpen((value) => !value)}
+              onClick={() => setOpen(true)}
             >
-              <span className="mkt-nav-drawer-icon" aria-hidden="true">
-                <span />
-                <span />
-                <span />
-              </span>
-              <span className="mkt-sr">{open ? copy.menuClose : copy.menuOpen}</span>
+              <List className="mkt-nav-menu-trigger-icon" weight="bold" aria-hidden="true" />
+              <span>{copy.menuOpen}</span>
             </button>
-            <nav
-              id="mkt-nav-menu"
-              className={`mkt-nav-drawer-panel${open ? " is-open" : ""}`}
-              aria-label={copy.navAria}
-              aria-hidden={!open}
-              inert={open ? undefined : true}
+          </div>
+        </div>
+      </header>
+
+      <div
+        className={`mkt-nav-sheet${open ? " is-open" : ""}`}
+        aria-hidden={!open}
+        inert={open ? undefined : true}
+      >
+        <button
+          type="button"
+          className="mkt-nav-scrim"
+          aria-label={copy.menuClose}
+          tabIndex={open ? 0 : -1}
+          onClick={() => setOpen(false)}
+        />
+        <aside
+          id="mkt-nav-menu"
+          className="mkt-nav-sheet-panel"
+          aria-label={copy.navAria}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="mkt-nav-sheet-head">
+            <button
+              ref={closeRef}
+              type="button"
+              className="mkt-nav-sheet-close"
+              onClick={() => setOpen(false)}
             >
-              <MarketingSearch
-                id="mkt-nav-q-menu"
-                lang={lang}
-                search={search}
-                onSubmit={() => setOpen(false)}
-              />
+              <X weight="bold" aria-hidden="true" />
+              <span>{copy.menuClose}</span>
+            </button>
+            <p className="mkt-nav-sheet-title">{copy.menuOpen}</p>
+          </div>
+
+          <div className="mkt-nav-sheet-toolbar">
+            <MarketingLangSwitcher
+              lang={lang}
+              label={copy.langAria}
+              arHref={langHref("ar")}
+              enHref={langHref("en")}
+              onSelect={switchLang}
+            />
+          </div>
+
+          <div className="mkt-nav-sheet-body">
+            <MarketingSearch
+              id="mkt-nav-q-menu"
+              lang={lang}
+              search={search}
+              onSubmit={() => setOpen(false)}
+            />
+
+            <p className="mkt-nav-sheet-search-hint">
+              <MagnifyingGlass weight="bold" aria-hidden="true" />
+              <span>{copy.heroSearchLabel}</span>
+            </p>
+
+            <nav className="mkt-nav-sheet-links" aria-label={copy.navAria}>
               {navItems.map((item) => {
                 const active = marketingPathActive(pathname, item.match);
+                const Icon = navIconFor(item.match);
                 return (
                   <Link
                     key={`m-${item.label}`}
                     href={item.href}
-                    className={active ? "is-active" : undefined}
+                    className={`mkt-nav-sheet-link${active ? " is-active" : ""}`}
                     aria-current={active ? "page" : undefined}
                     onClick={() => setOpen(false)}
                   >
-                    {item.label}
+                    <span className="mkt-nav-sheet-link-label">{item.label}</span>
+                    <Icon className="mkt-nav-sheet-link-icon" weight="regular" aria-hidden="true" />
                   </Link>
                 );
               })}
-              <Link href={loginHref} className="mkt-btn mkt-btn-ghost" onClick={() => setOpen(false)}>
-                {copy.navLogin}
-              </Link>
-              <Link href={signupHref} className="mkt-btn mkt-btn-primary" onClick={() => setOpen(false)}>
-                {copy.ctaKey}
-              </Link>
             </nav>
           </div>
-        </div>
-      </header>
+
+          <div className="mkt-nav-sheet-foot">
+            <Link
+              href={loginHref}
+              className="mkt-nav-sheet-login"
+              onClick={() => setOpen(false)}
+            >
+              <span>{copy.navLogin}</span>
+              <User className="mkt-nav-sheet-link-icon" weight="regular" aria-hidden="true" />
+            </Link>
+            <Link
+              href={signupHref}
+              className="mkt-btn mkt-btn-primary mkt-nav-sheet-cta"
+              onClick={() => setOpen(false)}
+            >
+              <RocketLaunch weight="bold" aria-hidden="true" />
+              <span>{copy.ctaKey}</span>
+            </Link>
+          </div>
+        </aside>
+      </div>
     </>
   );
 }
@@ -392,12 +473,29 @@ function MarketingFooter({ lang }: { lang: MarketingLang }) {
   );
 }
 
-export function MarketingShell({ children }: { children: ReactNode }) {
+export function MarketingShell({
+  children,
+  siteSettings,
+}: {
+  children: ReactNode;
+  siteSettings?: PublicSiteSettings;
+}) {
   const location = useMarketingLocation();
   const copy = marketingCopy(location.lang);
   useMarketingWaitCursor(location.pathname, location.search);
+  const tracking = siteSettings?.pageViewTracking ?? true;
+  const attribution = siteSettings?.attributionCapture ?? true;
+  const maintenanceBanner = siteSettings?.maintenanceBanner?.trim() || "";
+
   return (
     <div className="mkt" lang={location.lang} dir={copy.dir}>
+      {maintenanceBanner ? (
+        <div className="mkt-maintenance-banner" role="status">
+          {maintenanceBanner}
+        </div>
+      ) : null}
+      <AttributionCapture enabled={attribution} />
+      <PageViewBeacon locale={location.lang} enabled={tracking} />
       <MarketingNav {...location} />
       {children}
       <MarketingFooter lang={location.lang} />

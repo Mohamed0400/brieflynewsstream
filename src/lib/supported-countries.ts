@@ -77,8 +77,9 @@ export const REGION_GROUP_META: ReadonlyArray<{
 
 const REGION_MEMBERS: Record<CountryRegionKey, string[]> = {
   middle_east: [
-    "KW", "SA", "AE", "QA", "BH", "OM", "YE", "IQ", "IR", "JO", "LB", "SY",
-    "PS", "IL", "TR", "EG",
+    "KW", "SA", "AE", "QA", "BH", "OM",
+    "EG", "JO", "LB", "SY", "PS", "IQ", "IR", "YE", "TR",
+    "IL",
   ],
   africa: [
     "MA", "TN", "DZ", "LY", "SD", "MR", "DJ", "SO", "KM", "NG", "KE", "ET",
@@ -102,8 +103,31 @@ for (const meta of REGION_GROUP_META) {
   for (const code of REGION_MEMBERS[meta.key]) REGION_BY_CODE.set(code, meta.key);
 }
 
+const REGION_ORDER_INDEX = new Map<string, number>();
+for (const meta of REGION_GROUP_META) {
+  REGION_MEMBERS[meta.key].forEach((code, index) => {
+    REGION_ORDER_INDEX.set(`${meta.key}:${code}`, index);
+  });
+}
+
+function sortRegionItems(items: CountryPickerItem[], regionKey: CountryRegionKey, lang: "ar" | "en") {
+  const collator = lang === "ar" ? "ar" : "en";
+  return [...items].sort((a, b) => {
+    const aIndex = REGION_ORDER_INDEX.get(`${regionKey}:${a.code}`);
+    const bIndex = REGION_ORDER_INDEX.get(`${regionKey}:${b.code}`);
+    if (aIndex !== undefined && bIndex !== undefined) return aIndex - bIndex;
+    if (aIndex !== undefined) return -1;
+    if (bIndex !== undefined) return 1;
+    return a.name.localeCompare(b.name, collator);
+  });
+}
+
 export function regionGroupForCode(code: string): CountryRegionKey {
   return REGION_BY_CODE.get(code.trim().toUpperCase()) ?? "global";
+}
+
+export function regionEditorialRank(regionKey: CountryRegionKey, code: string) {
+  return REGION_ORDER_INDEX.get(`${regionKey}:${code.trim().toUpperCase()}`) ?? Number.MAX_SAFE_INTEGER;
 }
 
 export function regionGroupLabel(key: CountryRegionKey, lang: "ar" | "en") {
@@ -126,8 +150,8 @@ export type CountryRegionGroup = {
 
 /**
  * Groups supported country codes into browse buckets, each sorted by the
- * localized country name. Empty regions are dropped so the picker only shows
- * groups that actually have coverage.
+ * editorial region order (Gulf-first in Middle East) with alphabetical tail
+ * for codes outside the curated list. Empty regions are dropped.
  */
 export function groupCountryCodesByRegion(
   codes: string[],
@@ -148,7 +172,10 @@ export function groupCountryCodesByRegion(
   return REGION_GROUP_META.flatMap((meta) => {
     const items = buckets.get(meta.key);
     if (!items || items.length === 0) return [];
-    items.sort((a, b) => a.name.localeCompare(b.name, lang === "ar" ? "ar" : "en"));
-    return [{ key: meta.key, label: regionGroupLabel(meta.key, lang), items }];
+    return [{
+      key: meta.key,
+      label: regionGroupLabel(meta.key, lang),
+      items: sortRegionItems(items, meta.key, lang),
+    }];
   });
 }

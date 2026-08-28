@@ -39,12 +39,17 @@ export default async function ConsoleOverviewPage() {
     maxKeysOverride: account.maxKeysOverride,
   });
   const { start, end } = utcDayWindow();
-  const usedToday = await prisma.apiRequest.count({
-    where: {
-      apiKey: { accountId: account.id },
-      requestedAt: { gte: start, lt: end },
-    },
-  });
+  const [usedToday, activeKeys] = await Promise.all([
+    prisma.apiRequest.count({
+      where: {
+        apiKey: { accountId: account.id },
+        requestedAt: { gte: start, lt: end },
+      },
+    }),
+    prisma.apiKey.count({
+      where: { accountId: account.id, revokedAt: null },
+    }),
+  ]);
   const regions = marketingRegionPins();
 
   return (
@@ -59,6 +64,11 @@ export default async function ConsoleOverviewPage() {
             {copy.overview.usageLine(
               usedToday.toLocaleString(numberLocale),
               limits.dailyRequests.toLocaleString(numberLocale),
+            )}
+            {" · "}
+            {copy.overview.keysLine(
+              activeKeys.toLocaleString(numberLocale),
+              limits.maxKeys.toLocaleString(numberLocale),
             )}
           </small>
         </div>

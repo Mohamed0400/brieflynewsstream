@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import type { AccountStatus, PlanTier } from "@prisma/client";
+import { logAdminAction } from "@/lib/admin-audit";
+import { inferBillingKind } from "@/lib/admin-subscriptions";
 import { requireSuperAdmin } from "@/lib/account";
 import { isTrustedConsoleOrigin } from "@/lib/console-auth";
 import { prisma } from "@/lib/prisma";
@@ -16,6 +18,7 @@ export async function GET(request: Request) {
   if ("response" in auth) return auth.response;
 
   const { start, end } = utcDayWindow();
+  const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const accounts = await prisma.account.findMany({
     orderBy: { createdAt: "desc" },
     include: {
@@ -35,6 +38,8 @@ export async function GET(request: Request) {
           planTier: true,
           provider: true,
           currentPeriodEnd: true,
+          cancelAtPeriodEnd: true,
+          createdAt: true,
         },
       },
     },
@@ -68,26 +73,51 @@ export async function GET(request: Request) {
         by: ["apiKeyId"],
         where: {
           apiKeyId: { in: keyIds },
+          requestedAt: { gte: since7d },
+        },
+        _sum: { pointsUsed: true },
+        _count: true,
+      })
+    : [];
+  const usageToday = keyIds.length
+    ? await prisma.apiRequest.groupBy({
+        by: ["apiKeyId"],
+        where: {
+          apiKeyId: { in: keyIds },
           requestedAt: { gte: start, lt: end },
         },
         _sum: { pointsUsed: true },
         _count: true,
       })
     : [];
-  const usageByKey = new Map(
+  const usageByKey7d = new Map(
     usage.flatMap((row) =>
       row.apiKeyId
         ? [[row.apiKeyId, { requests: row._count, points: row._sum.pointsUsed || 0 }] as const]
         : [],
     ),
   );
+  const usageByKeyToday = new Map(
+    usageToday.flatMap((row) =>
+      row.apiKeyId
+        ? [[row.apiKeyId, { requests: row._count, points: row._sum.pointsUsed || 0 }] as const]
+        : [],
+    ),
+  );
+
+  const paidCounts = await prisma.invoice.groupBy({
+    by: ["accountId"],
+    where: { accountId: { in: accountIds }, status: "PAID", example: false },
+    _count: true,
+  });
+  const paidCountByAccount = new Map(paidCounts.map((row) => [row.accountId, row._count]));
 
   return NextResponse.json({
     items: accounts.map((account) => {
       const limits = resolvePlanLimits(account);
       const today = account.keys.reduce(
         (sum, key) => {
-          const row = usageByKey.get(key.id);
+          const row = usageByKeyToday.get(key.id);
           return {
             requests: sum.requests + (row?.requests || 0),
             points: sum.points + (row?.points || 0),
@@ -95,21 +125,56 @@ export async function GET(request: Request) {
         },
         { requests: 0, points: 0 },
       );
+      const week = account.keys.reduce(
+        (sum, key) => {
+          const row = usageByKey7d.get(key.id);
+          return {
+            requests: sum.requests + (row?.requests || 0),
+            points: sum.points + (row?.points || 0),
+          };
+        },
+        { requests: 0, points: 0 },
+      );
+      const paidInvoiceCount = paidCountByAccount.get(account.id) || 0;
+      const billingKind = inferBillingKind({
+        plan: account.plan,
+        subscriptionStatus: account.subscription?.status || null,
+        cancelAtPeriodEnd: account.subscription?.cancelAtPeriodEnd || false,
+        paidInvoiceCount,
+      });
       return {
         id: account.id,
         email: account.email,
         role: account.role,
         status: account.status,
         plan: account.plan,
+        planSource: account.planSource,
         country: account.country,
         address: account.address,
         mobilePhone: account.mobilePhone,
-        createdAt: account.createdAt,
+        createdAt: account.createdAt.toISOString(),
+        utmSource: account.utmSource,
+        utmMedium: account.utmMedium,
+        utmCampaign: account.utmCampaign,
+        utmContent: account.utmContent,
+        utmTerm: account.utmTerm,
+        trafficChannel: account.trafficChannel,
+        signupReferrer: account.signupReferrer,
+        signupLandingPath: account.signupLandingPath,
         dailyLimit: limits.dailyRequests,
         maxKeys: limits.maxKeys,
         usageToday: today,
+        usage7d: week,
+        paidInvoiceCount,
+        billingKind,
         keys: account.keys,
-        subscription: account.subscription,
+        subscription: account.subscription
+          ? {
+              ...account.subscription,
+              currentPeriodEnd: account.subscription.currentPeriodEnd?.toISOString() || null,
+              createdAt: account.subscription.createdAt.toISOString(),
+            }
+          : null,
         invoices: (invoicesByAccount.get(account.id) || []).map((invoice) => ({
           id: invoice.id,
           number: invoice.number,
@@ -178,18 +243,16 @@ export async function PATCH(request: Request) {
     },
   });
 
-  await prisma.adminAuditLog.create({
-    data: {
-      actorId: auth.account.id,
-      action: "account.plan_update",
-      targetType: "account",
-      targetId: updated.id,
-      metadata: {
-        plan: updated.plan,
-        status: updated.status,
-        dailyPointsOverride: updated.dailyPointsOverride,
-        maxKeysOverride: updated.maxKeysOverride,
-      },
+  await logAdminAction({
+    actorId: auth.account.id,
+    action: "account.plan_update",
+    targetType: "account",
+    targetId: updated.id,
+    metadata: {
+      plan: updated.plan,
+      status: updated.status,
+      dailyPointsOverride: updated.dailyPointsOverride,
+      maxKeysOverride: updated.maxKeysOverride,
     },
   });
 

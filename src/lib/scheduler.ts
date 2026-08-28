@@ -242,8 +242,11 @@ async function executeJob(key: string) {
   }));
 }
 
-export async function runScheduledJob(key: string) {
+export async function runScheduledJob(key: string, options?: { force?: boolean }) {
   await clearStaleJobLocks();
+  if (options?.force) {
+    await releaseJobLock(key);
+  }
   const now = new Date();
   const claimed = await prisma.scheduledJob.updateMany({
     where: {
@@ -258,7 +261,13 @@ export async function runScheduledJob(key: string) {
     },
   });
   if (claimed.count === 0) {
-    return { ok: false, skipped: true, message: "A collect or publish job is already running." };
+    return {
+      ok: false,
+      skipped: true,
+      message: options?.force
+        ? "Could not start the job. Try Release lock, then Force run again."
+        : "A collect or publish job is already running. Use Force run or Release lock in Operations → Schedule.",
+    };
   }
 
   const renewLock = setInterval(() => {

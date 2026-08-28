@@ -156,7 +156,7 @@ export function BillingPanel({
           <strong dir="ltr">
             {usedToday.toLocaleString("en-US")} / {dailyLimit.toLocaleString("en-US")}
           </strong>
-          <small>{t.remaining(remaining)} · {usagePct}%</small>
+          <small>{t.remaining(remaining)} · {usagePct}% · {t.usagePoolHint}</small>
         </article>
         <article className="console-metric">
           <span>{t.activeKeys}</span>

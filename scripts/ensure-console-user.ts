@@ -10,6 +10,7 @@
  */
 import { createServiceSupabaseClient } from "../src/lib/supabase/admin";
 import { getOrCreateAccount } from "../src/lib/account";
+import { ensureE2eQuotaApiKey, e2eQuotaApiKeyPlaintext } from "../src/lib/e2e-api-key";
 import { prisma } from "../src/lib/prisma";
 
 const email = (process.env.CONSOLE_E2E_EMAIL || "console-e2e@briefly.local").trim().toLowerCase();
@@ -49,6 +50,8 @@ async function main() {
     email: user.email,
   });
 
+  const apiKey = await ensureE2eQuotaApiKey(account.id);
+
   console.log({
     authUserId: user.id,
     accountId: account.id,
@@ -56,6 +59,9 @@ async function main() {
     role: account.role,
     plan: account.plan,
     passwordSet: true,
+    quotaTestKeyId: apiKey.keyId,
+    quotaTestKeyCreated: apiKey.created,
+    quotaTestKeyPrefix: `${e2eQuotaApiKeyPlaintext().slice(0, 12)}…`,
   });
 }
 

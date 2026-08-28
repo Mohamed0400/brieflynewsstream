@@ -12,14 +12,14 @@ export async function POST(request: Request) {
   }
   const auth = await requireSuperAdmin();
   if ("response" in auth) return auth.response;
-  const body = await request.json().catch(() => ({})) as { key?: string };
+  const body = await request.json().catch(() => ({})) as { key?: string; force?: boolean };
   if (!body.key) {
     return NextResponse.json(
       { error: "invalid_query", message: "key is required." },
       { status: 400 },
     );
   }
-  const result = await runScheduledJob(body.key);
+  const result = await runScheduledJob(body.key, { force: body.force === true });
   const snapshot = await getScheduleSnapshot();
   return NextResponse.json(
     { ...snapshot, run: result },

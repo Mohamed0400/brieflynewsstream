@@ -4,11 +4,26 @@ import { kuwaitDate } from "./market";
 import { limits } from "./limits";
 import { ensureTodaysEdition } from "./pipeline";
 
+function parseEditionPagination(searchParams?: URLSearchParams) {
+  const params = searchParams ?? new URLSearchParams();
+  const requested = params.get("limit");
+  const defaultLimit = limits.dailyEdition;
+  const limit = requested
+    ? Math.min(limits.apiMax, Math.max(1, Number(requested) || defaultLimit))
+    : defaultLimit;
+  const offset = Math.max(0, Number(params.get("offset") || 0));
+  if (!Number.isFinite(limit) || !Number.isFinite(offset)) {
+    throw new Error("Invalid pagination");
+  }
+  return { limit, offset };
+}
+
 export async function getDailyEditionPayload(date: string, searchParams?: URLSearchParams) {
   const query = parseQuery(
     searchParams ?? new URLSearchParams(),
     { applyDefaultFreshness: false },
   );
+  const pagination = parseEditionPagination(searchParams);
   if (date === kuwaitDate()) {
     await ensureTodaysEdition();
   }
@@ -25,6 +40,12 @@ export async function getDailyEditionPayload(date: string, searchParams?: URLSea
 
   if (!edition) return null;
 
+  const filteredCount = edition.items.length;
+  const pageItems = edition.items.slice(
+    pagination.offset,
+    pagination.offset + pagination.limit,
+  );
+
   return {
     date: edition.date,
     feature: "market_news",
@@ -33,13 +54,17 @@ export async function getDailyEditionPayload(date: string, searchParams?: URLSea
     itemCount: edition.itemCount,
     summary: edition.summary,
     updatedAt: edition.updatedAt.toISOString(),
-    count: edition.items.length,
+    count: pageItems.length,
+    total: filteredCount,
+    limit: pagination.limit,
+    offset: pagination.offset,
     filters: query.filters,
     meta: {
       lang: query.filters.lang,
       timezone: process.env.APP_TIMEZONE || "Asia/Kuwait",
+      editionSize: limits.dailyEdition,
     },
-    items: edition.items.map((item) => ({
+    items: pageItems.map((item) => ({
       ...serializeArticle(item.article, item.rank, query.filters.lang),
       section: item.section,
     })),

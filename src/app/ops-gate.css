@@ -253,3 +253,472 @@
 .ops-shell input[type="checkbox"] {
   accent-color: var(--console-cyan);
 }
+
+.ops-shell .ops-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2rem 1rem;
+  color: var(--console-muted);
+}
+
+.ops-shell .ops-metric-grid {
+  margin-bottom: 1.25rem;
+}
+
+.ops-shell .ops-split-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.ops-shell .ops-stat-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ops-shell .ops-stat-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--console-border);
+  font-size: 0.875rem;
+}
+
+.ops-shell .ops-stat-list li:last-child {
+  border-bottom: 0;
+}
+
+.ops-shell .ops-stat-list span {
+  color: var(--console-muted);
+}
+
+.ops-shell .ops-stat-list-mono span {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.8125rem;
+}
+
+.ops-shell .ops-analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.85rem;
+}
+
+.ops-shell .ops-analytics-block {
+  padding: 1rem;
+}
+
+.ops-shell .ops-analytics-block h3 {
+  margin: 0 0 0.65rem;
+  font-size: 0.875rem;
+}
+
+.ops-shell .ops-days-select {
+  display: flex;
+  align-items: center;
+}
+
+.ops-shell .ops-settings-form {
+  display: grid;
+  gap: 1rem;
+  max-width: 36rem;
+}
+
+.ops-shell .ops-danger-zone {
+  margin-top: 1rem;
+  border-color: color-mix(in srgb, var(--ops-danger) 35%, var(--console-border));
+}
+
+.ops-shell .ops-inline-confirm {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 28rem;
+}
+
+.ops-shell .ops-inline-confirm p {
+  margin: 0;
+  color: var(--console-muted);
+  font-size: 0.875rem;
+}
+
+.ops-shell .console-danger-button {
+  background: var(--ops-danger);
+  border-color: var(--ops-danger);
+  color: #fff;
+}
+
+.ops-shell .console-danger-button:hover {
+  filter: brightness(1.05);
+}
+
+.ops-shell .ops-customer-detail-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.ops-shell .ops-customer-detail-head h3 {
+  margin: 0;
+}
+
+/* Route progress */
+.ops-shell .ops-nav-progress {
+  position: fixed;
+  top: 0;
+  inset-inline: 0;
+  height: 2px;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.ops-shell .ops-nav-progress[data-active="true"] {
+  opacity: 1;
+}
+
+.ops-shell .ops-nav-progress span {
+  display: block;
+  height: 100%;
+  width: 35%;
+  background: linear-gradient(90deg, transparent, var(--console-cyan), transparent);
+  animation: ops-nav-progress 0.9s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@keyframes ops-nav-progress {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(320%); }
+}
+
+/* Panel enter + skeleton */
+.ops-shell .ops-panel-enter {
+  position: relative;
+  animation: ops-panel-enter 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.ops-shell .ops-detail-enter {
+  animation: ops-panel-enter 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes ops-panel-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ops-shell .ops-metric-animate {
+  animation: ops-panel-enter 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.ops-shell .ops-metric-animate:nth-child(2) { animation-delay: 0.04s; }
+.ops-shell .ops-metric-animate:nth-child(3) { animation-delay: 0.08s; }
+.ops-shell .ops-metric-animate:nth-child(4) { animation-delay: 0.12s; }
+.ops-shell .ops-metric-animate:nth-child(5) { animation-delay: 0.16s; }
+.ops-shell .ops-metric-animate:nth-child(6) { animation-delay: 0.2s; }
+.ops-shell .ops-metric-animate:nth-child(7) { animation-delay: 0.24s; }
+.ops-shell .ops-metric-animate:nth-child(8) { animation-delay: 0.28s; }
+
+.ops-shell .ops-loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(247 249 252 / 72%);
+  backdrop-filter: blur(2px);
+}
+
+.ops-shell .ops-customers-loading {
+  position: relative;
+  min-height: 12rem;
+}
+
+.ops-shell .ops-skeleton {
+  display: grid;
+  gap: 1rem;
+}
+
+.ops-shell .ops-skeleton-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.75rem;
+}
+
+.ops-shell .ops-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.75rem;
+}
+
+.ops-shell .ops-skeleton-block {
+  border-radius: 12px;
+  background: linear-gradient(
+    90deg,
+    rgb(11 20 34 / 6%) 0%,
+    rgb(94 200 220 / 14%) 50%,
+    rgb(11 20 34 / 6%) 100%
+  );
+  background-size: 200% 100%;
+  animation: ops-skeleton-shimmer 1.2s ease-in-out infinite;
+}
+
+.ops-shell .ops-skeleton-metric { min-height: 5.5rem; }
+.ops-shell .ops-skeleton-panel { min-height: 12rem; }
+.ops-shell .ops-skeleton-table { min-height: 10rem; }
+
+.ops-shell .ops-page-loading-header {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.ops-shell .ops-skeleton-line {
+  display: block;
+  height: 0.85rem;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    rgb(11 20 34 / 6%) 0%,
+    rgb(94 200 220 / 14%) 50%,
+    rgb(11 20 34 / 6%) 100%
+  );
+  background-size: 200% 100%;
+  animation: ops-skeleton-shimmer 1.2s ease-in-out infinite;
+}
+
+.ops-shell .ops-skeleton-kicker { width: 8rem; height: 0.65rem; }
+.ops-shell .ops-skeleton-title { width: min(18rem, 60%); height: 1.35rem; }
+.ops-shell .ops-skeleton-desc { width: min(28rem, 85%); }
+
+@keyframes ops-skeleton-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+/* Charts */
+.ops-shell .ops-charts-grid {
+  margin-bottom: 1rem;
+}
+
+.ops-shell .ops-chart-panel {
+  min-height: 14rem;
+}
+
+.ops-shell .ops-bar-chart-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.ops-shell .ops-bar-chart-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.8125rem;
+}
+
+.ops-shell .ops-bar-chart-meta span {
+  color: var(--console-muted);
+}
+
+.ops-shell .ops-bar-chart-track {
+  height: 0.45rem;
+  border-radius: 999px;
+  background: rgb(11 20 34 / 8%);
+  overflow: hidden;
+}
+
+.ops-shell .ops-bar-chart-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--console-cyan);
+  transition: width 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ops-shell .ops-bar-chart-fill[data-tone="ink"] {
+  background: #0b1422;
+}
+
+.ops-shell .ops-bar-chart-fill[data-tone="muted"] {
+  background: #94a3b8;
+}
+
+.ops-shell .ops-donut-chart {
+  display: grid;
+  gap: 1rem;
+  align-items: center;
+}
+
+@media (min-width: 640px) {
+  .ops-shell .ops-donut-chart {
+    grid-template-columns: auto 1fr;
+  }
+}
+
+.ops-shell .ops-donut-ring {
+  width: 9rem;
+  height: 9rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  transform: scale(0.88);
+  opacity: 0.6;
+  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.7s ease;
+}
+
+.ops-shell .ops-donut-ring[data-ready="true"] {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.ops-shell .ops-donut-hole {
+  width: 5.5rem;
+  height: 5.5rem;
+  border-radius: 50%;
+  background: var(--console-surface);
+  display: grid;
+  place-content: center;
+  text-align: center;
+  gap: 0.15rem;
+}
+
+.ops-shell .ops-donut-hole strong {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--console-muted);
+}
+
+.ops-shell .ops-donut-hole span {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.ops-shell .ops-donut-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.ops-shell .ops-donut-legend li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.8125rem;
+}
+
+.ops-shell .ops-donut-swatch {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 999px;
+}
+
+/* Table overflow fixes */
+.ops-shell .ops-cell-email {
+  max-width: 14rem;
+  min-width: 9rem;
+}
+
+.ops-shell .ops-email-text {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.ops-shell .ops-cell-mono {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.ops-shell .ops-pill {
+  display: inline-block;
+  margin-top: 0.25rem;
+  vertical-align: middle;
+}
+
+.ops-shell .ops-billing-badge {
+  display: inline-block;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  background: rgb(11 20 34 / 8%);
+  color: var(--console-ink);
+}
+
+.ops-shell .ops-billing-badge[data-kind="monthly"] {
+  background: rgb(94 200 220 / 22%);
+}
+
+.ops-shell .ops-billing-badge[data-kind="one_time"] {
+  background: rgb(148 163 184 / 22%);
+}
+
+.ops-shell .ops-billing-badge[data-kind="cancelled"] {
+  background: rgb(155 44 44 / 14%);
+  color: #9b2c2c;
+}
+
+.ops-shell .ops-detail-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--console-border);
+}
+
+.ops-shell .ops-detail-section h4 {
+  margin: 0 0 0.65rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--console-muted);
+}
+
+.ops-shell .ops-fact-wide {
+  grid-column: 1 / -1;
+}
+
+.ops-shell .ops-break-all {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ops-shell .ops-panel-enter,
+  .ops-shell .ops-detail-enter,
+  .ops-shell .ops-metric-animate,
+  .ops-shell .ops-donut-ring,
+  .ops-shell .ops-bar-chart-fill {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
+  .ops-shell .ops-nav-progress span {
+    animation: none !important;
+  }
+
+  .ops-shell .ops-skeleton-block,
+  .ops-shell .ops-skeleton-line {
+    animation: none !important;
+  }
+}
+

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getConsoleLang } from "@/lib/console-lang";
 import { consoleDashboardCopy } from "@/lib/console-translation";
+import { PLAN_DEFINITIONS } from "@/lib/plans";
 
 export async function generateMetadata(): Promise<Metadata> {
   const copy = consoleDashboardCopy(await getConsoleLang());
@@ -59,7 +60,7 @@ const filterRows = {
     ["Date filters", "`date=YYYY-MM-DD` or `from=YYYY-MM-DD&to=YYYY-MM-DD`."],
     ["Sorting", "`sort=score` for market impact or `sort=date` for newest first."],
     ["Pagination", "`limit=` and `offset=`."],
-    ["Request limits", "API access is currently available without usage caps in this console."],
+    ["Request limits", `Daily limits are account-wide (UTC midnight reset). Free: ${PLAN_DEFINITIONS.FREE.dailyRequests} requests/day, ${PLAN_DEFINITIONS.FREE.maxKeys} key. Pro: ${PLAN_DEFINITIONS.PRO.dailyRequests} requests/day shared across up to ${PLAN_DEFINITIONS.PRO.maxKeys} keys. Responses include X-API-Quota-* headers.`],
   ],
   ar: [
     ["البحث", "`q=` بالعربية أو الإنجليزية، بما في ذلك عبارات مثل `أسعار النفط` أو `oil prices`."],
@@ -72,7 +73,7 @@ const filterRows = {
     ["فلاتر التاريخ", "`date=YYYY-MM-DD` أو `from=YYYY-MM-DD&to=YYYY-MM-DD`."],
     ["الترتيب", "`sort=score` لأثر السوق أو `sort=date` للأحدث أولا."],
     ["الصفحات", "`limit=` و `offset=`."],
-    ["حدود الطلب", "الوصول إلى الواجهة بلا سقف استخدام في هذه اللوحة حاليا."],
+    ["حدود الطلب", `الحدود على مستوى الحساب (تتجدد عند منتصف الليل UTC). المجاني: ${PLAN_DEFINITIONS.FREE.dailyRequests} طلبات/يوم، ${PLAN_DEFINITIONS.FREE.maxKeys} مفتاح. Pro: ${PLAN_DEFINITIONS.PRO.dailyRequests} طلب/يوم مشتركة على حتى ${PLAN_DEFINITIONS.PRO.maxKeys} مفتاح. الاستجابات تتضمن ترويسات X-API-Quota-*`],
   ],
 } as const;
 

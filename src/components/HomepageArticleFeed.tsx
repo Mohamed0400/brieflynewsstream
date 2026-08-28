@@ -145,8 +145,18 @@ export function HomepageArticleFeed({
             id={index === 0 ? "homepage-first-article" : undefined}
             className="mkt-news-article"
           >
-            <span className="mkt-news-article-index">{String(offset + index + 1).padStart(2, "0")}</span>
-            <div>
+            <div className="mkt-news-article-rail" aria-hidden="false">
+              <div
+                className="mkt-news-article-score"
+                role="group"
+                aria-label={`${copy.impact}: ${Math.round(article.score?.finalScore ?? 0)}`}
+              >
+                <strong>{Math.round(article.score?.finalScore ?? 0)}</strong>
+                <span className="mkt-news-article-score-label">{copy.impact}</span>
+              </div>
+              <span className="mkt-news-article-index">{String(offset + index + 1).padStart(2, "0")}</span>
+            </div>
+            <div className="mkt-news-article-body">
               {article.audienceCodes && (
                 <div className="mkt-news-article-audiences">
                   {audienceCodesFromValue(article.audienceCodes).map((code) => {
@@ -180,10 +190,6 @@ export function HomepageArticleFeed({
                 </a>
                 {" | "}{timeFormat.format(article.publishedAt)}
               </p>
-            </div>
-            <div className="mkt-news-article-score">
-              <p>{copy.impact}</p>
-              <strong>{Math.round(article.score?.finalScore ?? 0)}</strong>
             </div>
           </article>
         );

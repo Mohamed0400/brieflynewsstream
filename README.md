@@ -41,7 +41,7 @@ Collection is uncapped by default. Relevance filters, API pagination, and rate l
 | `NATIONALITY_FEED_LIMIT` | `12` | Default items in a two-minute briefing |
 | `NORMALIZE_BATCH_SIZE` | `0` | Raw articles processed per run (`0` = all pending) |
 | `DAILY_CANDIDATE_POOL` | `0` | Ranking pool size (`0` = all scored in window) |
-| `DAILY_EDITION_SIZE` | `15` | Top N stored in daily edition |
+| `DAILY_EDITION_SIZE` | `20` | Top N stored in daily edition |
 | `DAILY_REGION_CAP` | `0` | Soft max per region (`0` = no region cap) |
 | `API_DEFAULT_LIMIT` | `50` | Default `?limit=` for filter API |
 | `API_MAX_LIMIT` | `500` | Absolute max `?limit=` |

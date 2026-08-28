@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAccount } from "@/lib/account";
+import { canIssueApiKey } from "@/lib/api-quota";
 import { createApiKey } from "@/lib/auth";
 import { isTrustedConsoleOrigin } from "@/lib/console-auth";
 import { resolvePlanLimits } from "@/lib/plans";
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
   const activeKeys = await prisma.apiKey.count({
     where: { accountId: auth.account.id, revokedAt: null },
   });
-  if (activeKeys >= limits.maxKeys) {
+  if (!canIssueApiKey(activeKeys, limits.maxKeys)) {
     return NextResponse.json(
       {
         error: "key_limit",

@@ -12,7 +12,9 @@ import {
   MagnifyingGlass,
 } from "@phosphor-icons/react";
 import { ConsoleDocumentLang, ConsoleLangSwitcher, useConsoleCopy } from "@/components/console/ConsoleLang";
+import { ConsoleMaintenanceBanner } from "@/components/console/ConsoleMaintenanceBanner";
 import { BrandLogo } from "@/components/media/BrandLogo";
+import type { MaintenanceStatus } from "@/lib/maintenance";
 import type { ConsoleLang } from "@/lib/console-translation";
 
 const customerNav = [
@@ -29,11 +31,13 @@ export function ConsoleShell({
   lang,
   accountEmail,
   accountPlan,
+  maintenance,
 }: {
   children: ReactNode;
   lang: ConsoleLang;
   accountEmail: string;
   accountPlan: string;
+  maintenance: MaintenanceStatus;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -111,6 +115,7 @@ export function ConsoleShell({
       </aside>
 
       <main id="console-main" className="console-app-main">
+        <ConsoleMaintenanceBanner initial={maintenance} />
         {isFree ? (
           <Link href="/console/billing" className="console-app-upgrade console-app-upgrade-mobile">
             {copy.switchToPro}

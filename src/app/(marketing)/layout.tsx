@@ -1,12 +1,15 @@
 import { Suspense } from "react";
 import { MarketingShell } from "@/components/marketing/MarketingChrome";
+import { getPublicSiteSettings } from "@/lib/ops-settings";
 import "../marketing.css";
 
-export default function MarketingLayout({
+export default async function MarketingLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const siteSettings = await getPublicSiteSettings();
+
   return (
     <Suspense
       fallback={
@@ -17,7 +20,7 @@ export default function MarketingLayout({
         </div>
       }
     >
-      <MarketingShell>
+      <MarketingShell siteSettings={siteSettings}>
         <main id="mkt-main" className="mkt-main">
           {children}
         </main>

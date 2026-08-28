@@ -1,3 +1,5 @@
+import { PLAN_DEFINITIONS } from "./plans";
+
 export type MarketingLang = "ar" | "en";
 
 const copy = {
@@ -29,7 +31,7 @@ const copy = {
     contrastBrieflyAfter: " per news item.",
     definitionAnswer:
       "A market intelligence API delivers structured market news with impact scores and bilingual fields so products can decide which stories matter, not only list more headlines.",
-    heroProof: "No credit card. 5 requests a day. Arabic and English.",
+    heroProof: `No credit card. ${PLAN_DEFINITIONS.FREE.dailyRequests} requests a day. Arabic and English.`,
     heroLangSupport: "Arabic + English",
     heroSearchLabel: "Search live market data",
     heroSearchPlaceholder: "Search oil, rates, markets…",
@@ -329,7 +331,7 @@ const copy = {
     contrastBrieflyAfter: " لكل خبر.",
     definitionAnswer:
       "واجهة ذكاء الأسواق تقدّم أخبار أسواق منظمة بدرجات أثر وحقول ثنائية اللغة، حتى تقرر المنتجات أي خبر يستحق الانتباه، لا أن تعرض المزيد من العناوين فقط.",
-    heroProof: "لا تحتاج إلى بطاقة ائتمانية. 5 طلبات يومياً. دعم العربية والإنجليزية.",
+    heroProof: `لا تحتاج إلى بطاقة ائتمانية. ${PLAN_DEFINITIONS.FREE.dailyRequests} طلبات يومياً. دعم العربية والإنجليزية.`,
     heroLangSupport: "العربية والإنجليزية",
     heroSearchLabel: "ابحث في بيانات الأسواق",
     heroSearchPlaceholder: "ابحث عن نفط، فائدة، أسواق…",

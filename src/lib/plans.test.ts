@@ -4,8 +4,8 @@ import { PLAN_DEFINITIONS, formatPlanCount, planPriceCents, resolvePlanLimits } 
 import { pricingCopy } from "./pricing-copy";
 
 test("published plans match the production quota and key gates", () => {
-  assert.equal(PLAN_DEFINITIONS.FREE.dailyRequests, 5);
-  assert.equal(PLAN_DEFINITIONS.FREE.maxKeys, 2);
+  assert.equal(PLAN_DEFINITIONS.FREE.dailyRequests, 3);
+  assert.equal(PLAN_DEFINITIONS.FREE.maxKeys, 1);
   assert.equal(PLAN_DEFINITIONS.FREE.commercialUse, false);
   assert.equal(PLAN_DEFINITIONS.FREE.listPriceMonthlyUsd, 0);
   assert.equal(PLAN_DEFINITIONS.FREE.archiveAccess, "full");

@@ -41,10 +41,10 @@ test("public dashboard metrics match API-backed records", async ({ page, request
   );
   await expect(page.getByText("Published within the last 72 hours")).toBeVisible();
   await expect(page.getByText("Everything kept so far")).toBeVisible();
-  await expect(page.getByText("Top 15 stories today by market impact")).toBeVisible();
+  await expect(page.getByText("Top 20 stories today by market impact")).toBeVisible();
   await page.getByRole("button", { name: "What this number means" }).nth(3).hover();
   await expect(page.getByRole("tooltip", {
-    name: "The top 15 stories today, ranked by market impact.",
+    name: "The top 20 stories today, ranked by market impact.",
   })).toBeVisible();
   await expect(page.locator(".homepage-country-chip")).toHaveCount(countries.supportedCount);
   await expect(page.getByRole("heading", { name: "Data overview" })).toBeVisible();
@@ -157,9 +157,11 @@ test("console schedule page exposes collect and publish controls", async ({ page
 
 test("API key screen exposes secure creation controls", async ({ page }) => {
   await signIn(page);
-  await page.goto("/console/keys");
+  await page.goto("/console/keys?lang=en");
   await expect(page.getByLabel("Key name")).toBeVisible();
   await expect(page.getByRole("button", { name: "Create key" })).toBeVisible();
+  await expect(page.getByText("API requests today")).toBeVisible();
+  await expect(page.getByText(/shared across all keys|share one daily request pool/i)).toBeVisible();
 
   await page.setViewportSize({ width: 320, height: 760 });
   const targetHeights = await page.locator(".console-shell button, .console-shell a").evaluateAll((elements) => (

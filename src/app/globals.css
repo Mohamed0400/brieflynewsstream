@@ -2132,6 +2132,12 @@ html[data-home-search] .homepage-feed {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.8125rem;
+  table-layout: fixed;
+}
+
+.ops-customers-table th:nth-child(1),
+.ops-customers-table td:nth-child(1) {
+  width: 16%;
 }
 
 .ops-customers-table th,
@@ -2140,6 +2146,7 @@ html[data-home-search] .homepage-feed {
   text-align: start;
   border-bottom: 1px solid var(--console-border);
   vertical-align: top;
+  overflow: hidden;
 }
 
 .ops-customers-table tbody tr {

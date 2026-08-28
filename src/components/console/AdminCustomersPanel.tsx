@@ -2,7 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useConsoleCopy } from "@/components/console/ConsoleLang";
+import { AdminQuotaResetButton } from "@/components/console/AdminSettingsPanel";
+import { OpsPanelSkeleton } from "@/components/console/ops/OpsCharts";
 import { BrandLoader } from "@/components/media/BrandLoader";
+import { TRAFFIC_CHANNEL_LABELS, type TrafficChannel } from "@/lib/attribution";
+import type { BillingKind } from "@/lib/admin-subscriptions";
 import { COUNTRY_CATALOG } from "@/lib/countries";
 import { PLAN_DEFINITIONS } from "@/lib/plans";
 
@@ -12,13 +16,25 @@ type Customer = {
   role: string;
   status: string;
   plan: keyof typeof PLAN_DEFINITIONS;
+  planSource: string;
   country: string;
   address: string;
   mobilePhone: string;
   createdAt: string;
+  trafficChannel: string;
+  utmSource: string;
+  utmMedium: string;
+  utmCampaign: string;
+  utmContent: string;
+  utmTerm: string;
+  signupReferrer: string;
+  signupLandingPath: string;
   dailyLimit: number;
   maxKeys: number;
+  paidInvoiceCount: number;
+  billingKind: BillingKind;
   usageToday: { requests: number; points: number };
+  usage7d: { requests: number; points: number };
   keys: Array<{
     id: string;
     name: string;
@@ -32,6 +48,8 @@ type Customer = {
     planTier: string;
     provider: string;
     currentPeriodEnd: string | null;
+    cancelAtPeriodEnd: boolean;
+    createdAt: string;
   } | null;
   invoices: Array<{
     id: string;
@@ -54,6 +72,11 @@ function money(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+function channelLabel(channel: string, lang: "ar" | "en") {
+  const key = channel as TrafficChannel;
+  return TRAFFIC_CHANNEL_LABELS[key]?.[lang] || channel || "—";
+}
+
 export function AdminCustomersPanel({
   onSelectEmail,
 }: {
@@ -61,6 +84,7 @@ export function AdminCustomersPanel({
 }) {
   const { copy } = useConsoleCopy();
   const t = copy.customers;
+  const s = copy.opsSubscriptions;
   const [items, setItems] = useState<Customer[]>([]);
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -95,7 +119,18 @@ export function AdminCustomersPanel({
     const needle = query.trim().toLowerCase();
     if (!needle) return items;
     return items.filter((item) => {
-      return [item.email, item.country, item.mobilePhone, item.address, item.plan, item.status]
+      return [
+        item.email,
+        item.country,
+        item.mobilePhone,
+        item.address,
+        item.plan,
+        item.status,
+        item.billingKind,
+        item.trafficChannel,
+        item.utmSource,
+        item.utmMedium,
+      ]
         .join(" ")
         .toLowerCase()
         .includes(needle);
@@ -104,8 +139,12 @@ export function AdminCustomersPanel({
 
   const selected = filtered.find((item) => item.id === selectedId) || null;
 
+  function billingLabel(kind: BillingKind) {
+    return s.billingKind[kind] || kind;
+  }
+
   return (
-    <section className="console-panel ops-customers" aria-labelledby="ops-customers-title">
+    <section className="console-panel ops-customers ops-panel-enter" aria-labelledby="ops-customers-title">
       <div className="console-panel-heading">
         <div>
           <h2 id="ops-customers-title">{t.title}</h2>
@@ -125,9 +164,11 @@ export function AdminCustomersPanel({
       </label>
 
       {loading ? (
-        <div className="ops-customers-status">
-          <BrandLoader size="sm" />
-          <p>{t.loading}</p>
+        <div className="ops-customers-loading">
+          <OpsPanelSkeleton rows={5} />
+          <div className="ops-loading ops-loading-overlay">
+            <BrandLoader size="sm" label={t.loading} />
+          </div>
         </div>
       ) : error ? (
         <p className="console-gate-error" role="alert">{error}</p>
@@ -142,7 +183,10 @@ export function AdminCustomersPanel({
                 <th>{t.colCountry}</th>
                 <th>{t.colMobile}</th>
                 <th>{t.colPlan}</th>
+                <th>{t.colBilling}</th>
                 <th>{t.colUsage}</th>
+                <th>{t.colUsage7d}</th>
+                <th>{t.colSource}</th>
                 <th>{t.colStatus}</th>
                 <th>{t.colJoined}</th>
               </tr>
@@ -157,16 +201,23 @@ export function AdminCustomersPanel({
                     onSelectEmail?.(item.email);
                   }}
                 >
-                  <td>
-                    <strong>{item.email}</strong>
+                  <td className="ops-cell-email">
+                    <span className="ops-email-text" dir="ltr" title={item.email}>{item.email}</span>
                     {item.role === "SUPER_ADMIN" ? <span className="ops-pill">{t.staff}</span> : null}
                   </td>
                   <td>{countryLabel(item.country, copy.lang)}</td>
-                  <td dir="ltr">{item.mobilePhone || "—"}</td>
+                  <td className="ops-cell-mono" dir="ltr">{item.mobilePhone || "—"}</td>
                   <td>{item.plan}</td>
+                  <td>
+                    <span className="ops-billing-badge" data-kind={item.billingKind}>
+                      {billingLabel(item.billingKind)}
+                    </span>
+                  </td>
                   <td>{item.usageToday.points}/{item.dailyLimit}</td>
+                  <td>{item.usage7d.points.toLocaleString(copy.locale)}</td>
+                  <td>{channelLabel(item.trafficChannel, copy.lang)}</td>
                   <td>{item.status}</td>
-                  <td>{new Date(item.createdAt).toLocaleDateString(copy.lang === "ar" ? "ar" : "en-GB")}</td>
+                  <td>{new Date(item.createdAt).toLocaleDateString(copy.locale)}</td>
                 </tr>
               ))}
             </tbody>
@@ -175,53 +226,141 @@ export function AdminCustomersPanel({
       )}
 
       {selected ? (
-        <article className="ops-customer-detail" aria-label={selected.email}>
-          <h3>{selected.email}</h3>
-          <dl className="ops-customer-facts">
-            <div>
-              <dt>{t.colCountry}</dt>
-              <dd>{countryLabel(selected.country, copy.lang)}</dd>
-            </div>
-            <div>
-              <dt>{t.colMobile}</dt>
-              <dd dir="ltr">{selected.mobilePhone || "—"}</dd>
-            </div>
-            <div>
-              <dt>{t.colPlan}</dt>
-              <dd>{selected.plan}</dd>
-            </div>
-            <div>
-              <dt>{t.colUsage}</dt>
-              <dd>{selected.usageToday.points}/{selected.dailyLimit}</dd>
-            </div>
-            <div>
-              <dt>{copy.billing.activeKeys}</dt>
-              <dd>{selected.keys.filter((key) => !key.revokedAt).length}/{selected.maxKeys}</dd>
-            </div>
-            <div>
-              <dt>{t.colStatus}</dt>
-              <dd>{selected.status}</dd>
-            </div>
-          </dl>
-          <p className="ops-customer-address">{selected.address || t.noAddress}</p>
-          {selected.keys.length > 0 ? (
-            <ul className="ops-customer-keys">
-              {selected.keys.map((key) => (
-                <li key={key.id}>
-                  {key.name} · {key.prefix}…{key.lastFour}
-                  {key.revokedAt ? ` · ${t.revoked}` : ""}
-                </li>
-              ))}
-            </ul>
+        <article className="ops-customer-detail ops-detail-enter" aria-label={selected.email}>
+          <div className="ops-customer-detail-head">
+            <h3 className="ops-email-text" dir="ltr" title={selected.email}>{selected.email}</h3>
+            <AdminQuotaResetButton accountId={selected.id} email={selected.email} />
+          </div>
+
+          <section className="ops-detail-section">
+            <h4>{t.registrationTitle}</h4>
+            <dl className="ops-customer-facts">
+              <div>
+                <dt>{t.colCountry}</dt>
+                <dd>{countryLabel(selected.country, copy.lang)}</dd>
+              </div>
+              <div>
+                <dt>{t.colMobile}</dt>
+                <dd dir="ltr">{selected.mobilePhone || "—"}</dd>
+              </div>
+              <div className="ops-fact-wide">
+                <dt>{t.colAddress}</dt>
+                <dd>{selected.address || t.noAddress}</dd>
+              </div>
+              <div>
+                <dt>{t.colJoined}</dt>
+                <dd>{new Date(selected.createdAt).toLocaleString(copy.locale)}</dd>
+              </div>
+              <div>
+                <dt>{t.colSource}</dt>
+                <dd>{channelLabel(selected.trafficChannel, copy.lang)}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section className="ops-detail-section">
+            <h4>{t.subscriptionTitle}</h4>
+            <dl className="ops-customer-facts">
+              <div>
+                <dt>{t.colPlan}</dt>
+                <dd>{selected.plan}</dd>
+              </div>
+              <div>
+                <dt>{t.colBilling}</dt>
+                <dd>
+                  <span className="ops-billing-badge" data-kind={selected.billingKind}>
+                    {billingLabel(selected.billingKind)}
+                  </span>
+                </dd>
+              </div>
+              <div>
+                <dt>{t.paidInvoices}</dt>
+                <dd>{selected.paidInvoiceCount}</dd>
+              </div>
+              <div>
+                <dt>{t.colUsage}</dt>
+                <dd>{selected.usageToday.points}/{selected.dailyLimit}</dd>
+              </div>
+              <div>
+                <dt>{t.colUsage7d}</dt>
+                <dd>{selected.usage7d.points.toLocaleString(copy.locale)}</dd>
+              </div>
+              <div>
+                <dt>{copy.billing.activeKeys}</dt>
+                <dd>{selected.keys.filter((key) => !key.revokedAt).length}/{selected.maxKeys}</dd>
+              </div>
+              {selected.subscription ? (
+                <>
+                  <div>
+                    <dt>{t.subStatus}</dt>
+                    <dd>{selected.subscription.status}</dd>
+                  </div>
+                  <div>
+                    <dt>{t.subRenews}</dt>
+                    <dd dir="ltr">
+                      {selected.subscription.currentPeriodEnd
+                        ? new Date(selected.subscription.currentPeriodEnd).toLocaleDateString(copy.locale)
+                        : "—"}
+                    </dd>
+                  </div>
+                </>
+              ) : null}
+            </dl>
+          </section>
+
+          {(selected.utmSource || selected.signupReferrer || selected.signupLandingPath) ? (
+            <section className="ops-detail-section">
+              <h4>{t.attributionTitle}</h4>
+              <dl className="ops-customer-facts">
+                <div className="ops-fact-wide">
+                  <dt>UTM</dt>
+                  <dd dir="ltr">
+                    {[selected.utmSource, selected.utmMedium, selected.utmCampaign, selected.utmContent, selected.utmTerm]
+                      .filter(Boolean)
+                      .join(" / ") || "—"}
+                  </dd>
+                </div>
+                {selected.signupReferrer ? (
+                  <div className="ops-fact-wide">
+                    <dt>{t.referrer}</dt>
+                    <dd dir="ltr" className="ops-break-all">{selected.signupReferrer}</dd>
+                  </div>
+                ) : null}
+                {selected.signupLandingPath ? (
+                  <div className="ops-fact-wide">
+                    <dt>{t.landingPath}</dt>
+                    <dd dir="ltr" className="ops-break-all">{selected.signupLandingPath}</dd>
+                  </div>
+                ) : null}
+              </dl>
+            </section>
           ) : null}
+
+          {selected.keys.length > 0 ? (
+            <section className="ops-detail-section">
+              <h4>{copy.billing.activeKeys}</h4>
+              <ul className="ops-customer-keys">
+                {selected.keys.map((key) => (
+                  <li key={key.id} dir="ltr">
+                    {key.name} · {key.prefix}…{key.lastFour}
+                    {key.revokedAt ? ` · ${t.revoked}` : ""}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
           {selected.invoices.length > 0 ? (
-            <ul className="ops-customer-invoices">
-              {selected.invoices.map((invoice) => (
-                <li key={invoice.id}>
-                  {invoice.number} · {invoice.status} · {money(invoice.totalCents)}
-                </li>
-              ))}
-            </ul>
+            <section className="ops-detail-section">
+              <h4>{t.invoicesTitle}</h4>
+              <ul className="ops-customer-invoices">
+                {selected.invoices.map((invoice) => (
+                  <li key={invoice.id}>
+                    {invoice.number} · {invoice.status} · {money(invoice.totalCents)}
+                  </li>
+                ))}
+              </ul>
+            </section>
           ) : null}
         </article>
       ) : null}

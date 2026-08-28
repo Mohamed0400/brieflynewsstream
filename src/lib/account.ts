@@ -1,5 +1,8 @@
 import type { Account, AccountRole, PlanTier } from "@prisma/client";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { ATTRIBUTION_COOKIE, parseAttributionCookie } from "./attribution";
+import { getOpsSettings } from "./ops-settings";
 import { prisma } from "./prisma";
 import { createServerSupabaseClient } from "./supabase/server";
 import { superAdminEmails } from "./supabase/env";
@@ -19,6 +22,30 @@ function profileFields(profile?: Partial<SignupProfile>) {
     ...(profile?.address ? { address: profile.address } : {}),
     ...(profile?.mobilePhone ? { mobilePhone: profile.mobilePhone } : {}),
   };
+}
+
+async function signupAttributionFields() {
+  try {
+    const settings = await getOpsSettings();
+    if (!settings.attributionCapture) return {};
+
+    const jar = await cookies();
+    const raw = jar.get(ATTRIBUTION_COOKIE)?.value;
+    const attr = parseAttributionCookie(raw ? decodeURIComponent(raw) : null);
+    if (!attr) return {};
+    return {
+      utmSource: attr.utmSource,
+      utmMedium: attr.utmMedium,
+      utmCampaign: attr.utmCampaign,
+      utmContent: attr.utmContent,
+      utmTerm: attr.utmTerm,
+      signupReferrer: attr.referrer,
+      signupLandingPath: attr.landingPath,
+      trafficChannel: attr.channel,
+    };
+  } catch {
+    return {};
+  }
 }
 
 export async function getOrCreateAccount(input: {
@@ -53,6 +80,7 @@ export async function getOrCreateAccount(input: {
     return existing;
   }
 
+  const attribution = await signupAttributionFields();
   const created = await prisma.account.create({
     data: {
       authUserId: input.authUserId,
@@ -61,6 +89,7 @@ export async function getOrCreateAccount(input: {
       status: "ACTIVE",
       plan: "FREE" satisfies PlanTier,
       ...profile,
+      ...attribution,
     },
   });
   return created;

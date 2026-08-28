@@ -90,15 +90,32 @@ export function SchedulePanel({ initial }: { initial: ScheduleSnapshot }) {
     }
   }
 
-  async function runJob(key: string) {
+  async function runJob(key: string, force = false) {
     setBusyKey(key);
     try {
       const response = await fetch("/api/console/schedule/run", {
         method: "POST",
         headers: { "content-type": "application/json" },
+        body: JSON.stringify({ key, force }),
+      });
+      await refreshFrom(response);
+    } catch (requestError) {
+      toast.exception(requestError, text.runFailed);
+    } finally {
+      setBusyKey("");
+    }
+  }
+
+  async function releaseLock(key: string) {
+    setBusyKey(key);
+    try {
+      const response = await fetch("/api/console/schedule/release", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
         body: JSON.stringify({ key }),
       });
       await refreshFrom(response);
+      toast.success(text.releaseLock);
     } catch (requestError) {
       toast.exception(requestError, text.runFailed);
     } finally {
@@ -222,10 +239,28 @@ export function SchedulePanel({ initial }: { initial: ScheduleSnapshot }) {
               type="button"
               className="console-primary-button"
               disabled={Boolean(busyKey)}
-              onClick={() => void runJob(job.key)}
+              onClick={() => void runJob(job.key, false)}
             >
               {busyKey === job.key || job.running ? text.running : text.runNow}
             </button>
+            <button
+              type="button"
+              className="console-secondary-button"
+              disabled={Boolean(busyKey)}
+              onClick={() => void runJob(job.key, true)}
+            >
+              {text.forceRun}
+            </button>
+            {job.running ? (
+              <button
+                type="button"
+                className="console-secondary-button"
+                disabled={Boolean(busyKey)}
+                onClick={() => void releaseLock(job.key)}
+              >
+                {text.releaseLock}
+              </button>
+            ) : null}
           </form>
         </section>
         );

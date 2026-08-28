@@ -74,6 +74,43 @@ export const GUIDES = [
     ],
   },
   {
+    slug: "gulf-gcc-market-news-api",
+    titleEn: "Gulf and GCC market news API",
+    titleAr: "واجهة أخبار أسواق الخليج ومجلس التعاون",
+    ledeEn:
+      "How to pull Gulf Cooperation Council market stories with country filters, impact scores, and bilingual Arabic-English fields from one REST endpoint.",
+    ledeAr:
+      "كيف تستخرج أخبار أسواق دول مجلس التعاون الخليجي بفلاتر الدولة ودرجات الأثر وحقول عربية-إنجليزية من نقطة REST واحدة.",
+    sectionsEn: [
+      {
+        h: "What the Gulf cluster covers",
+        p: "GCC desks typically need Saudi Arabia, UAE, Qatar, Bahrain, Oman, and Kuwait market context in one integration. Briefly tags every story with an ISO country code and region metadata so products can filter country=KW, country=SA, or pull the full Gulf set.",
+      },
+      {
+        h: "Why impact scores matter for Gulf desks",
+        p: "Energy, rates, and dollar moves dominate Gulf market news. Sorting by impact surfaces policy and commodity stories that newest-first feeds bury.",
+      },
+      {
+        h: "API pattern",
+        p: "Use /api/v1/market-news with country and category filters, lang=ar or lang=en, and sort=score for briefings. The live web briefing at /news mirrors the same filters for evaluation.",
+      },
+    ],
+    sectionsAr: [
+      {
+        h: "ماذا يغطي تجمع الخليج",
+        p: "مكاتب مجلس التعاون تحتاج عادة سياق أسواق السعودية والإمارات وقطر والبحرين وعمان والكويت في تكامل واحد. Briefly يوسم كل خبر بكود ISO ومنطقة حتى تصفّي country=KW أو country=SA أو تجلب مجموعة الخليج كاملة.",
+      },
+      {
+        h: "لماذا تهم درجات الأثر لمكاتب الخليج",
+        p: "الطاقة والفائدة والدولار تهيمن على أخبار أسواق الخليج. الترتيب حسب الأثر يبرز السياسات والسلع التي تطمرها موجزات الأحدث أولاً.",
+      },
+      {
+        h: "نمط الواجهة",
+        p: "استخدم /api/v1/market-news مع فلاتر الدولة والفئة وlang=ar أو lang=en وsort=score للموجزات. موجز الويب المباشر على /news يعكس نفس الفلاتر للتقييم.",
+      },
+    ],
+  },
+  {
     slug: "impact-scoring-for-market-news-feeds",
     titleEn: "Impact scoring for market news feeds",
     titleAr: "درجات الأثر لموجزات أخبار الأسواق",

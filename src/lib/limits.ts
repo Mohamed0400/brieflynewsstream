@@ -64,7 +64,7 @@ export const limits = {
   /** Candidate pool size before daily ranking. 0 = all scored articles in window. */
   dailyCandidates: intEnv("DAILY_CANDIDATE_POOL", 0),
   /** Published daily edition size (Top N). */
-  dailyEdition: intEnv("DAILY_EDITION_SIZE", 15),
+  dailyEdition: intEnv("DAILY_EDITION_SIZE", 20),
   /** Soft max items per region in the daily mix. 0 = no region cap. */
   dailyRegionCap: intEnv("DAILY_REGION_CAP", 0),
   /** Default page size for filterable API. */

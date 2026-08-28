@@ -20,7 +20,9 @@ import {
   siteTitle,
   breadcrumbJsonLd,
   collectionPageJsonLd,
+  newsMediaOrganizationJsonLd,
   pageMetadata,
+  webPageJsonLd,
   websiteJsonLd,
 } from "@/lib/seo";
 import type { Metadata } from "next";
@@ -38,19 +40,21 @@ export async function generateMetadata({
   return pageMetadata({
     lang,
     title: isEn
-      ? siteTitle("en", "Market data")
-      : siteTitle("ar", "بيانات الأسواق"),
+      ? siteTitle("en", "Market briefing")
+      : siteTitle("ar", "موجز الأسواق"),
     description: isEn
-      ? "Bilingual market news briefing from Briefly NewsStream. Filter by country, category, and impact across regional and global markets."
-      : "موجز أخبار الأسواق ثنائي اللغة من Briefly NewsStream. صفِّ حسب الدولة والفئة والأثر عبر الأسواق الإقليمية والعالمية.",
+      ? "Bilingual market news briefing from Briefly NewsStream. Gulf, MENA, and global stories with impact scores — filter by country, category, and region."
+      : "موجز أخبار أسواق ثنائي اللغة من Briefly NewsStream. أخبار الخليج والشرق الأوسط والعالم بدرجات أثر — صفِّ حسب الدولة والفئة والمنطقة.",
     path: "/news",
     pathEn: "/news?lang=en",
     keywords: [
       "market briefing",
-      "Middle East market news",
       "Gulf market news",
+      "GCC market news",
+      "Middle East market news",
       "Arabic market news",
-      "financial news",
+      "MENA financial news",
+      "regional news briefing",
     ],
   });
 }
@@ -145,11 +149,6 @@ export default async function Home({
   let fetchedArticles: Awaited<ReturnType<typeof listDedupedArticles>>["items"] = [];
   try {
     const feedQuery = parseQuery(feedParams, { searchVariants });
-    if (!country && !params.nationality) {
-      feedQuery.where = {
-        AND: [feedQuery.where, { country: { not: "KW" } }],
-      };
-    }
     freshnessHours = feedQuery.filters.freshnessHours ?? liveFreshnessHours;
     const listed = await listDedupedArticles(
       feedQuery.where,
@@ -203,7 +202,7 @@ export default async function Home({
       label: copy.todaysEdition,
       value: editionItemCount,
       detail: copy.todaysBriefDetail(limits.dailyEdition),
-      hint: copy.todaysEditionHint,
+      hint: copy.todaysEditionHint(limits.dailyEdition),
     },
     {
       id: "countries",
@@ -214,7 +213,15 @@ export default async function Home({
     },
   ];
   const structuredData = [
+    newsMediaOrganizationJsonLd(),
     websiteJsonLd(),
+    webPageJsonLd({
+      lang,
+      name: lang === "en" ? "Market briefing" : "موجز أخبار الأسواق",
+      description: `${copy.heroLede} ${copy.heroBody}`,
+      path: "/news",
+      speakableCssSelectors: [".mkt-news-hero h1", ".mkt-news-hero p", "[data-aeo-answer]"],
+    }),
     collectionPageJsonLd({
       name: lang === "en" ? "Market briefing" : "موجز أخبار الأسواق",
       description: `${copy.heroLede} ${copy.heroBody}`,
@@ -231,9 +238,10 @@ export default async function Home({
     <div className="mkt-page mkt-news-page" lang={copy.lang} dir={copy.dir}>
       <JsonLd data={structuredData} />
       <div className="mkt-section">
-        <div className="mkt-section-head">
+        <div className="mkt-section-head mkt-news-hero">
           <h1>{copy.heroTitle}</h1>
-          <p>{copy.heroLede}</p>
+          <p data-aeo-answer>{copy.heroLede}</p>
+          <p>{copy.heroBody}</p>
         </div>
 
       <HomepageDataOverview

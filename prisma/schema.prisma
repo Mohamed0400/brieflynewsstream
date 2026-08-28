@@ -231,6 +231,14 @@ model Account {
   country             String              @default("")
   address             String              @default("")
   mobilePhone         String              @default("")
+  utmSource           String              @default("")
+  utmMedium           String              @default("")
+  utmCampaign         String              @default("")
+  utmContent          String              @default("")
+  utmTerm             String              @default("")
+  signupReferrer      String              @default("")
+  signupLandingPath   String              @default("")
+  trafficChannel      String              @default("")
   keys                ApiKey[]
   subscription        Subscription?
   invoices            Invoice[]
@@ -352,8 +360,38 @@ model AdminAuditLog {
   createdAt  DateTime @default(now())
 
   @@index([createdAt])
+  @@index([action, createdAt])
   @@index([targetType, targetId])
   @@index([actorId, createdAt])
+}
+
+model PageView {
+  id          String   @id @default(cuid())
+  path        String
+  referrer    String   @default("")
+  utmSource   String   @default("")
+  utmMedium   String   @default("")
+  utmCampaign String   @default("")
+  utmContent  String   @default("")
+  utmTerm     String   @default("")
+  channel     String   @default("")
+  locale      String   @default("")
+  sessionId   String   @default("")
+  accountId   String?
+  viewedAt    DateTime @default(now())
+
+  @@index([viewedAt])
+  @@index([path, viewedAt])
+  @@index([channel, viewedAt])
+  @@index([utmSource, viewedAt])
+  @@index([sessionId, viewedAt])
+}
+
+model OpsSetting {
+  key       String   @id
+  value     Json
+  updatedBy String?
+  updatedAt DateTime @updatedAt
 }
 
 model AccountNote {

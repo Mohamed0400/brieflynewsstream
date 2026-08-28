@@ -4,6 +4,7 @@ import { ConsoleLangProvider } from "@/components/console/ConsoleLang";
 import { ConsoleShell } from "@/components/console/ConsoleShell";
 import { getOrCreateAccount, getSessionUser } from "@/lib/account";
 import { getConsoleLang } from "@/lib/console-lang";
+import { getMaintenanceStatus } from "@/lib/maintenance";
 import { startEmbeddedScheduler } from "@/lib/scheduler";
 import "../../console-shell.css";
 
@@ -47,12 +48,14 @@ export default async function ConsoleDashboardLayout({
 
   startEmbeddedScheduler("next");
   const lang = await getConsoleLang();
+  const maintenance = await getMaintenanceStatus();
   return (
     <ConsoleLangProvider lang={lang}>
       <ConsoleShell
         lang={lang}
         accountEmail={account.email}
         accountPlan={account.plan}
+        maintenance={maintenance}
       >
         {children}
       </ConsoleShell>

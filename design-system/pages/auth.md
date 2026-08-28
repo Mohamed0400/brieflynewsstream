@@ -20,7 +20,7 @@ Public auth sits in the marketing shell (site nav + footer). Loading keeps that 
 - Labels above inputs. Errors below. Password show/hide. 16px inputs. 44px targets.
 - CTA lock: Sign in vs Register. Marketing "Log in" hits `/console/login`. "Get API key" hits `/console/signup`.
 - Signup headline is registration, not dashboard: “Register for a free account” / “سجّل حساباً مجانياً”.
-- Honest Free facts only: 5 req/day, 2 keys, AR+EN, ~70 countries, explorer/scores/archive. Do not claim NewsData credits, Excel/CSV, or a limited archive.
+- Honest Free facts only: 3 req/day (shared pool), 1 key, AR+EN, ~70 countries, explorer/scores/archive. Do not claim NewsData credits, Excel/CSV, or a limited archive.
 
 ## Shape and color
 

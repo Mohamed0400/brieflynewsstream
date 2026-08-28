@@ -4,6 +4,20 @@ import { publicSiteUrl } from "@/lib/site-url";
 export const dynamic = "force-dynamic";
 export const revalidate = 300;
 
+/** Google News publication language — Arabic-first for Gulf/MENA stories. */
+function newsSitemapLanguage(article: {
+  language: string;
+  titleAr: string | null;
+  titleEn: string | null;
+  country: string;
+}) {
+  const gcc = new Set(["KW", "SA", "AE", "QA", "BH", "OM"]);
+  if (article.language === "ar" || article.language.startsWith("ar")) return "ar";
+  if (article.titleAr && !article.titleEn) return "ar";
+  if (gcc.has(article.country) && article.titleAr) return "ar";
+  return "en";
+}
+
 /** Google News-style sitemap of recent public story pages. */
 export async function GET() {
   const origin = publicSiteUrl();
@@ -19,6 +33,8 @@ export async function GET() {
       titleEn: true,
       titleAr: true,
       displayTitle: true,
+      language: true,
+      country: true,
       publisher: true,
       source: { select: { name: true } },
     },
@@ -35,6 +51,7 @@ export async function GET() {
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;");
+      const newsLanguage = newsSitemapLanguage(article);
       const safeTitle = title
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
@@ -46,7 +63,7 @@ export async function GET() {
     <news:news>
       <news:publication>
         <news:name>${publication}</news:name>
-        <news:language>en</news:language>
+        <news:language>${newsLanguage}</news:language>
       </news:publication>
       <news:publication_date>${pubDate}</news:publication_date>
       <news:title>${safeTitle}</news:title>

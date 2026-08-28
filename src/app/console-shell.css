@@ -618,6 +618,51 @@
   margin-top: 0.5rem;
 }
 
+.console-app .console-usage-bar {
+  margin-top: 0.65rem;
+  height: 0.35rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--console-ink) 12%, transparent);
+  overflow: hidden;
+}
+
+.console-app .console-usage-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--console-accent, #0d9488);
+  min-width: 0;
+  transition: width 240ms ease;
+}
+
+.console-app .console-maintenance-banner {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--console-accent, #0d9488) 45%, var(--console-line));
+  border-radius: var(--console-radius);
+  background: color-mix(in srgb, var(--console-accent, #0d9488) 8%, var(--console-surface));
+}
+
+.console-app .console-maintenance-banner strong {
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.console-app .console-maintenance-banner p {
+  margin: 0;
+  color: var(--console-muted);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.console-app .console-maintenance-countdown {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--console-ink);
+}
+
 @media (min-width: 40rem) {
   .console-app .console-plan-bar {
     grid-template-columns: minmax(0, 1fr) auto;
@@ -628,7 +673,8 @@
   .console-app-logout,
   .console-app-logout:active,
   .console-app-upgrade,
-  .console-app-upgrade:active {
+  .console-app-upgrade:active,
+  .console-app .console-usage-bar span {
     transition: none;
     transform: none;
   }

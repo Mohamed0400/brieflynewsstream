@@ -35,7 +35,7 @@ Also: worldwide / global country filters (100+ countries)
 - Pricing: https://www.brieflynewsstream.com/pricing
 - Developers: https://www.brieflynewsstream.com/developers
 - Coverage: https://www.brieflynewsstream.com/coverage
-- Market hubs: https://www.brieflynewsstream.com/markets/mena , /markets/gcc , /markets/europe
+- Market hubs: https://www.brieflynewsstream.com/markets/mena , /markets/gcc , /markets/kuwait , /markets/europe
 - Guides: https://www.brieflynewsstream.com/guides
 - Privacy: https://www.brieflynewsstream.com/privacy
 - Terms: https://www.brieflynewsstream.com/terms
@@ -45,3 +45,12 @@ Also: worldwide / global country filters (100+ countries)
 ## Citeable definition
 
 A market intelligence API delivers structured market news with impact scores and bilingual fields so products can decide which stories matter, not only list more headlines.
+
+## Common queries (GEO / AEO)
+
+- What is a market intelligence API? → /guides/what-is-a-market-intelligence-api
+- Gulf / GCC market news API → /markets/gcc
+- Kuwait market news API → /markets/kuwait
+- MENA bilingual market news → /guides/bilingual-mena-market-news-for-products
+- Live market briefing (filter by country) → /news
+- Gulf and Arabic market news briefing → /news (country filter + impact scores)

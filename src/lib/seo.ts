@@ -147,6 +147,7 @@ export const SEO_KEYWORDS_EN = [
   "Qatar news API",
   "Bahrain news API",
   "Oman news API",
+  "Kuwait news API",
   "Egypt news API",
   "Jordan news API",
   "Lebanon news API",
@@ -180,6 +181,7 @@ export const SEO_KEYWORDS_AR = [
   "أخبار قطر",
   "أخبار البحرين",
   "أخبار عمان",
+  "أخبار الكويت",
   "أخبار مصر",
   "أخبار الأردن",
   "أخبار لبنان",
@@ -298,8 +300,8 @@ export function pageMetadata(input: {
       type: input.ogType || "website",
       locale: isEn ? "en_US" : "ar_SA",
       alternateLocale: isEn
-        ? ["ar_SA", "ar_AE", "ar_EG"]
-        : ["en_US", "ar_SA", "ar_AE", "ar_EG"],
+        ? ["ar_SA", "ar_KW", "ar_AE", "ar_EG"]
+        : ["en_US", "ar_SA", "ar_KW", "ar_AE", "ar_EG"],
       url: canonical,
       siteName: SITE_NAME,
       title: input.title,
@@ -346,12 +348,14 @@ export function organizationJsonLd() {
     knowsAbout: [
       "Market news API",
       "Arabic news",
+      "Gulf news",
       "Bilingual news",
       "Middle East",
       "MENA",
       "GCC",
       "Arabic-speaking countries",
       "Impact scoring",
+      "Regional market briefings",
     ],
     areaServed: areaServedSchema(),
     availableLanguage: ["Arabic", "English"],
@@ -365,6 +369,24 @@ export function organizationJsonLd() {
         areaServed: [...GEO_AREA_SERVED],
       },
     ],
+  };
+}
+
+/** Publisher identity for news/briefing surfaces (Google News + AI citation). */
+export function newsMediaOrganizationJsonLd() {
+  const url = absoluteUrl("/");
+  return {
+    "@context": "https://schema.org",
+    "@type": "NewsMediaOrganization",
+    name: SITE_NAME,
+    alternateName: [PRODUCT_LINE_AR, PRODUCT_LINE_EN, "موجز الأسواق"],
+    url,
+    logo: brandLogoJsonLd(),
+    description: AEO_ENTITY_ANSWER_AR,
+    inLanguage: ["ar", "en"],
+    publishingPrinciples: absoluteUrl("/terms"),
+    areaServed: areaServedSchema(),
+    sameAs: [],
   };
 }
 

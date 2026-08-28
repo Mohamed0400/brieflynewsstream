@@ -43,7 +43,9 @@
     "db:migrate:sqlite": "tsx scripts/migrate-sqlite-to-supabase.ts",
     "seed:test": "dotenv -e .env.test -- tsx prisma/seed.ts",
     "seed:live": "dotenv -e .env.live -- tsx prisma/seed.ts",
-    "test": "tsx --test src/lib/api.test.ts src/lib/auth-redirect.test.ts src/lib/billing/invoices.test.ts src/lib/classify.test.ts src/lib/cloudinary.test.ts src/lib/console/platform-overview-pdf.test.ts src/lib/countries.test.ts src/lib/country-sources.test.ts src/lib/dedupe.test.ts src/lib/plans.test.ts src/lib/public-error.test.ts src/lib/public-source.test.ts src/lib/scheduler.test.ts src/lib/signup-profile.test.ts src/lib/toast.test.ts"
+    "test": "tsx --test src/lib/api-quota.test.ts src/lib/api.test.ts src/lib/auth-redirect.test.ts src/lib/billing/invoices.test.ts src/lib/classify.test.ts src/lib/cloudinary.test.ts src/lib/console/platform-overview-pdf.test.ts src/lib/countries.test.ts src/lib/country-sources.test.ts src/lib/dedupe.test.ts src/lib/e2e-api-key.test.ts src/lib/maintenance.test.ts src/lib/plans.test.ts src/lib/public-error.test.ts src/lib/public-source.test.ts src/lib/scheduler.test.ts src/lib/signup-profile.test.ts src/lib/supported-countries.test.ts src/lib/toast.test.ts",
+    "smoke:api-quota": "dotenv -e .env.test -- tsx scripts/smoke-api-quota.ts",
+    "auth:ensure-user:test": "dotenv -e .env.test -- tsx scripts/ensure-console-user.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1120.0",

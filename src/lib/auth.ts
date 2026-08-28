@@ -1,5 +1,7 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
+import { isQuotaExceeded, quotaResponseHeaders } from "./api-quota";
+import { getMaintenanceStatus } from "./maintenance";
 import { resolvePlanLimits, utcDayWindow } from "./plans";
 import { prisma } from "./prisma";
 
@@ -57,16 +59,6 @@ export async function rotateApiKey(id: string) {
   return { plaintext: issued.plaintext, record };
 }
 
-function quotaHeaders(used: number, limit: number, plan: string) {
-  const remaining = Math.max(0, limit - used);
-  return {
-    "X-API-Quota-Limit": String(limit),
-    "X-API-Quota-Remaining": String(remaining),
-    "X-API-Quota-Used": String(used),
-    "X-API-Plan": plan,
-  };
-}
-
 export async function requireApiKey(request: Request) {
   const provided = request.headers.get("x-api-key");
   let apiKeyId: string | null = null;
@@ -119,6 +111,25 @@ export async function requireApiKey(request: Request) {
       );
     }
 
+    const maintenance = await getMaintenanceStatus();
+    if (maintenance.apiActive) {
+      return NextResponse.json(
+        {
+          error: "maintenance",
+          message: maintenance.apiMessage,
+          scheduled_at: maintenance.scheduledAt,
+          status: "unavailable",
+        },
+        {
+          status: 503,
+          headers: {
+            "Retry-After": "3600",
+            "X-Maintenance-Mode": "active",
+          },
+        },
+      );
+    }
+
     apiKeyId = stored.id;
     accountId = stored.accountId;
     plan = stored.account.plan;
@@ -137,7 +148,7 @@ export async function requireApiKey(request: Request) {
       },
     });
 
-    if (usedToday >= dailyLimit) {
+    if (isQuotaExceeded(usedToday, dailyLimit)) {
       return NextResponse.json(
         {
           error: "quota_exceeded",
@@ -148,7 +159,7 @@ export async function requireApiKey(request: Request) {
         },
         {
           status: 429,
-          headers: quotaHeaders(usedToday, dailyLimit, plan),
+          headers: quotaResponseHeaders(usedToday, dailyLimit, plan),
         },
       );
     }
@@ -183,7 +194,7 @@ export async function requireApiKey(request: Request) {
 
   // Attach quota headers via a pass-through marker on the request is not possible;
   // callers that need headers should use applyQuotaHeaders on their response.
-  const headers = quotaHeaders(usedToday, dailyLimit, plan);
+  const headers = quotaResponseHeaders(usedToday, dailyLimit, plan);
   (request as Request & { __quotaHeaders?: Record<string, string> }).__quotaHeaders = headers;
   return null;
 }

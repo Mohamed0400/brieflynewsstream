@@ -1,4 +1,5 @@
 import type { MarketingLang } from "@/lib/marketing-copy";
+import { PLAN_DEFINITIONS } from "@/lib/plans";
 
 type LegalSection = {
   title: string;
@@ -29,7 +30,7 @@ const copy: Record<MarketingLang, { privacy: LegalPageCopy; terms: LegalPageCopy
           title: "What we collect",
           paragraphs: [
             "Console accounts store the email you register with, a hashed password, API keys you create, plan status, and request counts used to enforce daily limits.",
-            "We log enough operational data to run the service, debug failures, and apply the Free (5 requests a day) and Pro (500 requests a day) limits. We do not collect phone numbers and we do not offer Google sign-in.",
+            `We log enough operational data to run the service, debug failures, and apply the Free (${PLAN_DEFINITIONS.FREE.dailyRequests} requests a day) and Pro (${PLAN_DEFINITIONS.PRO.dailyRequests} requests a day) limits. We do not collect phone numbers and we do not offer Google sign-in.`,
           ],
         },
         {
@@ -78,7 +79,7 @@ const copy: Record<MarketingLang, { privacy: LegalPageCopy; terms: LegalPageCopy
         {
           title: "Plans and limits",
           paragraphs: [
-            "Free includes 5 API requests a day and 2 keys. Pro is listed at $70 per month with 500 requests a day and 10 keys. Enterprise is listed at $150 per month with 20,000 requests a day and 100 keys. Request Pro or Enterprise from Billing and pay by Lemon Squeezy checkout.",
+            `Free includes ${PLAN_DEFINITIONS.FREE.dailyRequests} API requests a day and ${PLAN_DEFINITIONS.FREE.maxKeys} key. Pro is listed at $${PLAN_DEFINITIONS.PRO.listPriceMonthlyUsd} per month with ${PLAN_DEFINITIONS.PRO.dailyRequests} requests a day and ${PLAN_DEFINITIONS.PRO.maxKeys} keys. Enterprise is listed at $${PLAN_DEFINITIONS.ENTERPRISE.listPriceMonthlyUsd} per month with ${PLAN_DEFINITIONS.ENTERPRISE.dailyRequests.toLocaleString("en-US")} requests a day and ${PLAN_DEFINITIONS.ENTERPRISE.maxKeys} keys. Request Pro or Enterprise from Billing and pay by Lemon Squeezy checkout.`,
           ],
         },
         {
@@ -118,7 +119,7 @@ const copy: Record<MarketingLang, { privacy: LegalPageCopy; terms: LegalPageCopy
           title: "ما نجمعه",
           paragraphs: [
             "حسابات اللوحة تخزّن البريد الذي تسجّل به، وكلمة مرور مشفّرة، ومفاتيح API التي تنشئها، وحالة الخطة، وعدادات الطلبات لفرض الحدود اليومية.",
-            "نسجّل بيانات تشغيل كافية لتشغيل الخدمة ومعالجة الأعطال وتطبيق حد المجاني (5 طلبات يومياً) وحد Pro (500 طلب يومياً). لا نجمع أرقام هواتف ولا نوفر دخولاً عبر Google.",
+            `نسجّل بيانات تشغيل كافية لتشغيل الخدمة ومعالجة الأعطال وتطبيق حد المجاني (${PLAN_DEFINITIONS.FREE.dailyRequests} طلبات يومياً) وحد Pro (${PLAN_DEFINITIONS.PRO.dailyRequests} طلب يومياً). لا نجمع أرقام هواتف ولا نوفر دخولاً عبر Google.`,
           ],
         },
         {
@@ -167,7 +168,7 @@ const copy: Record<MarketingLang, { privacy: LegalPageCopy; terms: LegalPageCopy
         {
           title: "الخطط والحدود",
           paragraphs: [
-            "المجاني يشمل 5 طلبات API يومياً ومفتاحين. Pro مدرج بسعر 70 دولاراً شهرياً مع 500 طلب يومياً و10 مفاتيح. Enterprise مدرج بسعر 150 دولاراً شهرياً مع 20,000 طلب يومياً و100 مفتاح. اطلب Pro أو Enterprise من الفوترة وادفع عبر Lemon Squeezy.",
+            `المجاني يشمل ${PLAN_DEFINITIONS.FREE.dailyRequests} طلبات API يومياً ومفتاحاً واحداً. Pro مدرج بسعر ${PLAN_DEFINITIONS.PRO.listPriceMonthlyUsd} دولاراً شهرياً مع ${PLAN_DEFINITIONS.PRO.dailyRequests} طلب يومياً و${PLAN_DEFINITIONS.PRO.maxKeys} مفاتيح. Enterprise مدرج بسعر ${PLAN_DEFINITIONS.ENTERPRISE.listPriceMonthlyUsd} دولاراً شهرياً مع ${PLAN_DEFINITIONS.ENTERPRISE.dailyRequests.toLocaleString("en-US")} طلب يومياً و${PLAN_DEFINITIONS.ENTERPRISE.maxKeys} مفتاح. اطلب Pro أو Enterprise من الفوترة وادفع عبر Lemon Squeezy.`,
           ],
         },
         {

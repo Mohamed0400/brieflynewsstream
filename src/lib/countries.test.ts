@@ -8,6 +8,7 @@ import {
 import {
   REGION_GROUP_META,
   groupCountryCodesByRegion,
+  regionEditorialRank,
   regionGroupForCode,
   supportedCountryCodes,
 } from "./supported-countries";
@@ -92,7 +93,7 @@ test("every catalog code maps to a browseable region group", () => {
   }
 });
 
-test("region grouping preserves order, drops empty groups, and sorts members", () => {
+test("region grouping preserves order, drops empty groups, and uses editorial member order", () => {
   const groups = groupCountryCodesByRegion(supportedCountryCodes(), "en");
   assert.ok(groups.length > 0, "expected at least one region group");
 
@@ -107,10 +108,17 @@ test("region grouping preserves order, drops empty groups, and sorts members", (
 
   for (const group of groups) {
     assert.ok(group.items.length > 0, `${group.key} should not be empty`);
-    const names = group.items.map((item) => item.name);
-    const sorted = [...names].sort((a, b) => a.localeCompare(b, "en"));
-    assert.deepEqual(names, sorted, `${group.key} members are not sorted`);
+    const ranks = group.items.map((item) => regionEditorialRank(group.key, item.code));
+    for (let index = 1; index < ranks.length; index += 1) {
+      assert.ok(
+        ranks[index] >= ranks[index - 1],
+        `${group.key} members are not in editorial order at ${group.items[index]?.code}`,
+      );
+    }
   }
+
+  const middleEast = groups.find((group) => group.key === "middle_east");
+  assert.equal(middleEast?.items[0]?.code, "KW", "Middle East should lead with Kuwait");
 
   const total = groups.reduce((sum, group) => sum + group.items.length, 0);
   assert.equal(total, supportedCountryCodes().length, "every code should land in a group");

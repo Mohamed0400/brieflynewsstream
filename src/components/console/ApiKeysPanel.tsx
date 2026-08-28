@@ -3,6 +3,8 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { ConfirmModal } from "@/components/console/ConfirmModal";
 import { useConsoleCopy } from "@/components/console/ConsoleLang";
+import { quotaUsagePercent } from "@/lib/api-quota";
+import { PLAN_DEFINITIONS } from "@/lib/plans";
 import { toast } from "@/lib/toast";
 
 export type ConsoleApiKey = {
@@ -71,7 +73,21 @@ function CopyMenu({
   );
 }
 
-export function ApiKeysPanel({ initialKeys }: { initialKeys: ConsoleApiKey[] }) {
+export function ApiKeysPanel({
+  initialKeys,
+  plan,
+  usedToday,
+  dailyLimit,
+  maxKeys,
+  usageByKeyId,
+}: {
+  initialKeys: ConsoleApiKey[];
+  plan: keyof typeof PLAN_DEFINITIONS;
+  usedToday: number;
+  dailyLimit: number;
+  maxKeys: number;
+  usageByKeyId: Record<string, number>;
+}) {
   const { copy } = useConsoleCopy();
   const text = copy.keys;
   const [keys, setKeys] = useState(initialKeys);
@@ -101,6 +117,11 @@ export function ApiKeysPanel({ initialKeys }: { initialKeys: ConsoleApiKey[] }) 
 
   const issued = issuedId ? keys.find((key) => key.id === issuedId) : null;
   const issuedSecret = issuedId ? secrets[issuedId] : undefined;
+  const activeKeyCount = keys.filter((key) => !key.revokedAt).length;
+  const atKeyLimit = activeKeyCount >= maxKeys;
+  const remaining = Math.max(0, dailyLimit - usedToday);
+  const usagePct = quotaUsagePercent(usedToday, dailyLimit);
+  const numberLocale = copy.locale;
 
   function storeSecret(id: string, value: string) {
     setIssuedId(id);
@@ -231,6 +252,28 @@ export function ApiKeysPanel({ initialKeys }: { initialKeys: ConsoleApiKey[] }) 
 
   return (
     <div className="grid gap-6">
+      <section className="console-metric-grid" aria-label={text.usageTitle}>
+        <article className="console-metric console-metric-primary">
+          <span>{text.requestsToday}</span>
+          <strong dir="ltr">
+            {usedToday.toLocaleString(numberLocale)} / {dailyLimit.toLocaleString(numberLocale)}
+          </strong>
+          <small>{text.remaining(remaining)} · {usagePct}%</small>
+          <div className="console-usage-bar" aria-hidden="true">
+            <span style={{ width: `${usagePct}%` }} />
+          </div>
+        </article>
+        <article className="console-metric">
+          <span>{text.activeKeysLabel}</span>
+          <strong dir="ltr">
+            {activeKeyCount} / {maxKeys}
+          </strong>
+          <small>{PLAN_DEFINITIONS[plan].label}</small>
+        </article>
+      </section>
+
+      <p className="console-help">{text.usageHint}</p>
+
       <section className="console-panel" aria-labelledby="create-key-heading">
         <div className="console-panel-heading">
           <div>
@@ -253,10 +296,11 @@ export function ApiKeysPanel({ initialKeys }: { initialKeys: ConsoleApiKey[] }) 
               placeholder={text.namePlaceholder}
             />
           </div>
-          <button type="submit" disabled={creating} className="console-primary-button">
+          <button type="submit" disabled={creating || atKeyLimit} className="console-primary-button">
             {creating ? text.creating : text.create}
           </button>
         </form>
+        {atKeyLimit ? <p className="console-help">{text.keyLimitReached}</p> : null}
       </section>
 
       {issued && issuedSecret && (
@@ -324,6 +368,10 @@ export function ApiKeysPanel({ initialKeys }: { initialKeys: ConsoleApiKey[] }) 
                   <div>
                     <dt>{text.lastUsed}</dt>
                     <dd>{key.lastUsedAt ? new Date(key.lastUsedAt).toLocaleString(copy.locale) : text.never}</dd>
+                  </div>
+                  <div>
+                    <dt>{text.requestsTodayKey}</dt>
+                    <dd dir="ltr">{(usageByKeyId[key.id] ?? 0).toLocaleString(numberLocale)}</dd>
                   </div>
                   <div>
                     <dt>{text.status}</dt>

@@ -188,16 +188,23 @@ export const apiDocGroups: ApiDocGroup[] = [
         method: "GET",
         path: "/api/v1/market-news/today",
         title: "Today's edition",
-        summary: "Stored Top 15 for today. Publish from Schedule if this returns 404.",
+        summary: "Stored Top N for today (default from DAILY_EDITION_SIZE, currently 20). Use limit to return fewer ranked items.",
         auth: "api-key",
         query: [
           { name: "lang", type: "ar | en", description: "Response language. Default ar." },
+          { name: "limit", type: "integer", description: "Max ranked items to return. Default matches DAILY_EDITION_SIZE (20)." },
+          { name: "offset", type: "integer", description: "Skip N ranked items. Default 0." },
+          { name: "country", type: "ISO code", description: "Filter edition items by article country." },
+          { name: "category", type: "category code", description: "Filter edition items by category." },
         ],
-        curl: curlGet("/api/v1/market-news/today?lang=ar"),
-        fetch: fetchGet("/api/v1/market-news/today?lang=ar"),
+        curl: curlGet("/api/v1/market-news/today?lang=ar&limit=20"),
+        fetch: fetchGet("/api/v1/market-news/today?lang=ar&limit=20"),
         response: `{
   "date": "2026-08-18",
-  "count": 15,
+  "count": 20,
+  "total": 20,
+  "limit": 20,
+  "offset": 0,
   "items": []
 }`,
         errors: [
@@ -215,6 +222,9 @@ export const apiDocGroups: ApiDocGroup[] = [
         query: [
           { name: "date", type: "YYYY-MM-DD", description: "Date. Defaults to today." },
           { name: "lang", type: "ar | en", description: "Response language. Default ar." },
+          { name: "limit", type: "integer", description: "Max ranked items to return. Default matches DAILY_EDITION_SIZE (20)." },
+          { name: "offset", type: "integer", description: "Skip N ranked items. Default 0." },
+          { name: "country", type: "ISO code", description: "Filter edition items by article country." },
         ],
         curl: curlGet("/api/v1/market-news/daily?date=2026-08-17&lang=en"),
         fetch: fetchGet("/api/v1/market-news/daily?date=2026-08-17&lang=en"),

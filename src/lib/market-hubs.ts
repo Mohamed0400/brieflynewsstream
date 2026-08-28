@@ -1,6 +1,16 @@
 import { COUNTRY_CATALOG } from "@/lib/countries";
 
-export type MarketHubSlug = "mena" | "gcc" | "europe" | "saudi-arabia" | "uae" | "egypt" | "united-kingdom" | "germany" | "france";
+export type MarketHubSlug =
+  | "mena"
+  | "gcc"
+  | "europe"
+  | "saudi-arabia"
+  | "uae"
+  | "kuwait"
+  | "egypt"
+  | "united-kingdom"
+  | "germany"
+  | "france";
 
 export type MarketHub = {
   slug: MarketHubSlug;
@@ -98,6 +108,19 @@ export const MARKET_HUBS: MarketHub[] = [
     bodyAr:
       "صفِّ بـ country=AE لتغطية أسواق الإمارات. رتّب حسب الأثر عندما لا يكفي الأحدث أولاً لمنتجات التداول أو الإعلام.",
     keywords: ["UAE news API", "Dubai Abu Dhabi market news API"],
+  },
+  {
+    slug: "kuwait",
+    countryCodes: ["KW"],
+    titleEn: "Kuwait market news API",
+    titleAr: "واجهة أخبار أسواق الكويت",
+    ledeEn: "Country-filtered Gulf market intelligence with bilingual fields and impact scores.",
+    ledeAr: "ذكاء أسواق خليجي مصفّى للدولة مع حقول ثنائية اللغة ودرجات أثر.",
+    bodyEn:
+      "Request country=KW for Kuwait-tagged market stories covering rates, oil, banking, and regional capital flows. Arabic and English fields ship on every record so Arabic-first products do not need a second translation layer.",
+    bodyAr:
+      "اطلب country=KW لأخبار أسواق موسومة بالكويت تغطي الفائدة والنفط والمصارف وتدفقات رأس المال الإقليمية. حقول عربية وإنجليزية في كل سجل حتى لا تحتاج المنتجات العربية أولاً طبقة ترجمة ثانية.",
+    keywords: ["Kuwait news API", "Kuwait market news API", "Gulf market news API"],
   },
   {
     slug: "egypt",

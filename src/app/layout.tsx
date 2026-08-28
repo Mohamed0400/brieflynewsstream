@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { Geist, Geist_Mono, IBM_Plex_Sans_Arabic } from "next/font/google";
+import { RouteScrollRestoration } from "@/components/RouteScrollRestoration";
 import { Toaster } from "@/components/Toaster";
 import {
   SITE_NAME,
@@ -121,6 +122,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${plexArabic.variable} h-full antialiased`}
     >
       <body className="min-h-[100dvh] flex flex-col">
+        <RouteScrollRestoration />
         {children}
         <Toaster />
         <Analytics />

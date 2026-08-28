@@ -19,7 +19,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }> = [
     { path: "/", changeFrequency: "weekly", priority: 1 },
     { path: "/news", changeFrequency: "hourly", priority: 0.95 },
-    { path: "/archive", changeFrequency: "daily", priority: 0.7 },
+    // Archive hidden — route disabled until cold storage is working.
     { path: "/pricing", changeFrequency: "weekly", priority: 0.9 },
     { path: "/developers", changeFrequency: "weekly", priority: 0.9 },
     { path: "/coverage", changeFrequency: "weekly", priority: 0.85 },

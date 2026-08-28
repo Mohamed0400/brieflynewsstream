@@ -1,3 +1,11 @@
+// Archive route disabled — cold storage / R2 integration not working yet.
+import { notFound } from "next/navigation";
+
+export default function ArchiveDayPageDisabled() {
+  notFound();
+}
+
+/*
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -93,3 +101,4 @@ export default async function ArchiveDayPage({
     </div>
   );
 }
+*/

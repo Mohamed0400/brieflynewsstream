@@ -6,7 +6,6 @@ import {
   AdminCustomersPanel,
   type AdminCustomerSnapshot,
 } from "@/components/console/AdminCustomersPanel";
-import { AdminQuotaResetAllPanel, AdminQuotaResetButton } from "@/components/console/OpsQuotaReset";
 
 export function AdminOperations() {
   const [email, setEmail] = useState("");
@@ -33,18 +32,15 @@ export function AdminOperations() {
         email={email}
         account={account}
         invoiceId={invoiceId}
-        onEmailChange={setEmail}
+        onEmailChange={(next) => {
+          setEmail(next);
+          if (account && next.trim().toLowerCase() !== account.email.toLowerCase()) {
+            setAccount(null);
+          }
+        }}
         onInvoiceIdChange={setInvoiceId}
         onSaved={bumpRefresh}
-        quotaResetSlot={account ? (
-          <AdminQuotaResetButton
-            accountId={account.id}
-            email={account.email}
-            onDone={bumpRefresh}
-          />
-        ) : null}
       />
-      <AdminQuotaResetAllPanel />
     </>
   );
 }

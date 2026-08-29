@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useConsoleCopy } from "@/components/console/ConsoleLang";
 import type { AdminCustomerSnapshot } from "@/components/console/AdminCustomersPanel";
+import { AdminQuotaResetAllPanel, AdminQuotaResetButton } from "@/components/console/OpsQuotaReset";
 import { PLAN_DEFINITIONS } from "@/lib/plans";
 
 type AdminBusyAction = "save" | "pay" | "void" | null;
@@ -14,7 +15,6 @@ export function AdminAccountsPanel({
   onEmailChange,
   onInvoiceIdChange,
   onSaved,
-  quotaResetSlot,
 }: {
   email?: string;
   account?: AdminCustomerSnapshot | null;
@@ -22,6 +22,7 @@ export function AdminAccountsPanel({
   onEmailChange?: (email: string) => void;
   onInvoiceIdChange?: (invoiceId: string) => void;
   onSaved?: () => void;
+  /** @deprecated Quota reset is always shown from email/account. */
   quotaResetSlot?: ReactNode;
 } = {}) {
   const { copy } = useConsoleCopy();
@@ -175,9 +176,16 @@ export function AdminAccountsPanel({
           >
             {busyAction === "save" ? t.adminSaving : t.adminSave}
           </button>
-          {quotaResetSlot}
+          <AdminQuotaResetButton
+            accountId={account?.id}
+            email={emailValue}
+            disabled={!emailValue.trim()}
+            onDone={() => onSaved?.()}
+          />
         </div>
       </section>
+
+      <AdminQuotaResetAllPanel />
 
       <section className="console-panel" aria-labelledby="ops-invoice-title">
         <div className="console-panel-heading">

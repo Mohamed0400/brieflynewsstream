@@ -30,22 +30,27 @@ export function AdminQuotaResetButton({
   accountId,
   email,
   onDone,
+  disabled,
 }: {
-  accountId: string;
+  accountId?: string;
   email: string;
   onDone?: (deleted: number) => void;
+  disabled?: boolean;
 }) {
   const { copy } = useConsoleCopy();
   const q = copy.opsQuota;
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const trimmedEmail = email.trim();
+  const canReset = Boolean(accountId || trimmedEmail) && !disabled;
 
   async function confirmReset() {
+    if (!canReset) return;
     setBusy(true);
     try {
       const payload = await postQuotaReset({
         scope: "account",
-        accountId,
+        ...(accountId ? { accountId } : { email: trimmedEmail }),
         window: "today",
       });
       toast.success(q.success(payload.deleted || 0));
@@ -61,12 +66,17 @@ export function AdminQuotaResetButton({
   return (
     <div className="ops-quota-account-reset">
       {!open ? (
-        <button type="button" className="console-danger-button" onClick={() => setOpen(true)}>
+        <button
+          type="button"
+          className="console-danger-button"
+          disabled={!canReset}
+          onClick={() => setOpen(true)}
+        >
           {q.resetAccount}
         </button>
       ) : (
         <div className="ops-inline-confirm">
-          <p>{q.confirmAccount(email)}</p>
+          <p>{q.confirmAccount(trimmedEmail || accountId || "—")}</p>
           <div className="console-inline-actions">
             <button
               type="button"

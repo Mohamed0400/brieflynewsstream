@@ -552,6 +552,8 @@ export async function runOpsRecovery(options: OpsRecoverOptions = {}): Promise<O
 export async function runOpsAutoHeal(options: {
   translate?: boolean;
   triggerCollectIfStale?: boolean;
+  /** Release every running job lock (pre-collect / GHA pre-heal). */
+  forceLocks?: boolean;
   actorId?: string;
   forceEnabled?: boolean;
 } = {}): Promise<OpsAutoHealResult> {
@@ -571,7 +573,11 @@ export async function runOpsAutoHeal(options: {
     };
   }
 
-  const clearedStaleLocks = await clearStaleJobLocks();
+  let clearedStaleLocks = await clearStaleJobLocks();
+  if (options.forceLocks) {
+    const forced = await releaseAllRunningJobLocks();
+    clearedStaleLocks = [...new Set([...clearedStaleLocks, ...forced])];
+  }
   const abandonedRaw = await abandonStaleRawArticles();
 
   let translated: number | null = null;
@@ -633,6 +639,7 @@ export async function runOpsAutoHeal(options: {
       translated,
       translationPending,
       collect,
+      forceLocks: Boolean(options.forceLocks),
       messages,
     },
   }).catch((error) => {

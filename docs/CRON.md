@@ -4,17 +4,17 @@
 
 This app needs an **external wake-up**. Collecting news from ~70 countries takes minutes. Serverless Next.js (Vercel) sleeps between requests, so in-process `node-cron` is only a backup on a long-lived host.
 
-Timezone is `APP_TIMEZONE` (default `Asia/Kuwait`). Three hosts wake collect at **different hours** so they do not overlap locks or burn the same GitHub minutes:
+Timezone is `APP_TIMEZONE` (default `Asia/Kuwait`). GitHub Actions is the reliable full collect (three times daily with pre-heal and post-confirm). Vercel and cron-job.org remain short HTTP backups:
 
 | Kuwait | UTC | Host | What |
 |--------|-----|------|------|
+| every 4h | `*/4` | **GitHub Actions** | Workflow `Ops heal` — zombie locks + abandon stale raw |
+| 06:00 / 14:00 / 22:00 | 03:00 / 11:00 / 19:00 | **GitHub Actions** | Workflow `Collect news` — pre-heal → collect → confirm |
 | 07:00 | 04:00 | **Vercel Cron** | HTTP `/api/cron/collect` (short serverless backup) |
-| 11:00 | 08:00 | **Vercel Cron** | HTTP `/api/cron/ops-heal` (zombie locks + abandon stale raw) |
-| 14:00 | 11:00 | **cron-job.org** | HTTP `/api/cron/collect` — set this time in their dashboard |
-| 22:00 | 19:00 | **GitHub Actions** | Full database pipeline (the long run, once a day) |
+| 11:00 | 08:00 | **Vercel Cron** | HTTP `/api/cron/ops-heal` |
 | 23:00 | 20:00 | **Vercel Cron** | HTTP `/api/cron/translate` backfill |
 
-GitHub Actions used to run 3× daily plus an hourly self-heal. That burned the 2,000 included minutes. One evening collect is enough; Vercel and cron-job.org cover the other two slots. **ops-heal** keeps interrupted collects from leaving the feed stuck until a human intervenes.
+See [CRONJOBS.md](./CRONJOBS.md) for the schedule of record.
 
 ## How we run cron (pick the host)
 

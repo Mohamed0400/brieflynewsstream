@@ -1,0 +1,87 @@
+name: Ops heal
+
+# Clears zombie locks and abandons stale raw between full collects so the feed
+# cannot stay blocked until the next Collect news run.
+
+on:
+  schedule:
+    # Every 4 hours UTC (07:00, 11:00, 15:00, 19:00, 23:00, 03:00 Kuwait)
+    - cron: "0 */4 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ops-heal
+  cancel-in-progress: false
+
+env:
+  APP_TIMEZONE: Asia/Kuwait
+  NEXT_PUBLIC_APP_ENV: live
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  DIRECT_URL: ${{ secrets.DIRECT_URL }}
+  GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+  ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
+  CRON_SECRET: ${{ secrets.CRON_SECRET }}
+  SITE_URL: ${{ secrets.SITE_URL }}
+  PRISMA_CONNECTION_LIMIT: "6"
+  TRANSLATE_BATCH_SIZE: "80"
+  TRANSLATE_MAX_PASSES: "8"
+  TRANSLATE_CONCURRENCY: "4"
+
+jobs:
+  heal:
+    name: Clear locks + abandon stale raw
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check secrets
+        run: |
+          if [ -z "$DATABASE_URL" ] && [ -z "$CRON_SECRET" ] && [ -z "$ADMIN_API_KEY" ]; then
+            echo "::error::Need DATABASE_URL (+ DIRECT_URL) or CRON_SECRET/ADMIN_API_KEY."
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/ci?schema=public
+          DIRECT_URL: postgresql://postgres:postgres@127.0.0.1:5432/ci?schema=public
+        run: npx prisma generate
+
+      - name: Heal via database
+        if: ${{ env.DATABASE_URL != '' }}
+        run: |
+          set -o pipefail
+          # Zombie locks + abandon stale raw only. Never force-kill a live collect heartbeat.
+          # Full collect belongs to the Collect news workflow (pre-heal → collect → confirm).
+          npx tsx src/worker/ops-heal-once.ts --no-translate | tee heal-result.json
+          {
+            echo "## Ops heal"
+            echo '```json'
+            cat heal-result.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Heal via HTTP
+        if: ${{ env.DATABASE_URL == '' }}
+        run: |
+          token="${CRON_SECRET:-$ADMIN_API_KEY}"
+          base="${SITE_URL:-https://www.brieflynewsstream.com}"
+          curl -fsS -X POST "$base/api/cron/ops-heal" \
+            -H "Authorization: Bearer $token" \
+            -H "Content-Type: application/json" \
+            --max-time 300 | tee heal-result.json
+          {
+            echo "## Ops heal (HTTP)"
+            echo '```json'
+            cat heal-result.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

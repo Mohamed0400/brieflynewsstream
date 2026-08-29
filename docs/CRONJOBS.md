@@ -1,10 +1,8 @@
 # CRONJOBS
 
-How Briefly NewsStream wakes news collect, translate, and publish.
+How Briefly NewsStream wakes news collect, translate, publish, and auto-heal.
 
 Timezone is **Asia/Kuwait** (`APP_TIMEZONE`, UTC+3). The site on Vercel does **not** run cron inside the Node process. Something outside must call the app, or GitHub must run the pipeline.
-
-Three hosts do that work at **different hours**. They must not share the same clock, or they fight the same database lock and GitHub burns extra Actions minutes.
 
 Implementation notes (locks, pg-boss, bilingual checks): [CRON.md](./CRON.md).
 
@@ -14,47 +12,43 @@ Implementation notes (locks, pg-boss, bilingual checks): [CRON.md](./CRON.md).
 
 | Kuwait | UTC | Host | Job | Kind |
 |--------|-----|------|-----|------|
-| 07:00 | 04:00 | **Vercel Cron** | `GET /api/cron/collect` | Short HTTP. Hobby functions often time out before a full country pass. Backup only. |
-| 14:00 | 11:00 | **cron-job.org** | `GET` or `POST /api/cron/collect` | Short HTTP. Set this time in the cron-job.org dashboard. |
-| 22:00 | 19:00 | **GitHub Actions** | Workflow `Collect news` | **The long run.** Ingest + translate + today’s edition on a 180-minute runner. Once per day. |
-| 23:00 | 20:00 | **Vercel Cron** | `GET /api/cron/translate` | HTTP backfill for leftover `ar` / `en` pairs after the evening collect. |
-| 03:30 | 00:30 | **Vercel Cron** | `GET /api/cron/archive` | Prune Supabase older than `ARCHIVE_HOT_RETENTION_DAYS` (default 5). Optional R2 upload — [R2-CLOUDFLARE-SETUP.md](./R2-CLOUDFLARE-SETUP.md). |
+| every 4h | `0 */4 * * *` | **GitHub Actions** | Workflow `Ops heal` | Clear zombie locks + abandon stale raw (never force-kills a live collect). |
+| 06:00 | 03:00 | **GitHub Actions** | Workflow `Collect news` | Pre-heal → full collect → confirm (+ repair if stale). |
+| 07:00 | 04:00 | **Vercel Cron** | `GET /api/cron/collect` | Short HTTP backup only. |
+| 11:00 | 08:00 | **Vercel Cron** | `GET /api/cron/ops-heal` | HTTP heal backup. |
+| 14:00 | 11:00 | **GitHub Actions** | Workflow `Collect news` | Pre-heal → full collect → confirm. |
+| 14:00 | 11:00 | **cron-job.org** | HTTP `/api/cron/collect` | Optional short midday ping (dashboard). Prefer GHA at this hour. |
+| 22:00 | 19:00 | **GitHub Actions** | Workflow `Collect news` | Pre-heal → full collect → confirm. |
+| 23:00 | 20:00 | **Vercel Cron** | `GET /api/cron/translate` | HTTP backfill for leftover `ar` / `en` pairs. |
+| 03:30 | 00:30 | **Vercel Cron** | `GET /api/cron/archive` | Prune hot window / optional R2. |
 
-Do not add a GitHub hourly job. Do not run GitHub collect three times a day. That is what used up the 2,000 included Actions minutes.
-
----
-
-## Why three hosts
-
-| Host | Strength | Limit |
-|------|----------|--------|
-| **GitHub Actions** | Can run 40–180 minutes. This is the only reliable full collect. | **Public repos:** standard Linux runners are free (no private-minute bill). **Private repos:** free plan is **2,000 minutes / month**; extras bill unless spending limit is $0. |
-| **Vercel Cron** | Always on with the deploy. No GitHub minutes. | Hobby: about one run per path per day, hour-level timing. Serverless timeout is too short for a full collect. |
-| **cron-job.org** | Free HTTP ping. No GitHub minutes. | Same Vercel timeout as Vercel Cron. Use it as a midday refresh, not as the full pipeline. |
-
-This repo is **public**, so the daily GitHub collect should not hit the private-repo Actions spending limit again. Keep the schedule staggered (once daily on GitHub) so runs stay short and do not overlap locks.
-
-If GitHub Actions is ever disabled, **the website and API stay up**. Midday Vercel / cron-job.org HTTP collect still refreshes what it can within the serverless timeout.
-
-CI (typecheck, tests, build on push) also uses Actions minutes. Collect is the expensive one.
+This repo is **public**, so standard GitHub Actions Linux runners do not burn the private-plan 2,000-minute budget. Prefer GHA for reliability.
 
 ---
 
-## GitHub Actions
+## GitHub Actions — Collect news
 
 File: `.github/workflows/collect.yml`
 
-- Trigger: `0 19 * * *` UTC = **22:00 Kuwait**, plus **Run workflow** in the Actions UI.
-- Timeout: 180 minutes.
-- One job: collect (ingest, translate, edition). No second 90-minute translate job.
-- Needs secrets: `DATABASE_URL`, `DIRECT_URL`, `GOOGLE_API_KEY`. Optional: `CRON_SECRET` / `ADMIN_API_KEY` / `SITE_URL` for HTTP fallback if `DATABASE_URL` is missing.
+Three jobs every run:
 
-After changing the workflow, it only applies once it is on `main`.
+1. **Pre-heal** — force-clear stuck locks + abandon stale raw (`ops-heal-once --pre-collect`)
+2. **Collect** — full DB pipeline (`run-once.ts`, up to 180 minutes)
+3. **Confirm** — assert newest `publishedAt` within 8h; if not, heal + force collect once (`ops-confirm-once --repair`)
 
-Do **not** re-enable:
+Schedules: `0 3,11,19 * * *` UTC (= 06:00 / 14:00 / 22:00 Kuwait), plus **Run workflow**.
 
-- `20 * * * *` hourly `--if-stale` (starts a runner even when collect is already fresh)
-- Extra daily crons at 03:00 or 11:00 UTC
+Secrets: `DATABASE_URL`, `DIRECT_URL`, `GOOGLE_API_KEY`. Optional HTTP fallback: `CRON_SECRET` / `ADMIN_API_KEY` / `SITE_URL`.
+
+---
+
+## GitHub Actions — Ops heal
+
+File: `.github/workflows/ops-heal.yml`
+
+- Every 4 hours + **Run workflow**
+- Clears **zombie** locks only (does not steal a live collect heartbeat)
+- Abandons raw rows outside the live window
 
 ---
 
@@ -67,80 +61,20 @@ File: `vercel.json`
   "crons": [
     { "path": "/api/cron/collect", "schedule": "0 4 * * *" },
     { "path": "/api/cron/archive", "schedule": "30 0 * * *" },
-    { "path": "/api/cron/translate", "schedule": "0 20 * * *" }
+    { "path": "/api/cron/translate", "schedule": "0 20 * * *" },
+    { "path": "/api/cron/ops-heal", "schedule": "0 8 * * *" }
   ]
 }
 ```
 
-Set `CRON_SECRET` on the Vercel project. Vercel sends `Authorization: Bearer $CRON_SECRET`. Without it, scheduled hits return 401.
-
-Hobby: one collect per day and one translate per day is the intended shape. Do not stack more Vercel crons on the same hour as GitHub or cron-job.org.
+Set `CRON_SECRET` on the Vercel project.
 
 ---
 
-## cron-job.org
+## If the feed looks stuck
 
-This is **not** in the repo. You configure it in their dashboard.
+1. Actions → **Ops heal** → Run workflow (clears zombies)
+2. Actions → **Collect news** → Run workflow (pre-heal → collect → confirm)
+3. Or Platform operations → **Run auto-heal** / **Force collect**
 
-| Field | Value |
-|-------|--------|
-| URL | `https://www.brieflynewsstream.com/api/cron/collect` |
-| Method | GET or POST |
-| Header | `Authorization: Bearer <CRON_SECRET>` |
-| Schedule | **Once daily, 14:00 Asia/Kuwait** (11:00 UTC) |
-| Timezone | Asia/Kuwait |
-
-If the job still uses the old GitHub times (06:00, 14:00, and 22:00), delete the extra times. Keep **only 14:00**.
-
----
-
-## HTTP routes
-
-Auth: `Authorization: Bearer $CRON_SECRET` or `X-API-Key: $ADMIN_API_KEY`.
-
-| Path | What it does |
-|------|----------------|
-| `/api/cron/collect` | Fetch sources, fill countries below 3 stories, translate, refresh today’s edition |
-| `/api/cron/translate` | Backfill missing Arabic / English pairs |
-| `/api/cron/publish` | Rebuild `/today` |
-| `/api/v1/admin/collect` | Same as collect (console / admin) |
-
-```bash
-curl -X GET "https://www.brieflynewsstream.com/api/cron/collect" \
-  -H "Authorization: Bearer $CRON_SECRET"
-```
-
-Manual collect: GitHub → **Actions → Collect news → Run workflow**, or Console → Schedule → Run.
-
----
-
-## Locks
-
-Only one collect should run at a time. `ScheduledJob.lockedUntil` lasts **4 hours**, with a heartbeat every 60 seconds.
-
-That is why the three hosts are hours apart (07:00 / 14:00 / 22:00). If two fire together, the second is skipped or waits on the lock.
-
-Health (`GET /api/v1/health`) does **not** steal a live lock.
-
----
-
-## Optional: long-lived worker
-
-Not required in production if the three HTTP/GHA wakes above are running.
-
-On a VPS: `npm run worker:live` (pg-boss on Postgres). Default queues still list 06:00 / 14:00 / 22:00 Kuwait for collect — do **not** also run that worker if GitHub + Vercel + cron-job.org are already covering those hours, or you will double-run.
-
----
-
-## Checklist
-
-- [ ] Vercel `CRON_SECRET` set; crons in `vercel.json` unchanged (07:00 collect, 23:00 translate Kuwait)
-- [ ] cron-job.org: one job at **14:00 Kuwait** with Bearer `CRON_SECRET`
-- [ ] GitHub secrets `DATABASE_URL`, `DIRECT_URL`, `GOOGLE_API_KEY`
-- [ ] GitHub workflow on `main` with a **single** `0 19 * * *` schedule
-- [ ] GitHub Actions spending limit $0 if you do not want overage bills
-- [ ] After a collect: `GET https://www.brieflynewsstream.com/api/v1/health`
-
-```bash
-BASE_URL="https://www.brieflynewsstream.com" npm run smoke
-```
+Do **not** cancel a running Collect job early — that leaves `collect` interrupted until the next pre-heal.

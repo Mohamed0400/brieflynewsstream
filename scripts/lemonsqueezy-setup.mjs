@@ -156,5 +156,7 @@ console.log("");
 console.log("Add this webhook in Lemon Squeezy → Settings → Webhooks:");
 console.log("  URL: https://www.brieflynewsstream.com/api/webhooks/billing/lemonsqueezy");
 console.log("  Local: http://localhost:3000/api/webhooks/billing/lemonsqueezy");
-console.log("  Events: order_created, subscription_created, subscription_payment_success");
+console.log("  Events: order_created, subscription_created, subscription_payment_success,");
+console.log("          subscription_payment_recovered, subscription_cancelled, subscription_expired,");
+console.log("          subscription_payment_failed, subscription_resumed, subscription_updated");
 console.log("  Signing secret: LEMONSQUEEZY_WEBHOOK_SECRET from .env");

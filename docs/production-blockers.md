@@ -100,18 +100,23 @@ LEMONSQUEEZY_ENTERPRISE_VARIANT_ID=
 LEMONSQUEEZY_WEBHOOK_SECRET=   # Live webhook signing secret
 ```
 
-**Webhook URL (must include `https://`):**  
-`https://www.brieflynewsstream.com/api/webhooks/billing/lemonsqueezy`
-
-**Webhook events to enable (only these three — the app ignores all others):**
+**Webhook events to enable (required for paid + auto Free downgrade):**
 
 | Event | Why |
 | --- | --- |
-| `order_created` | One-time / first checkout paid |
-| `subscription_created` | Subscription checkout started |
-| `subscription_payment_success` | Recurring subscription payment |
+| `order_created` | First checkout paid → Pro/Enterprise |
+| `subscription_created` | Subscription started → sync Subscription row |
+| `subscription_payment_success` | Renewal paid → keep Pro/Enterprise |
+| `subscription_payment_recovered` | Recovered after failed renew → keep paid plan |
+| `subscription_cancelled` | Soft cancel — **keeps Pro until period end** |
+| `subscription_expired` | Period ended / dunning finished → **plan = Free** |
+| `subscription_payment_failed` | Failed renew — marks `past_due`, **keeps Pro during dunning** |
+| `subscription_resumed` | Resume during grace → Pro again |
+| `subscription_updated` | Catch-all status sync (expired → Free) |
 
-You do **not** need `order_refunded`, `subscription_cancelled`, `subscription_payment_failed`, license-key events, etc. — they are not handled yet (the endpoint returns `ignored` and does not change plans).
+**Webhook URL:** `https://www.brieflynewsstream.com/api/webhooks/billing/lemonsqueezy`
+
+Lifecycle: Lemon bills monthly. Cancel keeps access until `ends_at`. Free is applied only on `subscription_expired` (or `subscription_updated` with status `expired`). Admin-set plans (`planSource=ADMIN`) are not auto-downgraded.
 
 **Store ID:** Required in Vercel for checkout to show as live (`paymentsLive`). Lemon Squeezy → Settings → Stores → copy the numeric store ID into `LEMONSQUEEZY_STORE_ID`. (Checkout can auto-discover the store at runtime, but the billing page treats payments as live only when this env var is set.)
 

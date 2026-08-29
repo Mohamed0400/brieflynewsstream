@@ -203,12 +203,19 @@ export type LemonWebhookPayload = {
     custom_data?: Record<string, string | number | boolean | null | undefined>;
   };
   data?: {
-    id?: string;
+    id?: string | number;
     type?: string;
     attributes?: {
       status?: string;
       total?: number;
       identifier?: string;
+      user_email?: string;
+      customer_id?: number | string;
+      subscription_id?: number | string;
+      renews_at?: string | null;
+      ends_at?: string | null;
+      created_at?: string | null;
+      updated_at?: string | null;
     };
   };
 };
@@ -219,11 +226,98 @@ export function extractInvoiceIdFromWebhook(payload: LemonWebhookPayload) {
   return raw == null ? null : String(raw);
 }
 
+export function extractAccountIdFromWebhook(payload: LemonWebhookPayload) {
+  const custom = payload.meta?.custom_data || {};
+  const raw = custom.account_id ?? custom.accountId;
+  return raw == null ? null : String(raw);
+}
+
+export function extractPlanTierFromWebhook(payload: LemonWebhookPayload): PlanTier | null {
+  const custom = payload.meta?.custom_data || {};
+  const raw = custom.plan_tier ?? custom.planTier;
+  if (raw == null) return null;
+  const value = String(raw).toUpperCase();
+  if (value === "PRO" || value === "ENTERPRISE" || value === "FREE") {
+    return value;
+  }
+  return null;
+}
+
+export function extractUserEmailFromWebhook(payload: LemonWebhookPayload) {
+  const email = payload.data?.attributes?.user_email;
+  if (!email) return null;
+  return String(email).trim().toLowerCase() || null;
+}
+
+export function extractLemonSubscriptionId(payload: LemonWebhookPayload) {
+  const type = payload.data?.type;
+  const attrs = payload.data?.attributes;
+  if (type === "subscription-invoices" || type === "subscription_invoices") {
+    if (attrs?.subscription_id != null) return String(attrs.subscription_id);
+  }
+  if (type === "subscriptions" && payload.data?.id != null) {
+    return String(payload.data.id);
+  }
+  if (attrs?.subscription_id != null) return String(attrs.subscription_id);
+  if (type !== "orders" && payload.data?.id != null) {
+    return String(payload.data.id);
+  }
+  return null;
+}
+
+export function extractLemonSubscriptionStatus(payload: LemonWebhookPayload) {
+  return payload.data?.attributes?.status ?? null;
+}
+
+export function extractLemonPeriodEnd(payload: LemonWebhookPayload) {
+  const attrs = payload.data?.attributes;
+  const raw = attrs?.ends_at || attrs?.renews_at;
+  if (!raw) return null;
+  const date = new Date(raw);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 export function isPaidLemonEvent(eventName: string | undefined) {
   if (!eventName) return false;
   return (
     eventName === "order_created" ||
     eventName === "subscription_payment_success" ||
-    eventName === "subscription_created"
+    eventName === "subscription_created" ||
+    eventName === "subscription_payment_recovered"
+  );
+}
+
+/** Soft cancel: keep Pro until period ends (subscription_expired). */
+export function isCancelLemonEvent(eventName: string | undefined) {
+  return eventName === "subscription_cancelled";
+}
+
+/** Hard end: downgrade to Free. */
+export function isExpireLemonEvent(eventName: string | undefined) {
+  return eventName === "subscription_expired";
+}
+
+/** Failed renew during dunning: keep Pro until expired. */
+export function isPastDueLemonEvent(eventName: string | undefined) {
+  return eventName === "subscription_payment_failed";
+}
+
+export function isResumeLemonEvent(eventName: string | undefined) {
+  return eventName === "subscription_resumed";
+}
+
+/** Catch-all status sync from Lemon. */
+export function isUpdateLemonEvent(eventName: string | undefined) {
+  return eventName === "subscription_updated";
+}
+
+export function isHandledLemonLifecycleEvent(eventName: string | undefined) {
+  return (
+    isPaidLemonEvent(eventName) ||
+    isCancelLemonEvent(eventName) ||
+    isExpireLemonEvent(eventName) ||
+    isPastDueLemonEvent(eventName) ||
+    isResumeLemonEvent(eventName) ||
+    isUpdateLemonEvent(eventName)
   );
 }

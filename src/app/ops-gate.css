@@ -149,6 +149,7 @@
 /* Authenticated ops chrome */
 .ops-shell {
   color-scheme: light;
+  --ops-danger: #9b2c2c;
   --console-bg: #f7f9fc;
   --console-paper: #f7f9fc;
   --console-surface: #ffffff;
@@ -164,6 +165,8 @@
   --console-cyan: #5ec8dc;
   --console-on-dark: #f7f9fc;
   --console-placeholder: #526274;
+  --console-danger: #9b2c2c;
+  --console-danger-soft: #fde8e8;
   min-height: 100dvh;
   background:
     radial-gradient(ellipse 65% 45% at 100% 0%, rgb(94 200 220 / 0.14), transparent 55%),
@@ -480,6 +483,13 @@
 
 .ops-shell .ops-account-actions {
   margin-top: 1rem;
+  width: 100%;
+}
+
+.ops-shell .ops-account-actions .console-primary-button,
+.ops-shell .ops-account-actions .console-danger-button,
+.ops-shell .ops-quota-account-reset {
+  flex: 0 1 auto;
 }
 
 .ops-shell .ops-quota-account-reset {
@@ -489,19 +499,23 @@
 }
 
 .ops-shell .console-danger-button {
-  background: var(--ops-danger);
-  border-color: var(--ops-danger);
-  color: #fff;
+  background: #9b2c2c;
+  border: 1px solid #9b2c2c;
+  color: #ffffff;
 }
 
 .ops-shell .console-danger-button:hover {
-  filter: brightness(1.05);
+  background: #7f2424;
+  border-color: #7f2424;
+  color: #ffffff;
+  filter: none;
 }
 
 .ops-shell .console-danger-button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
   filter: none;
+  color: #ffffff;
 }
 
 .ops-shell .ops-customer-detail-head {

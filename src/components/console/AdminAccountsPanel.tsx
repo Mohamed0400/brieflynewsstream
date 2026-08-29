@@ -183,6 +183,7 @@ export function AdminAccountsPanel({
             onDone={() => onSaved?.()}
           />
         </div>
+        <p className="console-help ops-quota-help">{copy.opsQuota.nextToSaveHint}</p>
       </section>
 
       <AdminQuotaResetAllPanel />

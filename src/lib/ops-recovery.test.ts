@@ -71,6 +71,7 @@ test("summarizeRecoverResult reports cleared locks and backlog", () => {
   const messages = summarizeRecoverResult({
     clearedStaleLocks: ["translate"],
     releasedRunningJobs: ["collect"],
+    abandonedRaw: 40,
     rawBefore: 120,
     rawAfter: 20,
     rawNormalized: 100,
@@ -83,6 +84,7 @@ test("summarizeRecoverResult reports cleared locks and backlog", () => {
     messages: [],
   });
   assert.match(messages.join(" "), /Cleared 1 stale lock/);
+  assert.match(messages.join(" "), /Abandoned 40 stale raw/);
   assert.match(messages.join(" "), /Normalized 100 raw/);
   assert.match(messages.join(" "), /Translated 45/);
   assert.match(messages.join(" "), /Purged 12 low-quality/);
@@ -95,7 +97,13 @@ test("ops status snapshot shape includes backlog and bilingual windows", () => {
     jobs: [],
     stuckJobs: [],
     pendingRawArticles: 0,
+    pendingFreshRawArticles: 0,
+    pendingStaleRawArticles: 0,
     pendingTranslationArticles: 0,
+    newestPublishedAt: null,
+    newestPublishedAgeHours: null,
+    pipelineAutoHeal: true,
+    pipelineAutoHealCollect: false,
     bilingual: {
       today: { scanned: 0, complete: 0, missingArabic: 0, missingEnglish: 0, ok: true },
       fresh: { scanned: 10, complete: 8, missingArabic: 2, missingEnglish: 1, ok: false },

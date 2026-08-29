@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useConsoleCopy } from "@/components/console/ConsoleLang";
-import { ADMIN_RECOVERY_PATH, adminNavHref } from "@/lib/admin-app";
+import { ADMIN_AUDIT_PATH, ADMIN_RECOVERY_PATH, adminNavHref } from "@/lib/admin-app";
 import { toast } from "@/lib/toast";
 
 type Recommendation = {
   id: string;
   severity: "critical" | "warning" | "info";
-  action: "kill_zombie" | "collect" | "translate" | "recovery" | "none";
+  action: "kill_zombie" | "collect" | "translate" | "recovery" | "auto_heal" | "none";
 };
 
 type PipelinePayload = {
@@ -19,13 +19,24 @@ type PipelinePayload = {
     runningJobs: string[];
     pendingTranslationArticles: number;
     pendingRawArticles: number;
+    pendingFreshRawArticles: number;
+    pendingStaleRawArticles: number;
     bilingualFreshOk: boolean;
     bilingualFreshMissingArabic: number;
     newestPublishedAt: string | null;
+    newestPublishedAgeHours: number | null;
     collectLastStatus: string | null;
     collectLastRunAt: string | null;
+    pipelineAutoHeal: boolean;
+    pipelineAutoHealCollect: boolean;
   };
 };
+
+function formatAgeHours(hours: number | null, locale: string) {
+  if (hours == null) return "—";
+  if (hours < 1) return `<1h`;
+  return `${hours.toLocaleString(locale, { maximumFractionDigits: 1 })}h`;
+}
 
 export function OpsOverviewActions() {
   const { copy, lang } = useConsoleCopy();
@@ -99,14 +110,104 @@ export function OpsOverviewActions() {
     }
   }
 
+  async function runAutoHeal(withCollect = false) {
+    setBusy(withCollect ? "heal-collect" : "heal");
+    try {
+      const response = await fetch("/api/console/ops/recover", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ autoHeal: true, collect: withCollect }),
+      });
+      const payload = await response.json().catch(() => ({})) as {
+        message?: string;
+        messages?: string[];
+      };
+      if (!response.ok) throw new Error(payload.message || t.autoHealFailed);
+      if (payload.messages?.length) toast.success(payload.messages.join(" "));
+      else toast.success(t.autoHealDone);
+      await load();
+    } catch (requestError) {
+      toast.exception(requestError, t.autoHealFailed);
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function runSuggestedRecovery() {
+    setBusy("recovery");
+    try {
+      const response = await fetch("/api/console/ops/recover", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ forceLocks: true, normalize: true, translate: true }),
+      });
+      const payload = await response.json().catch(() => ({})) as {
+        message?: string;
+        messages?: string[];
+      };
+      if (!response.ok && !payload.messages) {
+        throw new Error(payload.message || t.autoHealFailed);
+      }
+      if (payload.messages?.length) toast.success(payload.messages.join(" "));
+      await load();
+    } catch (requestError) {
+      toast.exception(requestError, t.autoHealFailed);
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function runSuggestedTranslate() {
+    setBusy("translate");
+    try {
+      const response = await fetch("/api/console/ops/recover", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ translate: true, forceLocks: false, normalize: false }),
+      });
+      const payload = await response.json().catch(() => ({})) as {
+        message?: string;
+        messages?: string[];
+      };
+      if (!response.ok && !payload.messages) {
+        throw new Error(payload.message || t.autoHealFailed);
+      }
+      if (payload.messages?.length) toast.success(payload.messages.join(" "));
+      await load();
+    } catch (requestError) {
+      toast.exception(requestError, t.autoHealFailed);
+    } finally {
+      setBusy("");
+    }
+  }
+
   function labelFor(id: string) {
     return t.recommendationLabels[id as keyof typeof t.recommendationLabels] || id;
   }
 
   const hasZombie = Boolean(data?.pipeline.stuckJobs.length);
+  const ageLabel = formatAgeHours(data?.pipeline.newestPublishedAgeHours ?? null, copy.locale);
 
   return (
     <div className="ops-overview-actions">
+      <section className="console-metric-grid" aria-label={t.pipelineMetricsAria}>
+        <article className={`console-metric ${(data?.pipeline.newestPublishedAgeHours ?? 0) > 6 ? "console-metric-warn" : "console-metric-primary"}`}>
+          <span>{t.newestAge}</span>
+          <strong dir="ltr">{ageLabel}</strong>
+          <small>{t.newestAgeHint}</small>
+        </article>
+        <article className={`console-metric ${data?.pipeline.pendingStaleRawArticles ? "console-metric-warn" : ""}`}>
+          <span>{t.staleRaw}</span>
+          <strong>{(data?.pipeline.pendingStaleRawArticles ?? 0).toLocaleString(copy.locale)}</strong>
+          <small>{t.staleRawHint}</small>
+        </article>
+        <article className="console-metric">
+          <span>{t.collectStatus}</span>
+          <strong>{data?.pipeline.collectLastStatus || "—"}</strong>
+          <small>{t.autoHealStatus(Boolean(data?.pipeline.pipelineAutoHeal))}</small>
+        </article>
+      </section>
+
       <section className="console-panel ops-collect-cta" aria-labelledby="ops-collect-cta-title">
         <div className="console-panel-heading">
           <div>
@@ -114,6 +215,14 @@ export function OpsOverviewActions() {
             <p>{t.collectCta.hint}</p>
           </div>
           <div className="ops-overview-cta-row">
+            <button
+              type="button"
+              className="console-secondary-button"
+              disabled={Boolean(busy)}
+              onClick={() => void runAutoHeal(false)}
+            >
+              {busy === "heal" ? t.collectCta.running : t.runAutoHeal}
+            </button>
             <button
               type="button"
               className="console-danger-button"
@@ -145,9 +254,14 @@ export function OpsOverviewActions() {
             <h2 id="ops-recs-title">{t.recommendationsTitle}</h2>
             <p>{t.recommendationsHint}</p>
           </div>
-          <Link href={adminNavHref(ADMIN_RECOVERY_PATH, lang)} className="console-secondary-button">
-            {t.openRecovery}
-          </Link>
+          <div className="ops-overview-cta-row">
+            <Link href={adminNavHref(ADMIN_AUDIT_PATH, lang)} className="console-secondary-button">
+              {t.openAudit}
+            </Link>
+            <Link href={adminNavHref(ADMIN_RECOVERY_PATH, lang)} className="console-secondary-button">
+              {t.openRecovery}
+            </Link>
+          </div>
         </div>
         {error ? <p className="console-gate-error" role="alert">{error}</p> : null}
         <ul className="ops-recommendation-tags">
@@ -164,6 +278,16 @@ export function OpsOverviewActions() {
                   {t.killZombie}
                 </button>
               ) : null}
+              {rec.action === "auto_heal" ? (
+                <button
+                  type="button"
+                  className="console-primary-button"
+                  disabled={Boolean(busy)}
+                  onClick={() => void runAutoHeal(false)}
+                >
+                  {t.runAutoHeal}
+                </button>
+              ) : null}
               {rec.action === "collect" ? (
                 <button
                   type="button"
@@ -174,10 +298,25 @@ export function OpsOverviewActions() {
                   {t.collectCta.button}
                 </button>
               ) : null}
-              {rec.action === "translate" || rec.action === "recovery" ? (
-                <Link href={adminNavHref(ADMIN_RECOVERY_PATH, lang)} className="console-secondary-button">
-                  {t.openRecovery}
-                </Link>
+              {rec.action === "translate" ? (
+                <button
+                  type="button"
+                  className="console-secondary-button"
+                  disabled={Boolean(busy)}
+                  onClick={() => void runSuggestedTranslate()}
+                >
+                  {busy === "translate" ? t.collectCta.running : t.drainTranslations}
+                </button>
+              ) : null}
+              {rec.action === "recovery" ? (
+                <button
+                  type="button"
+                  className="console-secondary-button"
+                  disabled={Boolean(busy)}
+                  onClick={() => void runSuggestedRecovery()}
+                >
+                  {busy === "recovery" ? t.collectCta.running : t.applyRecovery}
+                </button>
               ) : null}
             </li>
           ))}

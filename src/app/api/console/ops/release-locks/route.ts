@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireSuperAdmin } from "@/lib/account";
+import { logAdminAction } from "@/lib/admin-audit";
 import { describeQueryFailure } from "@/lib/api";
 import { isTrustedConsoleOrigin } from "@/lib/console-auth";
 import { getOpsStatus, releaseStuckJobLocks } from "@/lib/ops-recovery";
@@ -18,6 +19,13 @@ export async function POST(request: Request) {
       keys: body.keys,
       force: body.force === true,
     });
+    await logAdminAction({
+      actorId: auth.account.id,
+      action: "ops.release_locks",
+      targetType: "pipeline",
+      targetId: body.keys?.join(",") || "all",
+      metadata: { released, force: body.force === true },
+    }).catch(() => undefined);
     const status = await getOpsStatus();
     return NextResponse.json({
       released,

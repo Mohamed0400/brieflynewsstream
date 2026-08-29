@@ -9,6 +9,7 @@ export const JOB_COLLECT = "collect";
 export const JOB_PUBLISH = "publish-daily";
 export const JOB_TRANSLATE = "translate";
 export const JOB_ARCHIVE = "archive";
+export const JOB_OPS_HEAL = "ops-heal";
 
 const HEARTBEAT_ID = "default";
 const HEARTBEAT_MS = 30_000;
@@ -20,6 +21,7 @@ export const JOB_LOCK_MS: Record<string, number> = {
   [JOB_TRANSLATE]: 20 * 60 * 1000,
   [JOB_PUBLISH]: 20 * 60 * 1000,
   [JOB_ARCHIVE]: 45 * 60 * 1000,
+  [JOB_OPS_HEAL]: 15 * 60 * 1000,
 };
 /** Extend a live lock about once a minute so health polls cannot treat it as expired. */
 export const LOCK_HEARTBEAT_MS = 60_000;
@@ -154,6 +156,13 @@ export const DEFAULT_SCHEDULED_JOBS = [
     key: JOB_TRANSLATE,
     name: "Translate articles",
     description: "Store Arabic and English title and summary pairs for every fresh article.",
+    cron: "*/15 * * * *",
+  },
+  {
+    key: JOB_OPS_HEAL,
+    name: "Pipeline auto-heal",
+    description:
+      "Clear zombie job locks, abandon stale raw backlog outside the live window, drain a bounded translation batch, and optionally re-start collect when the feed is stale.",
     cron: "*/15 * * * *",
   },
   {
@@ -294,7 +303,21 @@ async function executeJob(key: string) {
     const itemCount = await buildDailyEdition(date, { force: true });
     return `Published ${itemCount} stories for ${date}`;
   }
+  if (key === JOB_OPS_HEAL) {
+    const { runOpsAutoHeal } = await import("./ops-recovery");
+    const heal = await runOpsAutoHeal({
+      translate: true,
+      // Respect OpsSetting.pipelineAutoHealCollect; do not force collect on every heal.
+    });
+    return heal.messages.join(" ");
+  }
   if (key === JOB_TRANSLATE) {
+    // Fast safety net before translate drains: never materialize stale raw again.
+    const { runOpsAutoHeal } = await import("./ops-recovery");
+    const preHeal = await runOpsAutoHeal({
+      translate: false,
+      triggerCollectIfStale: false,
+    });
     const { drainPendingTranslations } = await import("./article-translation");
     const { countPendingRawArticles, drainRawBacklog } = await import("./pipeline");
     const backlog = await countPendingRawArticles();
@@ -317,6 +340,8 @@ async function executeJob(key: string) {
       normalizeSummary = drained.normalized > 0 || drained.pending > 0
         ? `${abandonedBit}${drained.normalized} normalized, ${drained.pending} raw pending`
         : `${abandonedBit}0 normalized`;
+    } else if (preHeal.abandonedRaw > 0 || preHeal.clearedStaleLocks.length) {
+      normalizeSummary = preHeal.messages[0] || "auto-heal applied";
     }
     const translatePasses = process.env.VERCEL
       ? Math.min(MAX_TRANSLATION_PASSES, 8)
@@ -486,7 +511,7 @@ function serializeJob(job: {
     lockedUntil: job.lockedUntil?.toISOString() ?? null,
     presets: job.key === JOB_PUBLISH || job.key === JOB_ARCHIVE
       ? PUBLISH_PRESETS
-      : job.key === JOB_TRANSLATE
+      : job.key === JOB_TRANSLATE || job.key === JOB_OPS_HEAL
         ? TRANSLATE_PRESETS
         : COLLECT_PRESETS,
   };

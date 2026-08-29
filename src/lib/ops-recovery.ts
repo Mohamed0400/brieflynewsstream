@@ -1,9 +1,13 @@
 import type { BilingualCoverage } from "./article-translation";
+import { logAdminAction } from "./admin-audit";
 import { purgeLowQualityArticles } from "./article-quality";
 import { drainPendingTranslations, getBilingualCoverage } from "./article-translation";
 import { kuwaitDate } from "./market";
 import { limits } from "./limits";
+import { getOpsSettings } from "./ops-settings";
 import {
+  abandonStaleRawArticles,
+  countFreshPendingRawArticles,
   countPendingRawArticles,
   drainRawBacklog,
   type PipelineResult,
@@ -18,7 +22,11 @@ import {
   releaseJobLock,
   runScheduledJob,
   shouldClearStaleLock,
+  shouldRunStaleCollect,
 } from "./scheduler";
+
+/** Audit actor for automated pipeline heal (no human session). */
+export const OPS_SYSTEM_ACTOR_ID = "system:ops-heal";
 
 export type OpsJobStatus = {
   key: string;
@@ -36,7 +44,13 @@ export type OpsStatusSnapshot = {
   jobs: OpsJobStatus[];
   stuckJobs: string[];
   pendingRawArticles: number;
+  pendingFreshRawArticles: number;
+  pendingStaleRawArticles: number;
   pendingTranslationArticles: number;
+  newestPublishedAt: string | null;
+  newestPublishedAgeHours: number | null;
+  pipelineAutoHeal: boolean;
+  pipelineAutoHealCollect: boolean;
   bilingual: {
     today: BilingualCoverage;
     fresh: BilingualCoverage;
@@ -61,6 +75,7 @@ export type OpsRecoverResult = {
   at: string;
   clearedStaleLocks: string[];
   releasedRunningJobs: string[];
+  abandonedRaw: number | null;
   rawBefore: number | null;
   rawAfter: number | null;
   rawNormalized: number | null;
@@ -76,6 +91,17 @@ export type OpsRecoverResult = {
     pendingTranslationArticles: number;
     stuckJobs: string[];
   };
+};
+
+export type OpsAutoHealResult = {
+  at: string;
+  disabled: boolean;
+  clearedStaleLocks: string[];
+  abandonedRaw: number;
+  translated: number | null;
+  translationPending: number | null;
+  collect: { ok: boolean; skipped: boolean; message: string } | null;
+  messages: string[];
 };
 
 export type ReleaseLocksOptions = {
@@ -159,6 +185,9 @@ export function summarizeRecoverResult(result: Omit<OpsRecoverResult, "at" | "re
   if (result.releasedRunningJobs.length) {
     messages.push(`Released ${result.releasedRunningJobs.length} running job lock(s): ${result.releasedRunningJobs.join(", ")}.`);
   }
+  if (result.abandonedRaw != null && result.abandonedRaw > 0) {
+    messages.push(`Abandoned ${result.abandonedRaw} stale raw article(s) outside the live window.`);
+  }
   if (result.rawNormalized != null && result.rawNormalized > 0) {
     messages.push(`Normalized ${result.rawNormalized} raw article(s) (${result.rawBefore ?? 0} → ${result.rawAfter ?? 0} pending).`);
   } else if (result.rawBefore === 0) {
@@ -198,7 +227,17 @@ export async function getOpsStatus(): Promise<OpsStatusSnapshot> {
   await ensureDefaultJobs();
   const now = new Date();
   const fresh = freshnessCutoff();
-  const [rawJobs, pendingRaw, pendingTranslation, bilingualToday, bilingualFresh, snapshot] = await Promise.all([
+  const [
+    rawJobs,
+    pendingRaw,
+    pendingFreshRaw,
+    pendingTranslation,
+    bilingualToday,
+    bilingualFresh,
+    snapshot,
+    newest,
+    settings,
+  ] = await Promise.all([
     prisma.scheduledJob.findMany({
       orderBy: { name: "asc" },
       select: {
@@ -212,10 +251,16 @@ export async function getOpsStatus(): Promise<OpsStatusSnapshot> {
       },
     }),
     countPendingRawArticles(),
+    countFreshPendingRawArticles(),
     countPendingTranslationArticles(fresh),
     getBilingualCoverage(todayCutoff()),
     getBilingualCoverage(fresh),
     getScheduleSnapshot(),
+    prisma.article.findFirst({
+      orderBy: { publishedAt: "desc" },
+      select: { publishedAt: true },
+    }),
+    getOpsSettings(),
   ]);
 
   const jobs = mapOpsJobStatuses(rawJobs.map((job) => {
@@ -234,19 +279,30 @@ export async function getOpsStatus(): Promise<OpsStatusSnapshot> {
     };
   }), now);
   const stuckJobs = jobs.filter((job) => job.stale).map((job) => job.key);
+  const newestPublishedAt = newest?.publishedAt?.toISOString() ?? null;
+  const newestPublishedAgeHours = newest?.publishedAt
+    ? Math.max(0, (now.getTime() - newest.publishedAt.getTime()) / 3_600_000)
+    : null;
 
   return {
     at: now.toISOString(),
     jobs,
     stuckJobs,
     pendingRawArticles: pendingRaw,
+    pendingFreshRawArticles: pendingFreshRaw,
+    pendingStaleRawArticles: Math.max(0, pendingRaw - pendingFreshRaw),
     pendingTranslationArticles: pendingTranslation,
+    newestPublishedAt,
+    newestPublishedAgeHours,
+    pipelineAutoHeal: settings.pipelineAutoHeal,
+    pipelineAutoHealCollect: settings.pipelineAutoHealCollect,
     bilingual: {
       today: bilingualToday,
       fresh: bilingualFresh,
     },
     scheduler: snapshot.scheduler,
     notes: [
+      "Auto-heal clears zombie locks and abandons stale raw on a schedule so collect cannot stay stuck.",
       "Normalize and translate drains are bounded on Vercel (maxDuration 300s). Use GitHub Actions for full collect.",
     ],
   };
@@ -279,7 +335,7 @@ export async function releaseStuckJobLocks(options: ReleaseLocksOptions = {}) {
 export type OpsRecommendation = {
   id: string;
   severity: "critical" | "warning" | "info";
-  action: "kill_zombie" | "collect" | "translate" | "recovery" | "none";
+  action: "kill_zombie" | "collect" | "translate" | "recovery" | "auto_heal" | "none";
 };
 
 export async function getOpsRecommendations(): Promise<{
@@ -289,21 +345,23 @@ export async function getOpsRecommendations(): Promise<{
     runningJobs: string[];
     pendingTranslationArticles: number;
     pendingRawArticles: number;
+    pendingFreshRawArticles: number;
+    pendingStaleRawArticles: number;
     bilingualFreshOk: boolean;
     bilingualFreshMissingArabic: number;
     newestPublishedAt: string | null;
+    newestPublishedAgeHours: number | null;
     collectLastStatus: string | null;
     collectLastRunAt: string | null;
+    pipelineAutoHeal: boolean;
+    pipelineAutoHealCollect: boolean;
   };
 }> {
   const status = await getOpsStatus();
-  const newest = await prisma.article.findFirst({
-    orderBy: { publishedAt: "desc" },
-    select: { publishedAt: true },
-  });
   const collect = status.jobs.find((job) => job.key === JOB_COLLECT);
-  const newestPublishedAt = newest?.publishedAt?.toISOString() ?? null;
-  const ageMs = newest?.publishedAt ? Date.now() - newest.publishedAt.getTime() : null;
+  const ageMs = status.newestPublishedAgeHours != null
+    ? status.newestPublishedAgeHours * 3_600_000
+    : null;
   const recommendations: OpsRecommendation[] = [];
 
   if (status.stuckJobs.length) {
@@ -311,6 +369,13 @@ export async function getOpsRecommendations(): Promise<{
       id: "zombie_locks",
       severity: "critical",
       action: "kill_zombie",
+    });
+  }
+  if (status.pendingStaleRawArticles > 0) {
+    recommendations.push({
+      id: "stale_raw_backlog",
+      severity: "critical",
+      action: "auto_heal",
     });
   }
   if (collect?.lastStatus === "interrupted" || collect?.lastStatus === "error") {
@@ -333,11 +398,18 @@ export async function getOpsRecommendations(): Promise<{
       action: "translate",
     });
   }
-  if (status.pendingRawArticles > 0) {
+  if (status.pendingFreshRawArticles > 0) {
     recommendations.push({
       id: "raw_backlog",
       severity: "warning",
       action: "recovery",
+    });
+  }
+  if (!status.pipelineAutoHeal) {
+    recommendations.push({
+      id: "auto_heal_off",
+      severity: "warning",
+      action: "none",
     });
   }
   if (!recommendations.length) {
@@ -355,11 +427,16 @@ export async function getOpsRecommendations(): Promise<{
       runningJobs: status.jobs.filter((job) => job.running).map((job) => job.key),
       pendingTranslationArticles: status.pendingTranslationArticles,
       pendingRawArticles: status.pendingRawArticles,
+      pendingFreshRawArticles: status.pendingFreshRawArticles,
+      pendingStaleRawArticles: status.pendingStaleRawArticles,
       bilingualFreshOk: status.bilingual.fresh.ok,
       bilingualFreshMissingArabic: status.bilingual.fresh.missingArabic,
-      newestPublishedAt,
+      newestPublishedAt: status.newestPublishedAt,
+      newestPublishedAgeHours: status.newestPublishedAgeHours,
       collectLastStatus: collect?.lastStatus ?? null,
       collectLastRunAt: collect?.lastRunAt ?? null,
+      pipelineAutoHeal: status.pipelineAutoHeal,
+      pipelineAutoHealCollect: status.pipelineAutoHealCollect,
     },
   };
 }
@@ -385,6 +462,7 @@ export async function runOpsRecovery(options: OpsRecoverOptions = {}): Promise<O
     }
   }
 
+  let abandonedRaw: number | null = null;
   let rawBefore: number | null = null;
   let rawAfter: number | null = null;
   let rawNormalized: number | null = null;
@@ -395,14 +473,18 @@ export async function runOpsRecovery(options: OpsRecoverOptions = {}): Promise<O
       const normalizeResult = await drainRawBacklog(emptyPipelineResult(), {
         maxPasses: limits.normalizeBacklogPasses,
       });
+      abandonedRaw = normalizeResult.abandoned;
       rawAfter = normalizeResult.pending;
       rawNormalized = normalizeResult.normalized;
       normalizePasses = normalizeResult.passes;
     } else {
+      abandonedRaw = await abandonStaleRawArticles();
       rawAfter = 0;
       rawNormalized = 0;
       normalizePasses = 0;
     }
+  } else {
+    abandonedRaw = await abandonStaleRawArticles();
   }
 
   let translated: number | null = null;
@@ -440,6 +522,7 @@ export async function runOpsRecovery(options: OpsRecoverOptions = {}): Promise<O
   const partial: Omit<OpsRecoverResult, "at" | "remaining"> = {
     clearedStaleLocks,
     releasedRunningJobs,
+    abandonedRaw,
     rawBefore,
     rawAfter,
     rawNormalized,
@@ -457,5 +540,113 @@ export async function runOpsRecovery(options: OpsRecoverOptions = {}): Promise<O
     at: now.toISOString(),
     ...partial,
     remaining,
+  };
+}
+
+/**
+ * Unattended heal used by the ops-heal cron/job and translate preamble.
+ * Always clears zombie locks and abandons out-of-window raw rows.
+ * Optionally drains translations and starts collect when the feed is stale
+ * (gated by OpsSetting.pipelineAutoHealCollect — off by default on Vercel).
+ */
+export async function runOpsAutoHeal(options: {
+  translate?: boolean;
+  triggerCollectIfStale?: boolean;
+  actorId?: string;
+  forceEnabled?: boolean;
+} = {}): Promise<OpsAutoHealResult> {
+  await ensureDefaultJobs();
+  const settings = await getOpsSettings();
+  const at = new Date().toISOString();
+  if (!options.forceEnabled && !settings.pipelineAutoHeal) {
+    return {
+      at,
+      disabled: true,
+      clearedStaleLocks: [],
+      abandonedRaw: 0,
+      translated: null,
+      translationPending: null,
+      collect: null,
+      messages: ["Pipeline auto-heal is disabled in Operations settings."],
+    };
+  }
+
+  const clearedStaleLocks = await clearStaleJobLocks();
+  const abandonedRaw = await abandonStaleRawArticles();
+
+  let translated: number | null = null;
+  let translationPending: number | null = null;
+  if (options.translate !== false) {
+    const translation = await drainPendingTranslations(
+      Math.min(8, limits.translateMaxPasses),
+    );
+    translated = translation.translated;
+    translationPending = translation.pending;
+  }
+
+  let collect: OpsAutoHealResult["collect"] = null;
+  const wantCollect = options.triggerCollectIfStale ?? settings.pipelineAutoHealCollect;
+  if (wantCollect) {
+    const collectJob = await prisma.scheduledJob.findUnique({
+      where: { key: JOB_COLLECT },
+      select: { lastStatus: true, lastRunAt: true, lockedUntil: true },
+    });
+    if (collectJob && shouldRunStaleCollect(collectJob, new Date())) {
+      // Do not force while a live lock exists — shouldRunStaleCollect already
+      // returns false when locked. Force only recovers interrupted/error states.
+      const force = collectJob.lastStatus === "interrupted" || collectJob.lastStatus === "error";
+      const result = await runScheduledJob(JOB_COLLECT, { force });
+      collect = {
+        ok: result.ok,
+        skipped: result.skipped,
+        message: result.message,
+      };
+    }
+  }
+
+  const messages: string[] = [];
+  if (clearedStaleLocks.length) {
+    messages.push(`Cleared zombie lock(s): ${clearedStaleLocks.join(", ")}.`);
+  }
+  if (abandonedRaw > 0) {
+    messages.push(`Abandoned ${abandonedRaw} stale raw article(s).`);
+  }
+  if (translated != null && translated > 0) {
+    messages.push(`Translated ${translated} article(s); ${translationPending ?? 0} still pending.`);
+  }
+  if (collect) {
+    messages.push(collect.message);
+  }
+  if (!messages.length) {
+    messages.push("Auto-heal: no blockers found.");
+  }
+
+  const actorId = options.actorId || OPS_SYSTEM_ACTOR_ID;
+  await logAdminAction({
+    actorId,
+    action: "ops.auto_heal",
+    targetType: "pipeline",
+    targetId: "ops-heal",
+    metadata: {
+      clearedStaleLocks,
+      abandonedRaw,
+      translated,
+      translationPending,
+      collect,
+      messages,
+    },
+  }).catch((error) => {
+    console.error("ops auto-heal audit log failed", error);
+  });
+
+  return {
+    at,
+    disabled: false,
+    clearedStaleLocks,
+    abandonedRaw,
+    translated,
+    translationPending,
+    collect,
+    messages,
   };
 }

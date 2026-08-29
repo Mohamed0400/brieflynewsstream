@@ -65,7 +65,9 @@ export function OpsRecoveryPanel() {
       if (!response.ok && !payload.messages) {
         throw new Error(payload.message || t.recoverFailed);
       }
-      setLastResult(payload as OpsRecoverResult);
+      if (!body.autoHeal) {
+        setLastResult(payload as OpsRecoverResult);
+      }
       if (payload.messages?.length) {
         toast.success(payload.messages.join(" "));
       }
@@ -108,6 +110,22 @@ export function OpsRecoveryPanel() {
           <span>{t.stuckJobs}</span>
           <strong>{stuckCount.toLocaleString(copy.locale)}</strong>
           <small>{stuckCount ? status!.stuckJobs.join(", ") : t.noStuckJobs}</small>
+        </article>
+        <article className={`console-metric ${(status?.newestPublishedAgeHours ?? 0) > 6 ? "console-metric-warn" : "console-metric-primary"}`}>
+          <span>{t.newestAge}</span>
+          <strong dir="ltr">
+            {status?.newestPublishedAgeHours != null
+              ? `${status.newestPublishedAgeHours.toLocaleString(copy.locale, { maximumFractionDigits: 1 })}h`
+              : "—"}
+          </strong>
+          <small>{t.newestAgeHint}</small>
+        </article>
+        <article className={`console-metric ${(status?.pendingStaleRawArticles ?? 0) ? "console-metric-warn" : ""}`}>
+          <span>{t.staleRaw}</span>
+          <strong>{(status?.pendingStaleRawArticles ?? 0).toLocaleString(copy.locale)}</strong>
+          <small>
+            {t.freshRaw((status?.pendingFreshRawArticles ?? 0).toLocaleString(copy.locale))}
+          </small>
         </article>
         <article className="console-metric">
           <span>{t.rawBacklog}</span>
@@ -152,6 +170,14 @@ export function OpsRecoveryPanel() {
           </button>
         </div>
         <div className="ops-recovery-actions">
+          <button
+            type="button"
+            className="console-primary-button"
+            disabled={Boolean(busy)}
+            onClick={() => void runRecover({ autoHeal: true }, "heal")}
+          >
+            {busy === "heal" ? t.working : t.runAutoHeal}
+          </button>
           <button
             type="button"
             className="console-secondary-button"
@@ -201,7 +227,11 @@ export function OpsRecoveryPanel() {
             {busy === "purge" ? t.working : t.purgeQuality}
           </button>
         </div>
-        <p className="console-help">{t.vercelNote}</p>
+        <p className="console-help">
+          {status?.pipelineAutoHeal ? t.autoHealOn : t.autoHealOff}
+          {" · "}
+          {t.vercelNote}
+        </p>
       </section>
 
       {loading ? (

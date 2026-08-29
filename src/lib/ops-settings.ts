@@ -11,6 +11,13 @@ export const DEFAULT_OPS_SETTINGS = {
     "Briefly NewsStream API is temporarily unavailable for scheduled maintenance. Please retry shortly.",
   apiMaintenanceScheduledAt: null as string | null,
   apiMaintenanceNotice: "",
+  /** Clear zombie locks + abandon stale raw on a schedule without an operator. */
+  pipelineAutoHeal: true,
+  /**
+   * When auto-heal runs, also start collect if the last run failed or the feed is stale.
+   * Keep false on Vercel (300s cap); enable on a long-lived worker / GHA host.
+   */
+  pipelineAutoHealCollect: false,
 } as const;
 
 export type OpsSettings = {
@@ -23,6 +30,8 @@ export type OpsSettings = {
   apiMaintenanceMessage: string;
   apiMaintenanceScheduledAt: string | null;
   apiMaintenanceNotice: string;
+  pipelineAutoHeal: boolean;
+  pipelineAutoHealCollect: boolean;
 };
 
 export type PublicSiteSettings = Pick<

@@ -13,6 +13,8 @@ type SettingsPayload = {
   apiMaintenanceMessage: string;
   apiMaintenanceScheduledAt: string | null;
   apiMaintenanceNotice: string;
+  pipelineAutoHeal: boolean;
+  pipelineAutoHealCollect: boolean;
 };
 
 export function AdminSettingsPanel() {
@@ -27,6 +29,8 @@ export function AdminSettingsPanel() {
       "Briefly NewsStream API is temporarily unavailable for scheduled maintenance. Please retry shortly.",
     apiMaintenanceScheduledAt: null,
     apiMaintenanceNotice: "",
+    pipelineAutoHeal: true,
+    pipelineAutoHealCollect: false,
   });
   const [busy, setBusy] = useState(false);
 
@@ -82,6 +86,22 @@ export function AdminSettingsPanel() {
               onChange={(e) => setSettings((s) => ({ ...s, attributionCapture: e.target.checked }))}
             />
             {t.attributionCapture}
+          </label>
+          <label className="schedule-enable">
+            <input
+              type="checkbox"
+              checked={settings.pipelineAutoHeal}
+              onChange={(e) => setSettings((s) => ({ ...s, pipelineAutoHeal: e.target.checked }))}
+            />
+            {t.pipelineAutoHeal}
+          </label>
+          <label className="schedule-enable">
+            <input
+              type="checkbox"
+              checked={settings.pipelineAutoHealCollect}
+              onChange={(e) => setSettings((s) => ({ ...s, pipelineAutoHealCollect: e.target.checked }))}
+            />
+            {t.pipelineAutoHealCollect}
           </label>
           <label className="console-gate-field">
             <span>{t.maintenanceBanner}</span>

@@ -9,17 +9,18 @@ Timezone is `APP_TIMEZONE` (default `Asia/Kuwait`). Three hosts wake collect at 
 | Kuwait | UTC | Host | What |
 |--------|-----|------|------|
 | 07:00 | 04:00 | **Vercel Cron** | HTTP `/api/cron/collect` (short serverless backup) |
+| 11:00 | 08:00 | **Vercel Cron** | HTTP `/api/cron/ops-heal` (zombie locks + abandon stale raw) |
 | 14:00 | 11:00 | **cron-job.org** | HTTP `/api/cron/collect` — set this time in their dashboard |
 | 22:00 | 19:00 | **GitHub Actions** | Full database pipeline (the long run, once a day) |
 | 23:00 | 20:00 | **Vercel Cron** | HTTP `/api/cron/translate` backfill |
 
-GitHub Actions used to run 3× daily plus an hourly self-heal. That burned the 2,000 included minutes. One evening collect is enough; Vercel and cron-job.org cover the other two slots.
+GitHub Actions used to run 3× daily plus an hourly self-heal. That burned the 2,000 included minutes. One evening collect is enough; Vercel and cron-job.org cover the other two slots. **ops-heal** keeps interrupted collects from leaving the feed stuck until a human intervenes.
 
 ## How we run cron (pick the host)
 
 | Host | Mechanism | What to configure |
 |------|-----------|-------------------|
-| **Vercel** | `vercel.json` → collect and translate HTTP routes | Collect at 07:00 Kuwait (`0 4 * * *` UTC), translate at 23:00 Kuwait (`0 20 * * *` UTC). Set `CRON_SECRET`. |
+| **Vercel** | `vercel.json` → collect, ops-heal, and translate HTTP routes | Collect at 07:00 Kuwait (`0 4 * * *` UTC), ops-heal at 11:00 Kuwait (`0 8 * * *` UTC), translate at 23:00 Kuwait (`0 20 * * *` UTC). Set `CRON_SECRET`. |
 | **cron-job.org** | HTTP GET/POST to `/api/cron/collect` | Once daily at **14:00 Kuwait (11:00 UTC)**. Header `Authorization: Bearer $CRON_SECRET`. |
 | **DigitalOcean / other VPS** | pg-boss durable worker via `npm run worker:live` | Set `DATABASE_URL` or preferably `DIRECT_URL`, then keep one worker process running. |
 | **GitHub Actions** | `.github/workflows/collect.yml` | Once daily at 22:00 Kuwait. Secrets `DATABASE_URL` + `DIRECT_URL` (preferred) or `CRON_SECRET`/`ADMIN_API_KEY` + `SITE_URL` for HTTP collect. |
@@ -35,6 +36,7 @@ Vercel and any external cron (cron-job.org, Cloudflare Workers, curl) call these
 | Path | Job |
 |------|-----|
 | `/api/cron/collect` | Fetch every country source, fill markets below 3 stories, translate, refresh today's edition |
+| `/api/cron/ops-heal` | Clear zombie locks, abandon stale raw outside the live window, bounded translate; optional collect when OpsSetting `pipelineAutoHealCollect` is on |
 | `/api/cron/translate` | Backfill missing `ar`/`en` pairs |
 | `/api/cron/publish` | Rebuild `/today` |
 | `/api/v1/admin/collect` | Same as `/api/cron/collect` (console / admin alias) |
@@ -49,6 +51,7 @@ curl -X GET "https://www.brieflynewsstream.com/api/cron/collect" \
 | Key | Default cron | Used by |
 |-----|--------------|---------|
 | `collect` | `0 6,14,22 * * *` | Staggered external wakes (Vercel 07:00, cron-job.org 14:00, GitHub 22:00 Kuwait); pg-boss worker if running |
+| `ops-heal` | `*/15 * * * *` | pg-boss worker; Vercel daily backup at 11:00 Kuwait; translate job also runs a safe heal preamble |
 | `translate` | `*/15 * * * *` | pg-boss worker; Vercel daily backup; collect also drains pending translations |
 | `publish-daily` | `0 6 * * *` | pg-boss worker; collect also refreshes today's edition |
 
@@ -64,6 +67,7 @@ pg-boss stores its own queue tables in the `pgboss` schema by default and schedu
 |-------|----------|
 | `brieflynewsstream.collect` | `0 6,14,22 * * *` |
 | `brieflynewsstream.translate` | `*/15 * * * *` |
+| `brieflynewsstream.ops-heal` | `*/15 * * * *` |
 | `brieflynewsstream.publish-daily` | `0 6 * * *` |
 
 Run it on a long-lived host:

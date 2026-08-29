@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireSuperAdmin } from "@/lib/account";
+import { logAdminAction } from "@/lib/admin-audit";
 import { describeQueryFailure } from "@/lib/api";
 import { isTrustedConsoleOrigin } from "@/lib/console-auth";
-import { runOpsRecovery, type OpsRecoverOptions } from "@/lib/ops-recovery";
+import { runOpsAutoHeal, runOpsRecovery, type OpsRecoverOptions } from "@/lib/ops-recovery";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -13,9 +14,43 @@ export async function POST(request: Request) {
   }
   const auth = await requireSuperAdmin();
   if ("response" in auth) return auth.response;
-  const body = await request.json().catch(() => ({})) as OpsRecoverOptions;
+  const body = await request.json().catch(() => ({})) as OpsRecoverOptions & {
+    autoHeal?: boolean;
+  };
   try {
+    if (body.autoHeal) {
+      const result = await runOpsAutoHeal({
+        actorId: auth.account.id,
+        forceEnabled: true,
+        translate: true,
+        triggerCollectIfStale: body.collect === true,
+      });
+      await logAdminAction({
+        actorId: auth.account.id,
+        action: "ops.auto_heal.manual",
+        targetType: "pipeline",
+        targetId: "ops-heal",
+        metadata: result,
+      }).catch(() => undefined);
+      return NextResponse.json(result, {
+        status: result.disabled ? 200 : 200,
+      });
+    }
+
     const result = await runOpsRecovery(body);
+    await logAdminAction({
+      actorId: auth.account.id,
+      action: "ops.recover",
+      targetType: "pipeline",
+      targetId: "recover",
+      metadata: {
+        plan: body,
+        messages: result.messages,
+        remaining: result.remaining,
+        abandonedRaw: result.abandonedRaw,
+        collect: result.collect,
+      },
+    }).catch(() => undefined);
     const status = result.remaining.stuckJobs.length > 0
       || result.remaining.pendingRawArticles > 0
       || result.remaining.pendingTranslationArticles > 0

@@ -12,6 +12,7 @@ import {
   JOB_PUBLISH,
   JOB_TRANSLATE,
   JOB_ARCHIVE,
+  JOB_OPS_HEAL,
   LOCK_MS,
   LOCK_ZOMBIE_MS,
   PUBLISH_PRESETS,
@@ -32,11 +33,16 @@ test("default schedule presets are valid five-field cron", () => {
 
 test("production cron jobs collect, translate, publish, and archive", () => {
   const keys = DEFAULT_SCHEDULED_JOBS.map((job) => job.key);
-  assert.deepEqual(keys, [JOB_COLLECT, JOB_TRANSLATE, JOB_PUBLISH, JOB_ARCHIVE]);
+  assert.deepEqual(keys, [JOB_COLLECT, JOB_TRANSLATE, JOB_OPS_HEAL, JOB_PUBLISH, JOB_ARCHIVE]);
   const collect = DEFAULT_SCHEDULED_JOBS.find((job) => job.key === JOB_COLLECT);
   const translate = DEFAULT_SCHEDULED_JOBS.find((job) => job.key === JOB_TRANSLATE);
+  const opsHeal = DEFAULT_SCHEDULED_JOBS.find((job) => job.key === JOB_OPS_HEAL);
   const publish = DEFAULT_SCHEDULED_JOBS.find((job) => job.key === JOB_PUBLISH);
   const archive = DEFAULT_SCHEDULED_JOBS.find((job) => job.key === JOB_ARCHIVE);
+  assert.ok(collect);
+  assert.ok(translate);
+  assert.ok(opsHeal);
+  assert.equal(opsHeal?.cron, "*/15 * * * *");
   assert.equal(collect?.cron, COLLECT_THREE_TIMES_DAILY);
   assert.equal(isValidCron(COLLECT_THREE_TIMES_DAILY), true);
   assert.equal(translate?.cron, "*/15 * * * *");

@@ -36,6 +36,9 @@ import {
   shouldStartAnotherFetch,
   sortSourcesOldestStaleFirst,
 } from "./collect-policy";
+import { newsFreshnessCutoff } from "./news-freshness";
+
+export { newsFreshnessCutoff, isWithinNewsFreshnessWindow } from "./news-freshness";
 
 export type PipelineResult = {
   sourcesOk: number;
@@ -99,7 +102,13 @@ export async function ensureLiveSources() {
 async function storeCollectedItems(source: Source, items: Awaited<ReturnType<typeof collectSource>>) {
   if (!items.length) return;
 
-  const normalized = items.map((item) => ({
+  const cutoff = newsFreshnessCutoff();
+  // Drop items that can never enter the live feed — prevents another multi-thousand
+  // stale RawArticle backlog (seen: pending publishedAt from 2009 through June).
+  const freshItems = items.filter((item) => item.publishedAt.getTime() >= cutoff.getTime());
+  if (!freshItems.length) return;
+
+  const normalized = freshItems.map((item) => ({
     ...item,
     externalId: item.externalId.slice(0, 500),
     audienceCodes: item.audienceCodes ?? "",
@@ -119,6 +128,7 @@ async function storeCollectedItems(source: Source, items: Awaited<ReturnType<typ
       audienceCodes: true,
       imageUrl: true,
       processedAt: true,
+      publishedAt: true,
     },
   });
   const existingByExternalId = new Map(existingRows.map((row) => [row.externalId, row]));
@@ -137,6 +147,11 @@ async function storeCollectedItems(source: Source, items: Awaited<ReturnType<typ
       || (existing.summary ?? "") !== (item.summary ?? "")
       || existing.url !== item.url;
 
+    // Never reopen a processed row just to push an older publishedAt.
+    const publishedAt = existing.publishedAt && existing.publishedAt > item.publishedAt
+      ? existing.publishedAt
+      : item.publishedAt;
+
     await prisma.rawArticle.update({
       where: { id: existing.id },
       data: {
@@ -145,7 +160,7 @@ async function storeCollectedItems(source: Source, items: Awaited<ReturnType<typ
         publisher: item.publisher,
         audienceCodes: item.audienceCodes,
         imageUrl: item.imageUrl,
-        publishedAt: item.publishedAt,
+        publishedAt,
         rawJson: item.rawJson,
         // Only reopen for re-normalize when the story content actually changed.
         ...(contentChanged || !existing.processedAt ? { processedAt: null } : {}),
@@ -320,8 +335,12 @@ async function fillThinCountries(result: PipelineResult, deadline = Number.POSIT
 }
 
 async function normalizePendingBatch(result: PipelineResult) {
+  const cutoff = newsFreshnessCutoff();
   const pending = await prisma.rawArticle.findMany({
-    where: { processedAt: null },
+    where: {
+      processedAt: null,
+      publishedAt: { gte: cutoff },
+    },
     include: { source: true },
     orderBy: { publishedAt: "desc" },
     ...(limits.normalizeBatch > 0 ? { take: limits.normalizeBatch } : {}),
@@ -340,6 +359,7 @@ async function normalizePendingBatch(result: PipelineResult) {
         summaryEn: true,
         summaryAr: true,
         translatedAt: true,
+        publishedAt: true,
       },
     })).map((row) => [row.url, row]),
   );
@@ -347,6 +367,14 @@ async function normalizePendingBatch(result: PipelineResult) {
   for (const raw of pending) {
     const markProcessed = () =>
       prisma.rawArticle.update({ where: { id: raw.id }, data: { processedAt: new Date() } });
+
+    // Defense in depth: never materialize rows outside the live window even if
+    // abandonStaleRawArticles raced with insert or was skipped by a caller.
+    if (raw.publishedAt.getTime() < cutoff.getTime()) {
+      result.rejected += 1;
+      await markProcessed();
+      continue;
+    }
 
     const title = cleanText(raw.title);
     const summary = cleanText(raw.summary).slice(0, 1200);
@@ -383,10 +411,22 @@ async function normalizePendingBatch(result: PipelineResult) {
       if (duplicate.url === raw.url) {
         const existing = cachedDuplicate ?? await prisma.article.findUnique({
           where: { id: duplicate.id },
-          select: { title: true, titleEn: true, titleAr: true, summaryEn: true, summaryAr: true, translatedAt: true },
+          select: {
+            title: true,
+            titleEn: true,
+            titleAr: true,
+            summaryEn: true,
+            summaryAr: true,
+            translatedAt: true,
+            publishedAt: true,
+          },
         });
         const titleChanged = existing?.title !== title;
         const seeded = seedBilingualFields(title, summary);
+        // Never regress a live article's publishedAt when a stale raw rematch hits.
+        const publishedAt = existing?.publishedAt && existing.publishedAt > raw.publishedAt
+          ? existing.publishedAt
+          : raw.publishedAt;
         await prisma.article.update({
           where: { id: duplicate.id },
           data: {
@@ -395,7 +435,7 @@ async function normalizePendingBatch(result: PipelineResult) {
             publisher: raw.publisher,
             audienceCodes: raw.audienceCodes,
             imageUrl: raw.imageUrl,
-            publishedAt: raw.publishedAt,
+            publishedAt,
             language: seeded.language,
             ...(titleChanged ? {
               titleEn: seeded.titleEn ?? existing?.titleEn,
@@ -485,8 +525,8 @@ async function normalizePendingBatch(result: PipelineResult) {
   return pending.length;
 }
 
-async function abandonStaleRawArticles() {
-  const cutoff = new Date(Date.now() - Math.max(1, limits.newsMaxAgeHours) * 60 * 60 * 1000);
+export async function abandonStaleRawArticles() {
+  const cutoff = newsFreshnessCutoff();
   const abandoned = await prisma.rawArticle.updateMany({
     where: {
       processedAt: null,
@@ -501,13 +541,29 @@ export async function countPendingRawArticles() {
   return prisma.rawArticle.count({ where: { processedAt: null } });
 }
 
+/** Pending raw that can still appear in the live feed window. */
+export async function countFreshPendingRawArticles() {
+  return prisma.rawArticle.count({
+    where: {
+      processedAt: null,
+      publishedAt: { gte: newsFreshnessCutoff() },
+    },
+  });
+}
+
 export async function drainRawBacklog(
   result: PipelineResult,
   options: { skipTranslation?: boolean; maxPasses?: number } = {},
 ) {
+  // Translate/recover used to normalize without this gate and spent hours
+  // materializing June–2009 RSS backlog into Article — starving the live feed.
+  const abandoned = await abandonStaleRawArticles();
+  if (abandoned > 0) {
+    console.log(`Abandoned ${abandoned} stale raw articles outside the ${limits.newsMaxAgeHours}h news window.`);
+  }
   const before = await countPendingRawArticles();
   if (before === 0) {
-    return { pending: 0, normalized: 0, passes: 0 };
+    return { pending: 0, normalized: 0, passes: 0, abandoned };
   }
   const passes = options.maxPasses
     ?? (before > limits.normalizeBatch ? limits.normalizeBacklogPasses : limits.normalizePasses);
@@ -517,6 +573,7 @@ export async function drainRawBacklog(
     pending,
     normalized: Math.max(0, before - pending),
     passes,
+    abandoned,
   };
 }
 

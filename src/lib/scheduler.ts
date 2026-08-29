@@ -313,7 +313,10 @@ async function executeJob(key: string) {
       }, {
         maxPasses: Math.min(6, limits.normalizeBacklogPasses),
       });
-      normalizeSummary = `${drained.normalized} normalized, ${drained.pending} raw pending`;
+      const abandonedBit = drained.abandoned > 0 ? `${drained.abandoned} stale abandoned, ` : "";
+      normalizeSummary = drained.normalized > 0 || drained.pending > 0
+        ? `${abandonedBit}${drained.normalized} normalized, ${drained.pending} raw pending`
+        : `${abandonedBit}0 normalized`;
     }
     const translatePasses = process.env.VERCEL
       ? Math.min(MAX_TRANSLATION_PASSES, 8)

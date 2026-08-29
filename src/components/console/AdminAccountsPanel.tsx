@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useConsoleCopy } from "@/components/console/ConsoleLang";
 import type { AdminCustomerSnapshot } from "@/components/console/AdminCustomersPanel";
 import { PLAN_DEFINITIONS } from "@/lib/plans";
@@ -14,6 +14,7 @@ export function AdminAccountsPanel({
   onEmailChange,
   onInvoiceIdChange,
   onSaved,
+  quotaResetSlot,
 }: {
   email?: string;
   account?: AdminCustomerSnapshot | null;
@@ -21,6 +22,7 @@ export function AdminAccountsPanel({
   onEmailChange?: (email: string) => void;
   onInvoiceIdChange?: (invoiceId: string) => void;
   onSaved?: () => void;
+  quotaResetSlot?: ReactNode;
 } = {}) {
   const { copy } = useConsoleCopy();
   const t = copy.billing;
@@ -164,14 +166,17 @@ export function AdminAccountsPanel({
             />
           </label>
         </div>
-        <button
-          type="button"
-          className="console-primary-button"
-          disabled={busy || !emailValue.trim()}
-          onClick={() => void saveAdmin()}
-        >
-          {busyAction === "save" ? t.adminSaving : t.adminSave}
-        </button>
+        <div className="console-inline-actions ops-account-actions">
+          <button
+            type="button"
+            className="console-primary-button"
+            disabled={busy || !emailValue.trim()}
+            onClick={() => void saveAdmin()}
+          >
+            {busyAction === "save" ? t.adminSaving : t.adminSave}
+          </button>
+          {quotaResetSlot}
+        </div>
       </section>
 
       <section className="console-panel" aria-labelledby="ops-invoice-title">

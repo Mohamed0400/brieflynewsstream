@@ -22,7 +22,8 @@ export async function POST(request: Request) {
     window?: "today" | "all";
   };
 
-  if (body.confirmPhrase?.trim() !== CONFIRM_PHRASE) {
+  const scope = body.scope === "all" ? "all" : "account";
+  if (scope === "all" && body.confirmPhrase?.trim() !== CONFIRM_PHRASE) {
     return NextResponse.json(
       {
         error: "confirm_required",
@@ -32,7 +33,13 @@ export async function POST(request: Request) {
     );
   }
 
-  const scope = body.scope === "all" ? "all" : "account";
+  if (scope === "account" && !body.accountId && !body.email?.trim()) {
+    return NextResponse.json(
+      { error: "invalid_query", message: "accountId or email is required." },
+      { status: 400 },
+    );
+  }
+
   const windowMode = body.window === "all" ? "all" : "today";
   const { start, end } = utcDayWindow();
 
@@ -42,38 +49,45 @@ export async function POST(request: Request) {
   } else {
     const target = body.accountId
       ? await prisma.account.findUnique({ where: { id: body.accountId } })
-      : body.email
-        ? await prisma.account.findFirst({
-            where: { email: body.email.trim().toLowerCase() },
-          })
-        : null;
+      : await prisma.account.findFirst({
+          where: { email: body.email!.trim().toLowerCase() },
+        });
     if (!target) {
-      return NextResponse.json({ error: "not_found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "not_found", message: "Account not found." },
+        { status: 404 },
+      );
     }
     accountIds = [target.id];
   }
 
   const keys = await prisma.apiKey.findMany({
     where: { accountId: { in: accountIds } },
-    select: { id: true, accountId: true },
+    select: { id: true },
   });
   const keyIds = keys.map((row) => row.id);
   if (!keyIds.length) {
+    await logAdminAction({
+      actorId: auth.account.id,
+      action: scope === "all" ? "quota.reset_all" : "quota.reset_account",
+      targetType: "account",
+      targetId: scope === "all" ? "all" : accountIds[0]!,
+      metadata: { scope, window: windowMode, deleted: 0, accountCount: accountIds.length },
+    });
     return NextResponse.json({
       ok: true,
       deleted: 0,
+      scope,
+      window: windowMode,
+      accountCount: accountIds.length,
       message: "No API keys found for the selected scope.",
     });
   }
 
-  const timeFilter = windowMode === "today"
-    ? { requestedAt: { gte: start, lt: end } }
-    : {};
-
   const deleted = await prisma.apiRequest.deleteMany({
     where: {
       apiKeyId: { in: keyIds },
-      ...timeFilter,
+      ...(windowMode === "today" ? { requestedAt: { gte: start, lt: end } } : {}),
     },
   });
 

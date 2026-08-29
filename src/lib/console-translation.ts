@@ -389,6 +389,7 @@ const dashboardCopy = {
     opsQuota: {
       resetAccount: "Reset today's API usage",
       resetAll: "Reset all accounts (today)",
+      resetAllCta: "Reset all accounts' usage today",
       confirmTitle: "Reset API usage?",
       confirmAccount: (email: string) => `This clears today's counted API requests for ${email}. The customer can call the API again within their plan limit.`,
       confirmAll: "This clears today's API request counts for every account. Use only when quotas were miscounted.",
@@ -1031,6 +1032,7 @@ const dashboardCopy = {
     opsQuota: {
       resetAccount: "إعادة ضبط استخدام API اليوم",
       resetAll: "إعادة ضبط الكل (اليوم)",
+      resetAllCta: "إعادة ضبط استخدام كل الحسابات اليوم",
       confirmTitle: "إعادة ضبط الاستخدام؟",
       confirmAccount: (email: string) => `سيُمسح عدّ طلبات API اليوم لـ ${email}. يمكن للعميل استخدام الواجهة مجدداً ضمن حد خطته.`,
       confirmAll: "سيُمسح عدّ طلبات API اليوم لكل الحسابات. استخدمه فقط عند وجود خطأ في العد.",

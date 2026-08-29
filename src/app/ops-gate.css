@@ -471,6 +471,23 @@
   font-size: 0.875rem;
 }
 
+.ops-shell .console-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.ops-shell .ops-account-actions {
+  margin-top: 1rem;
+}
+
+.ops-shell .ops-quota-account-reset {
+  display: grid;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
 .ops-shell .console-danger-button {
   background: var(--ops-danger);
   border-color: var(--ops-danger);
@@ -479,6 +496,12 @@
 
 .ops-shell .console-danger-button:hover {
   filter: brightness(1.05);
+}
+
+.ops-shell .console-danger-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: none;
 }
 
 .ops-shell .ops-customer-detail-head {

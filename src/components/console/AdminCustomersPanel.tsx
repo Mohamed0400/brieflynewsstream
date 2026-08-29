@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useConsoleCopy } from "@/components/console/ConsoleLang";
-import { AdminQuotaResetButton } from "@/components/console/AdminSettingsPanel";
+import { AdminQuotaResetButton } from "@/components/console/OpsQuotaReset";
 import { OpsPanelSkeleton } from "@/components/console/ops/OpsCharts";
 import { BrandLoader } from "@/components/media/BrandLoader";
 import { TRAFFIC_CHANNEL_LABELS, type TrafficChannel } from "@/lib/attribution";
@@ -88,10 +88,12 @@ export function AdminCustomersPanel({
   refreshKey = 0,
   onSelectCustomer,
   onSelectInvoice,
+  onRequestRefresh,
 }: {
   refreshKey?: number;
   onSelectCustomer?: (customer: AdminCustomerSnapshot) => void;
   onSelectInvoice?: (invoiceId: string) => void;
+  onRequestRefresh?: () => void;
 }) {
   const { copy } = useConsoleCopy();
   const t = copy.customers;
@@ -248,7 +250,18 @@ export function AdminCustomersPanel({
         <article className="ops-customer-detail ops-detail-enter" aria-label={selected.email}>
           <div className="ops-customer-detail-head">
             <h3 className="ops-email-text" dir="ltr" title={selected.email}>{selected.email}</h3>
-            <AdminQuotaResetButton accountId={selected.id} email={selected.email} />
+            <AdminQuotaResetButton
+              accountId={selected.id}
+              email={selected.email}
+              onDone={() => {
+                setItems((prev) => prev.map((item) => (
+                  item.id === selected.id
+                    ? { ...item, usageToday: { requests: 0, points: 0 } }
+                    : item
+                )));
+                onRequestRefresh?.();
+              }}
+            />
           </div>
 
           <section className="ops-detail-section">

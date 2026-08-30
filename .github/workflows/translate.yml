@@ -1,16 +1,19 @@
-name: Ops heal
+name: Translate news
 
-# Clears zombie locks and abandons stale raw between full collects so the feed
-# cannot stay blocked until the next Collect news run.
+# Standalone bilingual backfill between full collects.
+# Skips itself while collect holds a live lock (collect workflow re-runs translate after).
 
 on:
   schedule:
-    # Every 2 hours UTC — denser self-heal between collect/translate slots
-    - cron: "30 */2 * * *"
+    # Between collect slots — Asia/Kuwait: 08:00, 12:00, 16:00, 20:00
+    - cron: "0 5 * * *"
+    - cron: "0 9 * * *"
+    - cron: "0 13 * * *"
+    - cron: "0 17 * * *"
   workflow_dispatch:
 
 concurrency:
-  group: ops-heal
+  group: translate-news
   cancel-in-progress: false
 
 env:
@@ -23,15 +26,17 @@ env:
   CRON_SECRET: ${{ secrets.CRON_SECRET }}
   SITE_URL: ${{ secrets.SITE_URL }}
   PRISMA_CONNECTION_LIMIT: "6"
-  TRANSLATE_BATCH_SIZE: "80"
-  TRANSLATE_MAX_PASSES: "8"
+  TRANSLATE_BATCH_SIZE: "100"
+  TRANSLATE_MAX_PASSES: "30"
   TRANSLATE_CONCURRENCY: "4"
+  NORMALIZE_BATCH_SIZE: "2500"
+  NORMALIZE_BACKLOG_PASSES: "8"
 
 jobs:
-  heal:
-    name: Clear locks + abandon stale raw
+  translate:
+    name: Drain pending translations
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
 
@@ -40,6 +45,9 @@ jobs:
           if [ -z "$DATABASE_URL" ] && [ -z "$CRON_SECRET" ] && [ -z "$ADMIN_API_KEY" ]; then
             echo "::error::Need DATABASE_URL (+ DIRECT_URL) or CRON_SECRET/ADMIN_API_KEY."
             exit 1
+          fi
+          if [ -n "$DATABASE_URL" ] && [ -z "$GOOGLE_API_KEY" ]; then
+            echo "::warning::GOOGLE_API_KEY is not set; translate will not fill missing ar/en pairs."
           fi
 
       - uses: actions/setup-node@v4
@@ -56,32 +64,38 @@ jobs:
           DIRECT_URL: postgresql://postgres:postgres@127.0.0.1:5432/ci?schema=public
         run: npx prisma generate
 
-      - name: Heal via database
+      - name: Clear zombie translate lock then translate
         if: ${{ env.DATABASE_URL != '' }}
         run: |
           set -o pipefail
-          # Zombie locks + abandon stale raw only. Never force-kill a live collect heartbeat.
-          # Full collect belongs to the Collect news workflow (pre-heal → collect → confirm).
-          npx tsx src/worker/ops-heal-once.ts --no-translate | tee heal-result.json
+          # Heal zombies without force-killing a live collect heartbeat.
+          npx tsx src/worker/ops-heal-once.ts --no-translate | tee heal-result.json || true
+          # Skip if collect is mid-run; collect.yml always translates afterward.
+          npx tsx src/worker/job-once.ts translate --force --skip-if-collect-running \
+            | tee translate-result.json
           {
-            echo "## Ops heal"
+            echo "## Heal"
             echo '```json'
             cat heal-result.json
             echo '```'
+            echo "## Translate"
+            echo '```json'
+            cat translate-result.json
+            echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Heal via HTTP
+      - name: Translate via HTTP
         if: ${{ env.DATABASE_URL == '' }}
         run: |
           token="${CRON_SECRET:-$ADMIN_API_KEY}"
           base="${SITE_URL:-https://www.brieflynewsstream.com}"
-          curl -fsS -X POST "$base/api/cron/ops-heal" \
+          curl -fsS -X POST "$base/api/cron/translate" \
             -H "Authorization: Bearer $token" \
             -H "Content-Type: application/json" \
-            --max-time 300 | tee heal-result.json
+            --max-time 300 | tee translate-result.json
           {
-            echo "## Ops heal (HTTP)"
+            echo "## Translate (HTTP)"
             echo '```json'
-            cat heal-result.json
+            cat translate-result.json
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"

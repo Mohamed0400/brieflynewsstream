@@ -1,7 +1,8 @@
 name: Collect news
 
-# Full pipeline with pre-heal (clear stuck locks) and post-confirm (verify freshness).
-# Public repo → Actions minutes are free on standard runners; run as often as needed.
+# Full pipeline: pre-heal → collect → translate → confirm.
+# Pre-heal stops a running/stuck translate so collect can start; translate always
+# re-runs after collect. Public repo → standard runners are free; run as needed.
 
 on:
   schedule:
@@ -28,7 +29,7 @@ env:
   NORMALIZE_PASSES: "8"
   NORMALIZE_PRE_COLLECT_PASSES: "1"
   TRANSLATE_BATCH_SIZE: "80"
-  TRANSLATE_MAX_PASSES: "25"
+  TRANSLATE_MAX_PASSES: "40"
   TRANSLATE_CONCURRENCY: "4"
   DATABASE_URL: ${{ secrets.DATABASE_URL }}
   DIRECT_URL: ${{ secrets.DIRECT_URL }}
@@ -40,7 +41,7 @@ env:
 
 jobs:
   pre-heal:
-    name: Pre-heal (clear stuck locks)
+    name: Pre-heal (stop stuck translate, clear locks)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -71,6 +72,8 @@ jobs:
         if: ${{ env.DATABASE_URL != '' }}
         run: |
           set -o pipefail
+          # Stops running/stuck translate + clears all job locks, abandons stale raw.
+          # Translate is restarted in the post-collect job below.
           npx tsx src/worker/ops-heal-once.ts --pre-collect | tee pre-heal-result.json
           {
             echo "## Pre-heal"
@@ -129,8 +132,9 @@ jobs:
           {
             echo "## Why this job is long-running"
             echo ""
-            echo "Full collect walks ~70 countries / hundreds of sources, normalizes raw rows, translates ar/en, and rebuilds today's edition."
-            echo "Expect **30–180 minutes**. Do **not** cancel early — a cancelled run leaves a DB job lock; the next pre-heal clears it."
+            echo "Full collect walks ~70 countries / hundreds of sources, normalizes raw rows, and rebuilds today's edition."
+            echo "A dedicated **translate** job runs next to finish ar/en pairs."
+            echo "Expect **30–180 minutes**. Do **not** cancel early."
             echo ""
           } >> "$GITHUB_STEP_SUMMARY"
           npx tsx src/worker/run-once.ts | tee pipeline-result.json
@@ -162,9 +166,68 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-  confirm:
-    name: Confirm fresh feed
+  translate:
+    name: Translate after collect
     needs: collect
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    if: always() && needs.collect.result != 'cancelled'
+    env:
+      # Drain more aggressively after a full collect.
+      TRANSLATE_MAX_PASSES: "40"
+      TRANSLATE_BATCH_SIZE: "100"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/ci?schema=public
+          DIRECT_URL: postgresql://postgres:postgres@127.0.0.1:5432/ci?schema=public
+        run: npx prisma generate
+
+      - name: Translate via scheduled job
+        if: ${{ env.DATABASE_URL != '' }}
+        run: |
+          set -o pipefail
+          if [ -z "$GOOGLE_API_KEY" ]; then
+            echo "::warning::GOOGLE_API_KEY missing; translate job will not fill ar/en pairs."
+          fi
+          # Force-claim translate even if pre-heal left it interrupted.
+          npx tsx src/worker/job-once.ts translate --force | tee translate-result.json
+          {
+            echo "## Translate after collect"
+            echo '```json'
+            cat translate-result.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Translate via HTTP
+        if: ${{ env.DATABASE_URL == '' }}
+        run: |
+          token="${CRON_SECRET:-$ADMIN_API_KEY}"
+          base="${SITE_URL:-https://www.brieflynewsstream.com}"
+          curl -fsS -X POST "$base/api/cron/translate" \
+            -H "Authorization: Bearer $token" \
+            -H "Content-Type: application/json" \
+            --max-time 300 | tee translate-result.json
+          {
+            echo "## Translate after collect (HTTP)"
+            echo '```json'
+            cat translate-result.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  confirm:
+    name: Confirm fresh bilingual feed
+    needs: [collect, translate]
     runs-on: ubuntu-latest
     timeout-minutes: 200
     if: always() && needs.collect.result != 'cancelled'
@@ -185,11 +248,14 @@ jobs:
           DIRECT_URL: postgresql://postgres:postgres@127.0.0.1:5432/ci?schema=public
         run: npx prisma generate
 
-      - name: Confirm freshness (repair if stale)
+      - name: Confirm freshness + translation (repair if needed)
         if: ${{ env.DATABASE_URL != '' }}
         run: |
           set -o pipefail
-          npx tsx scripts/ops-confirm-once.ts --max-age-hours=8 --repair | tee confirm-result.json
+          npx tsx scripts/ops-confirm-once.ts \
+            --max-age-hours=8 \
+            --max-pending-translate=150 \
+            --repair | tee confirm-result.json
           {
             echo "## Confirm"
             echo '```json'

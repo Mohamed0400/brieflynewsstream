@@ -42,6 +42,8 @@
     "ops:heal:live": "dotenv -e .env.live -- tsx src/worker/ops-heal-once.ts --force-locks",
     "ops:confirm": "dotenv -e .env -- tsx scripts/ops-confirm-once.ts --max-age-hours=8",
     "ops:confirm:live": "dotenv -e .env.live -- tsx scripts/ops-confirm-once.ts --max-age-hours=8 --repair",
+    "job:translate": "dotenv -e .env -- tsx src/worker/job-once.ts translate --force",
+    "job:translate:live": "dotenv -e .env.live -- tsx src/worker/job-once.ts translate --force",
     "ops:status": "dotenv -e .env -- tsx scripts/ops-status-once.ts",
     "ops:status:live": "dotenv -e .env.live -- tsx scripts/ops-status-once.ts",
     "archive:once": "dotenv -e .env -- tsx src/worker/archive-once.ts",

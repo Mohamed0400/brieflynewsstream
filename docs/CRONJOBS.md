@@ -12,69 +12,69 @@ Implementation notes (locks, pg-boss, bilingual checks): [CRON.md](./CRON.md).
 
 | Kuwait | UTC | Host | Job | Kind |
 |--------|-----|------|-----|------|
-| every 4h | `0 */4 * * *` | **GitHub Actions** | Workflow `Ops heal` | Clear zombie locks + abandon stale raw (never force-kills a live collect). |
-| 06:00 | 03:00 | **GitHub Actions** | Workflow `Collect news` | Pre-heal → full collect → confirm (+ repair if stale). |
+| every 2h at :30 | `30 */2 * * *` | **GitHub Actions** | Workflow `Ops heal` | Zombie locks + abandon stale raw (never steals a live collect heartbeat). |
+| 06:00 / 14:00 / 22:00 | 03:00 / 11:00 / 19:00 | **GitHub Actions** | Workflow `Collect news` | **Pre-heal → collect → translate → confirm**. |
+| 08:00 / 12:00 / 16:00 / 20:00 | 05:00 / 09:00 / 13:00 / 17:00 | **GitHub Actions** | Workflow `Translate news` | Bilingual backfill; skips if collect is live. |
 | 07:00 | 04:00 | **Vercel Cron** | `GET /api/cron/collect` | Short HTTP backup only. |
 | 11:00 | 08:00 | **Vercel Cron** | `GET /api/cron/ops-heal` | HTTP heal backup. |
-| 14:00 | 11:00 | **GitHub Actions** | Workflow `Collect news` | Pre-heal → full collect → confirm. |
-| 14:00 | 11:00 | **cron-job.org** | HTTP `/api/cron/collect` | Optional short midday ping (dashboard). Prefer GHA at this hour. |
-| 22:00 | 19:00 | **GitHub Actions** | Workflow `Collect news` | Pre-heal → full collect → confirm. |
-| 23:00 | 20:00 | **Vercel Cron** | `GET /api/cron/translate` | HTTP backfill for leftover `ar` / `en` pairs. |
+| 23:00 | 20:00 | **Vercel Cron** | `GET /api/cron/translate` | HTTP translate backup. |
 | 03:30 | 00:30 | **Vercel Cron** | `GET /api/cron/archive` | Prune hot window / optional R2. |
 
-This repo is **public**, so standard GitHub Actions Linux runners do not burn the private-plan 2,000-minute budget. Prefer GHA for reliability.
+This repo is **public**, so standard GitHub Actions Linux runners do not burn the private-plan minute budget. Prefer GHA for reliability.
 
 ---
 
-## GitHub Actions — Collect news
+## Collect news (main pipeline)
 
 File: `.github/workflows/collect.yml`
 
-Three jobs every run:
+Four jobs every run:
 
-1. **Pre-heal** — force-clear stuck locks + abandon stale raw (`ops-heal-once --pre-collect`)
-2. **Collect** — full DB pipeline (`run-once.ts`, up to 180 minutes)
-3. **Confirm** — assert newest `publishedAt` within 8h; if not, heal + force collect once (`ops-confirm-once --repair`)
+1. **Pre-heal** — stop running/stuck **translate** (and other job locks) + abandon stale raw  
+2. **Collect** — full DB pipeline (`run-once.ts`, up to 180 minutes)  
+3. **Translate** — force `translate` job after collect (up to 120 minutes)  
+4. **Confirm** — newest story &lt; 8h and translation backlog sane; repair (collect + translate) if not  
 
-Schedules: `0 3,11,19 * * *` UTC (= 06:00 / 14:00 / 22:00 Kuwait), plus **Run workflow**.
-
-Secrets: `DATABASE_URL`, `DIRECT_URL`, `GOOGLE_API_KEY`. Optional HTTP fallback: `CRON_SECRET` / `ADMIN_API_KEY` / `SITE_URL`.
+If translate is mid-run when collect is about to start, pre-heal releases its lock. Translate always runs again after collect.
 
 ---
 
-## GitHub Actions — Ops heal
+## Translate news (between collects)
+
+File: `.github/workflows/translate.yml`
+
+- Four times daily between collect slots  
+- Clears zombie locks, then force-runs translate  
+- **Skips** when collect holds a live lock (`--skip-if-collect-running`)
+
+---
+
+## Ops heal
 
 File: `.github/workflows/ops-heal.yml`
 
-- Every 4 hours + **Run workflow**
-- Clears **zombie** locks only (does not steal a live collect heartbeat)
-- Abandons raw rows outside the live window
+- Every 2 hours (+ **Run workflow**)  
+- Clears **zombie** locks only + abandons stale raw  
 
 ---
 
-## Vercel Cron
+## Edge-case behaviour
 
-File: `vercel.json`
-
-```json
-{
-  "crons": [
-    { "path": "/api/cron/collect", "schedule": "0 4 * * *" },
-    { "path": "/api/cron/archive", "schedule": "30 0 * * *" },
-    { "path": "/api/cron/translate", "schedule": "0 20 * * *" },
-    { "path": "/api/cron/ops-heal", "schedule": "0 8 * * *" }
-  ]
-}
-```
-
-Set `CRON_SECRET` on the Vercel project.
+| Situation | What happens |
+|-----------|----------------|
+| Translate stuck / running, collect starts | Pre-heal stops translate locks → collect → translate again |
+| Collect interrupted / cancelled | Next ops-heal + next collect pre-heal clears lock; confirm repair can re-collect |
+| Translate backlog after collect | Post-collect translate job + confirm `--repair` + standalone Translate workflow |
+| Collect live during Translate cron | Translate exits skipped; collect workflow translates afterward |
+| Stale raw backlog (old publish dates) | Abandoned before normalize (pipeline + heal) |
 
 ---
 
 ## If the feed looks stuck
 
-1. Actions → **Ops heal** → Run workflow (clears zombies)
-2. Actions → **Collect news** → Run workflow (pre-heal → collect → confirm)
-3. Or Platform operations → **Run auto-heal** / **Force collect**
+1. Actions → **Ops heal** → Run workflow  
+2. Actions → **Collect news** → Run workflow (includes translate + confirm)  
+3. Actions → **Translate news** → Run workflow (backfill only)  
+4. Or Platform operations → **Run auto-heal** / **Force collect**
 
-Do **not** cancel a running Collect job early — that leaves `collect` interrupted until the next pre-heal.
+Do **not** cancel a running Collect job early.

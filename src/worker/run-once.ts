@@ -10,6 +10,7 @@ import {
 
 const collectOnly = process.argv.includes("--collect-only");
 const ifStale = process.argv.includes("--if-stale");
+const force = process.argv.includes("--force");
 
 function registerInterruptHandlers() {
   const onSignal = () => {
@@ -39,6 +40,10 @@ async function shouldSkipFreshCollect() {
 if (collectOnly) {
   process.env.CRON_COLLECT_ONLY = "true";
 }
+if (force) {
+  // Scheduled GHA collects must always re-hit sources; refresh-hours backoff is for HTTP backups.
+  process.env.CRON_FORCE_COLLECT = "true";
+}
 
 registerInterruptHandlers();
 
@@ -54,7 +59,7 @@ ensureDefaultJobs()
       return;
     }
     return clearStaleJobLocks()
-      .then(() => runScheduledJob(JOB_COLLECT))
+      .then(() => runScheduledJob(JOB_COLLECT, { force }))
       .then((result) => {
         console.log(JSON.stringify(result, null, 2));
         if (!result.ok && !result.skipped) process.exitCode = 1;

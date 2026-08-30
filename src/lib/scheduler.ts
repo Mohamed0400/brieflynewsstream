@@ -360,6 +360,7 @@ async function executeJob(key: string) {
   }
   return summarizePipeline(await runPipeline({
     forceEdition: true,
+    forceCollect: process.env.CRON_FORCE_COLLECT === "true" || process.env.FORCE_COLLECT === "true",
     skipTranslation: process.env.CRON_COLLECT_ONLY === "true",
   }));
 }

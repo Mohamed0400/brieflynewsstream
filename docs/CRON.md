@@ -9,11 +9,11 @@ Timezone is `APP_TIMEZONE` (default `Asia/Kuwait`). GitHub Actions owns the reli
 | Kuwait | UTC | Host | What |
 |--------|-----|------|------|
 | every 2h :30 | `30 */2` | **GitHub Actions** | Workflow `Ops heal` |
-| 06:00 / 14:00 / 22:00 | 03:00 / 11:00 / 19:00 | **GitHub Actions** | `Collect news`: pre-heal → collect → **translate** → confirm |
-| 08:00 / 12:00 / 16:00 / 20:00 | 05:00 / 09:00 / 13:00 / 17:00 | **GitHub Actions** | Workflow `Translate news` (skips if collect live) |
-| 07:00 | 04:00 | **Vercel Cron** | HTTP `/api/cron/collect` |
-| 11:00 | 08:00 | **Vercel Cron** | HTTP `/api/cron/ops-heal` |
-| 23:00 | 20:00 | **Vercel Cron** | HTTP `/api/cron/translate` |
+| 6:00 AM / 10:00 AM / 2:00 PM / 6:00 PM / 10:00 PM | 03:00 / 07:00 / 11:00 / 15:00 / 19:00 | **GitHub Actions** | `Collect news` (force-refetch → translate → confirm) |
+| 8:00 AM / 12:00 PM / 4:00 PM / 8:00 PM | 05:00 / 09:00 / 13:00 / 17:00 | **GitHub Actions** | Workflow `Translate news` |
+| 7:00 AM | 04:00 | **Vercel Cron** | HTTP `/api/cron/collect` |
+| 11:00 AM | 08:00 | **Vercel Cron** | HTTP `/api/cron/ops-heal` |
+| 11:00 PM | 20:00 | **Vercel Cron** | HTTP `/api/cron/translate` |
 
 See [CRONJOBS.md](./CRONJOBS.md) for the schedule of record.
 

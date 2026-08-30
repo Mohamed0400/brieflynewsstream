@@ -6,9 +6,11 @@ name: Collect news
 
 on:
   schedule:
-    # Three times daily Asia/Kuwait (UTC+3): 06:00, 14:00, 22:00
+    # Five times daily Asia/Kuwait (UTC+3): 6:00 AM, 10:00 AM, 2:00 PM, 6:00 PM, 10:00 PM
     - cron: "0 3 * * *"
+    - cron: "0 7 * * *"
     - cron: "0 11 * * *"
+    - cron: "0 15 * * *"
     - cron: "0 19 * * *"
   workflow_dispatch:
 
@@ -24,7 +26,10 @@ env:
   MIN_COUNTRY_ARTICLES: "3"
   COLLECT_CONCURRENCY: "6"
   COLLECT_BUDGET_MS: "2400000"
-  COLLECT_REFRESH_HOURS: "4"
+  # Short backoff for HTTP backups only. GHA sets CRON_FORCE_COLLECT so every
+  # scheduled collect re-hits sources even if the previous run finished recently.
+  COLLECT_REFRESH_HOURS: "2"
+  CRON_FORCE_COLLECT: "true"
   NORMALIZE_BATCH_SIZE: "2500"
   NORMALIZE_PASSES: "8"
   NORMALIZE_PRE_COLLECT_PASSES: "1"
@@ -137,7 +142,7 @@ jobs:
             echo "Expect **30–180 minutes**. Do **not** cancel early."
             echo ""
           } >> "$GITHUB_STEP_SUMMARY"
-          npx tsx src/worker/run-once.ts | tee pipeline-result.json
+          npx tsx src/worker/run-once.ts --force | tee pipeline-result.json
           echo "used_http=false" >> "$GITHUB_OUTPUT"
           {
             echo "## Collect pipeline result"

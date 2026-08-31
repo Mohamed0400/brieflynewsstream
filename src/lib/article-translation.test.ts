@@ -4,6 +4,8 @@ import {
   articleLocalizedText,
   hasArabicDisplay,
   hasEnglishDisplay,
+  isBilingualComplete,
+  likelyIncompleteTranslationWhere,
   sortArticlesForTranslation,
 } from "./article-translation";
 
@@ -77,4 +79,13 @@ test("translation queue prioritizes Kuwait, global/US/EU/CN desk, then Gulf", ()
     { id: "eu", country: "EU", publishedAt: new Date(now), category: "ECONOMICS" },
   ]);
   assert.deepEqual(sorted.map((item) => item.id), ["kw-gold", "kw", "us", "eu", "cn-gold", "ae", "eg"]);
+});
+
+test("incomplete bilingual rows fail the complete gate and match the drain where filter", () => {
+  assert.equal(isBilingualComplete(englishArticle), false);
+  assert.equal(isBilingualComplete(bilingualArticle), true);
+  const where = likelyIncompleteTranslationWhere(new Date("2026-08-01T00:00:00Z"));
+  assert.ok(where.publishedAt.gte);
+  assert.ok(where.OR.some((clause) => "titleAr" in clause && clause.titleAr === null));
+  assert.ok(where.OR.some((clause) => "translatedAt" in clause && clause.translatedAt === null));
 });

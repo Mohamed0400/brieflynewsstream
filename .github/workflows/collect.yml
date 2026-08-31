@@ -255,11 +255,18 @@ jobs:
 
       - name: Confirm freshness + translation (repair if needed)
         if: ${{ env.DATABASE_URL != '' }}
+        env:
+          # Confirm repair drains the older incomplete backlog, not just newest rows.
+          TRANSLATE_BATCH_SIZE: "100"
+          TRANSLATE_MAX_PASSES: "50"
+          TRANSLATE_CONCURRENCY: "4"
         run: |
           set -o pipefail
+          # Soft threshold: backlog above this still self-heals (exit 0) when collect
+          # and freshness are healthy. Use --strict-translate only for hard fail.
           npx tsx scripts/ops-confirm-once.ts \
             --max-age-hours=8 \
-            --max-pending-translate=150 \
+            --max-pending-translate=400 \
             --repair | tee confirm-result.json
           {
             echo "## Confirm"

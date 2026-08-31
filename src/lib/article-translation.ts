@@ -81,6 +81,15 @@ type BilingualArticle = {
   translatedAt: Date | null;
 };
 
+/** Last Gemini/API failure message from a translate batch (spend cap, auth, etc.). */
+let lastTranslationFailure: string | null = null;
+
+export function consumeLastTranslationFailure() {
+  const value = lastTranslationFailure;
+  lastTranslationFailure = null;
+  return value;
+}
+
 export function isArabicText(value: string | null | undefined) {
   return Boolean(value && ARABIC_TEXT.test(value));
 }
@@ -389,6 +398,7 @@ async function translateBatch(
       lastError = error instanceof Error ? error.message : String(error);
     }
   }
+  lastTranslationFailure = lastError;
   console.error("Article translation batch failed:", lastError);
   return new Map<string, { title: string; summary: string }>();
 }
@@ -553,6 +563,20 @@ function canonicalArabic(article: BilingualArticle) {
   };
 }
 
+/** Prisma filter for rows that are likely missing an en/ar pair (JS still verifies). */
+export function likelyIncompleteTranslationWhere(cutoff: Date) {
+  return {
+    publishedAt: { gte: cutoff },
+    OR: [
+      { translatedAt: null },
+      { titleAr: null },
+      { summaryAr: null },
+      { titleEn: null },
+      { summaryEn: null },
+    ],
+  };
+}
+
 export async function translatePendingArticles(options: { limit?: number; countries?: string[] } = {}) {
   const freshnessCutoff = new Date(
     Date.now() - Math.max(1, limits.newsMaxAgeHours) * 60 * 60 * 1000,
@@ -560,17 +584,26 @@ export async function translatePendingArticles(options: { limit?: number; countr
   const unlimited = options.limit === 0 || (options.limit === undefined && limits.translateBatch === 0);
   const take = unlimited ? undefined : (options.limit ?? Math.max(1, limits.translateBatch));
   const countryFilter = options.countries?.map((code) => code.trim().toUpperCase()).filter(Boolean);
+  // Pull likely-incomplete rows — NOT merely the newest N articles. After a
+  // successful collect the newest window is mostly bilingual, which previously
+  // made repair report "0 translated" while hundreds of older rows stayed incomplete.
+  const candidateTake = unlimited
+    ? undefined
+    : Math.min(Math.max((take ?? 80) * 20, 500), 5000);
   const pool = await prisma.article.findMany({
     where: {
-      publishedAt: { gte: freshnessCutoff },
+      ...likelyIncompleteTranslationWhere(freshnessCutoff),
       ...(countryFilter?.length ? { country: { in: countryFilter } } : {}),
     },
     orderBy: { publishedAt: "desc" },
-    ...(take ? { take: Math.min(Math.max(take * 6, take), 3000) } : {}),
+    ...(candidateTake ? { take: candidateTake } : {}),
   });
   const allPending = sortArticlesForTranslation(pool.filter((article) => !isBilingualComplete(article)));
   const pending = allPending.slice(0, take || allPending.length);
-  if (!pending.length) return { translated: 0, pending: allPending.length };
+  if (!pending.length) {
+    const remaining = await countIncompleteBilingualArticles(freshnessCutoff);
+    return { translated: 0, pending: remaining };
+  }
 
   const needsArabic: TranslationInput[] = [];
   const needsEnglish: TranslationInput[] = [];
@@ -578,14 +611,15 @@ export async function translatePendingArticles(options: { limit?: number; countr
   for (const article of pending) {
     const english = canonicalEnglish(article);
     const arabic = canonicalArabic(article);
-    if (english && !isArabicText(article.titleAr)) {
+    // Queue when either title or summary is missing for that language.
+    if (english && (!isArabicText(article.titleAr) || !isArabicText(article.summaryAr))) {
       needsArabic.push({
         id: article.id,
         title: english.title,
         summary: english.summary || english.title,
       });
     }
-    if (arabic && !isEnglishText(article.titleEn)) {
+    if (arabic && (!isEnglishText(article.titleEn) || !isEnglishText(article.summaryEn))) {
       needsEnglish.push({
         id: article.id,
         title: arabic.title,
@@ -640,13 +674,15 @@ export async function translatePendingArticles(options: { limit?: number; countr
 export async function drainPendingTranslations(maxPasses = limits.translateMaxPasses) {
   let translated = 0;
   let pending = 0;
+  let apiError: string | null = null;
   for (let pass = 0; pass < maxPasses; pass += 1) {
     const result = await translatePendingArticles();
     translated += result.translated;
     pending = result.pending;
+    apiError = consumeLastTranslationFailure() || apiError;
     if (result.pending === 0 || result.translated === 0) break;
   }
-  return { translated, pending };
+  return { translated, pending, apiError };
 }
 
 export async function localizeFetchedArticles<T extends BilingualArticle>(

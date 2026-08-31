@@ -68,30 +68,59 @@ export async function syncLiveCountrySources(sources: CountrySourceSeed[]) {
   }
 }
 
-/** Upsert Arabic-only pipeline sources without touching main-pipeline rows. */
+/** Upsert Arabic-only pipeline sources; retag rows that already share the same RSS URL. */
 export async function syncArabicLiveSources(sources: CountrySourceSeed[]) {
-  for (let index = 0; index < sources.length; index += BATCH_SIZE) {
-    const batch = sources.slice(index, index + BATCH_SIZE).map(toSourceSeed);
-    await prisma.$transaction(
-      batch.map((source) => prisma.source.upsert({
-        where: { code: source.code },
-        create: source,
-        update: {
-          name: source.name,
-          url: source.url,
-          homepageUrl: source.homepageUrl,
-          adapter: source.adapter,
-          country: source.country,
-          region: source.region,
-          defaultCategory: source.defaultCategory,
-          qualityWeight: source.qualityWeight,
+  let created = 0;
+  let retagged = 0;
+  let updated = 0;
+  for (const raw of sources) {
+    const seed = toSourceSeed(raw);
+    seed.sourceLocale = "ar";
+    seed.collectPipeline = "arabic";
+    const existingByCode = await prisma.source.findUnique({ where: { code: seed.code } });
+    const existingByUrl = await prisma.source.findUnique({ where: { url: seed.url } });
+    if (existingByUrl && existingByUrl.code !== seed.code) {
+      await prisma.source.update({
+        where: { id: existingByUrl.id },
+        data: {
+          name: seed.name,
+          homepageUrl: seed.homepageUrl,
+          country: seed.country,
+          region: seed.region,
+          defaultCategory: seed.defaultCategory,
+          qualityWeight: Math.max(existingByUrl.qualityWeight, seed.qualityWeight),
           sourceLocale: "ar",
           collectPipeline: "arabic",
           enabled: true,
         },
-      })),
-    );
+      });
+      retagged += 1;
+      continue;
+    }
+    if (existingByCode) {
+      await prisma.source.update({
+        where: { code: seed.code },
+        data: {
+          name: seed.name,
+          url: seed.url,
+          homepageUrl: seed.homepageUrl,
+          adapter: seed.adapter,
+          country: seed.country,
+          region: seed.region,
+          defaultCategory: seed.defaultCategory,
+          qualityWeight: seed.qualityWeight,
+          sourceLocale: "ar",
+          collectPipeline: "arabic",
+          enabled: true,
+        },
+      });
+      updated += 1;
+    } else {
+      await prisma.source.create({ data: seed });
+      created += 1;
+    }
   }
+  return { created, updated, retagged, total: sources.length };
 }
 
 export async function disableRetiredCountrySources() {

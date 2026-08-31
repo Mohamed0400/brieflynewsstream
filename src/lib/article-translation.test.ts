@@ -65,13 +65,16 @@ test("localized display uses the matching language when bilingual", () => {
   assert.equal(hasEnglishDisplay(bilingualArticle), true);
 });
 
-test("translation queue prioritizes Kuwait and Gulf markets", () => {
+test("translation queue prioritizes Kuwait, global/US/EU/CN desk, then Gulf", () => {
   const now = Date.now();
   const sorted = sortArticlesForTranslation([
-    { id: "us", country: "US", publishedAt: new Date(now) },
-    { id: "kw", country: "KW", publishedAt: new Date(now - 60_000) },
-    { id: "ae", country: "AE", publishedAt: new Date(now) },
-    { id: "eg", country: "EG", publishedAt: new Date(now) },
+    { id: "us", country: "US", publishedAt: new Date(now), category: "MARKETS" },
+    { id: "kw", country: "KW", publishedAt: new Date(now - 60_000), category: "ME_ECONOMY" },
+    { id: "ae", country: "AE", publishedAt: new Date(now), category: "ME_ECONOMY" },
+    { id: "eg", country: "EG", publishedAt: new Date(now), category: "ME_ECONOMY" },
+    { id: "kw-gold", country: "KW", publishedAt: new Date(now - 120_000), category: "GOLD" },
+    { id: "cn-gold", country: "CN", publishedAt: new Date(now), category: "GOLD" },
+    { id: "eu", country: "EU", publishedAt: new Date(now), category: "ECONOMICS" },
   ]);
-  assert.deepEqual(sorted.map((item) => item.id), ["kw", "ae", "eg", "us"]);
+  assert.deepEqual(sorted.map((item) => item.id), ["kw-gold", "kw", "us", "eu", "cn-gold", "ae", "eg"]);
 });

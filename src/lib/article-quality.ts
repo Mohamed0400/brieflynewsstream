@@ -40,7 +40,11 @@ export function shouldKeepStoredArticle(input: ArticleQualityInput) {
     publishedAt: input.publishedAt,
   });
   if (nationalityNews) return true;
-  return shouldStoreArticle(classified, scores);
+  return shouldStoreArticle(classified, scores, {
+    sourceQuality: input.sourceQuality,
+    defaultCategory: input.defaultCategory,
+    sourceCountry: input.sourceCountry,
+  });
 }
 
 export async function purgeLowQualityArticles(options: {

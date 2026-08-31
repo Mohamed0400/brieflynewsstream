@@ -194,14 +194,62 @@ export function classifyArticle(
 }
 
 /** Final pipeline gate after scoring — catches low-signal stories that slip past keyword rules. */
+export const HIGH_PRIORITY_SOURCE_WEIGHT = 88;
+
+const INVESTOR_DESK_CATEGORIES = new Set<Category>([
+  Category.GOLD,
+  Category.OIL,
+  Category.ENERGY,
+  Category.FINANCE,
+  Category.ECONOMICS,
+  Category.MARKETS,
+  Category.ME_ECONOMY,
+  Category.COMMODITIES,
+  Category.FX,
+  Category.BANKING,
+  Category.TRADE,
+]);
+
+export function isHighPriorityInvestorSource(
+  sourceQuality: number,
+  defaultCategory?: Category | null,
+  sourceCountry?: string,
+) {
+  if (sourceQuality >= HIGH_PRIORITY_SOURCE_WEIGHT) return true;
+  if (sourceCountry === "KW" && sourceQuality >= 82) return true;
+  if (defaultCategory && INVESTOR_DESK_CATEGORIES.has(defaultCategory) && sourceQuality >= 85) {
+    return true;
+  }
+  return false;
+}
+
 export function shouldStoreArticle(
   classified: Pick<ClassifiedArticle, "accepted" | "relevance" | "weakMarketOnly">,
   scores: Pick<ReturnType<typeof calculateScores>, "marketImpact" | "finalScore">,
+  options?: {
+    sourceQuality?: number;
+    defaultCategory?: Category | null;
+    sourceCountry?: string;
+  },
 ) {
   if (!classified.accepted) return false;
-  if (classified.weakMarketOnly) return false;
-  if (classified.relevance < 36 && scores.marketImpact < 20) return false;
-  if (classified.relevance < 28 && scores.finalScore < 40) return false;
+
+  const highPriority = isHighPriorityInvestorSource(
+    options?.sourceQuality ?? 0,
+    options?.defaultCategory,
+    options?.sourceCountry,
+  );
+
+  if (classified.weakMarketOnly && !highPriority) return false;
+
+  if (classified.relevance < 36 && scores.marketImpact < 20 && !highPriority) {
+    return false;
+  }
+
+  const minFinalScore = highPriority ? (options?.sourceCountry === "KW" ? 28 : 32) : 40;
+  const minRelevance = highPriority ? (options?.sourceCountry === "KW" ? 20 : 24) : 28;
+  if (classified.relevance < minRelevance && scores.finalScore < minFinalScore) return false;
+
   return true;
 }
 
@@ -240,12 +288,15 @@ export function calculateScores(input: {
     Math.max(goldImpact, ratesImpact, oilImpact) * 0.65 +
     Math.min(100, termHits(text, TERMS.FINANCE) * 18) * 0.35,
   ));
+  // Gold-first investor desk: metals lead, then oil/power + Kuwait/ME, then markets.
   const finalScore = Number((
-    input.relevance * 0.3 +
-    freshness * 0.18 +
-    input.sourceQuality * 0.18 +
-    goldImpact * 0.19 +
-    marketImpact * 0.15
+    input.relevance * 0.24 +
+    freshness * 0.15 +
+    input.sourceQuality * 0.16 +
+    goldImpact * 0.24 +
+    oilImpact * 0.09 +
+    middleEastImpact * 0.06 +
+    marketImpact * 0.06
   ).toFixed(2));
 
   return {
@@ -259,6 +310,6 @@ export function calculateScores(input: {
     middleEastImpact,
     marketImpact,
     finalScore,
-    explanation: `relevance ${input.relevance}, freshness ${freshness}, source ${input.sourceQuality}, gold ${goldImpact}, market ${marketImpact}`,
+    explanation: `relevance ${input.relevance}, freshness ${freshness}, source ${input.sourceQuality}, gold ${goldImpact}, oil ${oilImpact}, me ${middleEastImpact}, market ${marketImpact}`,
   };
 }

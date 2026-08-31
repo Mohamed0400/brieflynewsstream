@@ -10,6 +10,11 @@
  */
 import { prisma } from "../src/lib/prisma";
 import { limits } from "../src/lib/limits";
+import {
+  backfillTranslatedAt,
+  countIncompleteBilingualArticles,
+  drainPendingTranslations,
+} from "../src/lib/article-translation";
 import { runOpsAutoHeal } from "../src/lib/ops-recovery";
 import {
   clearStaleJobLocks,
@@ -27,10 +32,13 @@ function intFlag(argv: string[], name: string, fallback: number) {
   return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
+function freshnessCutoff() {
+  return new Date(Date.now() - Math.max(1, limits.newsMaxAgeHours) * 3_600_000);
+}
+
 async function snapshot() {
-  const freshnessCutoff = new Date(
-    Date.now() - Math.max(1, limits.newsMaxAgeHours) * 3_600_000,
-  );
+  const cutoff = freshnessCutoff();
+  await backfillTranslatedAt(cutoff);
   const [collect, translate, newest, pendingRaw, pendingTranslate] = await Promise.all([
     prisma.scheduledJob.findUnique({
       where: { key: JOB_COLLECT },
@@ -47,21 +55,10 @@ async function snapshot() {
     prisma.rawArticle.count({
       where: {
         processedAt: null,
-        publishedAt: { gte: freshnessCutoff },
+        publishedAt: { gte: cutoff },
       },
     }),
-    prisma.article.count({
-      where: {
-        publishedAt: { gte: freshnessCutoff },
-        OR: [
-          { translatedAt: null },
-          { titleAr: null },
-          { summaryAr: null },
-          { titleEn: null },
-          { summaryEn: null },
-        ],
-      },
-    }),
+    countIncompleteBilingualArticles(cutoff),
   ]);
   const ageHours = newest?.publishedAt
     ? (Date.now() - newest.publishedAt.getTime()) / 3_600_000
@@ -147,13 +144,34 @@ async function main() {
     const collect = needsCollect
       ? await runScheduledJob(JOB_COLLECT, { force: true })
       : { ok: true, skipped: true, message: "collect repair skipped (translate-only issue)" };
-    const translate = await runScheduledJob(JOB_TRANSLATE, { force: true });
+
+    let translateMessage = "translate repair skipped";
+    let translateOk = true;
+    if (state.pendingTranslate > maxPendingTranslate || problems.some((p) => p.includes("translation"))) {
+      const repairPasses = Math.max(limits.translateMaxPasses, 40);
+      let drained = 0;
+      let pendingAfter = state.pendingTranslate;
+      for (let round = 0; round < 6 && pendingAfter > maxPendingTranslate; round += 1) {
+        await backfillTranslatedAt(freshnessCutoff());
+        const result = await drainPendingTranslations(repairPasses);
+        drained += result.translated;
+        pendingAfter = await countIncompleteBilingualArticles(freshnessCutoff());
+        if (result.translated === 0) break;
+      }
+      translateMessage = `${drained} translated in repair; ${pendingAfter} still incomplete`;
+      translateOk = pendingAfter <= maxPendingTranslate;
+    } else {
+      const translate = await runScheduledJob(JOB_TRANSLATE, { force: true });
+      translateMessage = translate.message;
+      translateOk = translate.ok;
+    }
+
     state = await snapshot();
     report.repair = {
       heal: heal.messages,
       collect: collect.message,
-      translate: translate.message,
-      ok: collect.ok && translate.ok,
+      translate: translateMessage,
+      ok: collect.ok && translateOk,
       ageHoursAfter: state.ageHours,
       pendingTranslateAfter: state.pendingTranslate,
       collectStatusAfter: state.collect?.lastStatus ?? null,
@@ -161,7 +179,7 @@ async function main() {
     };
     const stillBad =
       !collect.ok
-      || !translate.ok
+      || !translateOk
       || state.ageHours == null
       || state.ageHours > maxAgeHours
       || state.pendingTranslate > maxPendingTranslate

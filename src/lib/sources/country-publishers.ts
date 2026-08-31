@@ -209,24 +209,24 @@ const COUNTRY_ROWS = [
   ["TUOI_TRE_VN", "Tuoi Tre News", "https://tuoitrenews.vn/rss", "https://tuoitrenews.vn/", "VN", Category.MARKETS, 76],
   ["SAIGON_TIMES_VN", "The Saigon Times", "https://english.thesaigontimes.vn/feed/", "https://english.thesaigontimes.vn/", "VN", Category.FINANCE, 80],
 
-  // China
-  ["GLOBAL_TIMES_CN", "Global Times", "https://www.globaltimes.cn/rss/outbrain.xml", "https://www.globaltimes.cn/", "CN", Category.MARKETS, 76],
-  ["SIXTH_TONE_CN", "Sixth Tone", "https://www.sixthtone.com/rss", "https://www.sixthtone.com/", "CN", Category.MARKETS, 76],
-  ["ECNS_CN", "China News Service", "https://www.ecns.cn/rss/rss.xml", "https://www.ecns.cn/", "CN", Category.MARKETS, 78],
-  ["PEOPLE_CN", "People's Daily English Business", "http://en.people.cn/rss/business.xml", "http://en.people.cn/", "CN", Category.ECONOMICS, 78],
-  ["XINHUA_BIZ_CN", "Xinhua Business", "https://www.xinhuanet.com/english/rss/businessrss.xml", "https://english.news.cn/", "CN", Category.FINANCE, 80],
+  // China — elevated for gold / trade / energy investors
+  ["GLOBAL_TIMES_CN", "Global Times", "https://www.globaltimes.cn/rss/outbrain.xml", "https://www.globaltimes.cn/", "CN", Category.MARKETS, 86],
+  ["SIXTH_TONE_CN", "Sixth Tone", "https://www.sixthtone.com/rss", "https://www.sixthtone.com/", "CN", Category.MARKETS, 82],
+  ["ECNS_CN", "China News Service", "https://www.ecns.cn/rss/rss.xml", "https://www.ecns.cn/", "CN", Category.MARKETS, 88],
+  ["PEOPLE_CN", "People's Daily English Business", "http://en.people.cn/rss/business.xml", "http://en.people.cn/", "CN", Category.ECONOMICS, 88],
+  ["XINHUA_BIZ_CN", "Xinhua Business", "https://www.xinhuanet.com/english/rss/businessrss.xml", "https://english.news.cn/", "CN", Category.FINANCE, 90],
 
   // Hong Kong
-  ["HKFP_HK", "Hong Kong Free Press", "https://hongkongfp.com/feed/", "https://hongkongfp.com/", "HK", Category.MARKETS, 80],
-  ["RTHK_HK", "RTHK English News", "https://rthk.hk/rthk/news/rss/e_expressnews_elocal.xml", "https://news.rthk.hk/", "HK", Category.MARKETS, 82],
-  ["EJINSIGHT_HK", "EJ Insight", "https://www.ejinsight.com/feed/", "https://www.ejinsight.com/", "HK", Category.FINANCE, 80],
-  ["THE_STANDARD_HK", "The Standard Hong Kong", "https://www.thestandard.com.hk/rss.php", "https://www.thestandard.com.hk/", "HK", Category.FINANCE, 78],
+  ["HKFP_HK", "Hong Kong Free Press", "https://hongkongfp.com/feed/", "https://hongkongfp.com/", "HK", Category.MARKETS, 84],
+  ["RTHK_HK", "RTHK English News", "https://rthk.hk/rthk/news/rss/e_expressnews_elocal.xml", "https://news.rthk.hk/", "HK", Category.MARKETS, 88],
+  ["EJINSIGHT_HK", "EJ Insight", "https://www.ejinsight.com/feed/", "https://www.ejinsight.com/", "HK", Category.FINANCE, 88],
+  ["THE_STANDARD_HK", "The Standard Hong Kong", "https://www.thestandard.com.hk/rss.php", "https://www.thestandard.com.hk/", "HK", Category.FINANCE, 84],
 
   // Taiwan
-  ["FOCUS_TAIWAN_TW", "Focus Taiwan", "https://focustaiwan.tw/rss", "https://focustaiwan.tw/", "TW", Category.MARKETS, 84],
-  ["TAIWAN_NEWS_TW", "Taiwan News", "https://www.taiwannews.com.tw/en/rss", "https://www.taiwannews.com.tw/", "TW", Category.MARKETS, 78],
-  ["CNA_TW", "CNA English", "https://focustaiwan.tw/rss/aall", "https://www.cna.com.tw/english/", "TW", Category.MARKETS, 84],
-  ["TAIWAN_TODAY_TW", "Taiwan Today", "https://taiwantoday.tw/rss.php", "https://taiwantoday.tw/", "TW", Category.ECONOMICS, 76],
+  ["FOCUS_TAIWAN_TW", "Focus Taiwan", "https://focustaiwan.tw/rss", "https://focustaiwan.tw/", "TW", Category.MARKETS, 92],
+  ["TAIWAN_NEWS_TW", "Taiwan News", "https://www.taiwannews.com.tw/en/rss", "https://www.taiwannews.com.tw/", "TW", Category.MARKETS, 88],
+  ["CNA_TW", "CNA English", "https://focustaiwan.tw/rss/aall", "https://www.cna.com.tw/english/", "TW", Category.MARKETS, 92],
+  ["TAIWAN_TODAY_TW", "Taiwan Today", "https://taiwantoday.tw/rss.php", "https://taiwantoday.tw/", "TW", Category.ECONOMICS, 86],
 
   // Japan
   ["MAINICHI_JP", "Mainichi English", "https://mainichi.jp/english/rss/index.rss", "https://mainichi.jp/english/", "JP", Category.MARKETS, 80],
@@ -304,7 +304,7 @@ const COUNTRY_ROWS = [
   ["FAZ_DE", "FAZ Wirtschaft", "https://www.faz.net/rss/aktuell/wirtschaft/", "https://www.faz.net/aktuell/wirtschaft/", "DE", Category.ECONOMICS, 86],
   ["TAGESSCHAU_DE", "Tagesschau", "https://www.tagesschau.de/xml/rss2/", "https://www.tagesschau.de/", "DE", Category.MARKETS, 86],
   ["BUNDESBANK_DE", "Deutsche Bundesbank", "https://www.bundesbank.de/en/rss", "https://www.bundesbank.de/en", "DE", Category.ECONOMICS, 98],
-  ["HANDELSBLATT_DE", "Handelsblatt", "https://www.handelsblatt.com/contentexport/feed/schlagzeilen", "https://www.handelsblatt.com/", "DE", Category.FINANCE, 86],
+  ["HANDELSBLATT_DE", "Handelsblatt", "https://www.handelsblatt.com/contentexport/feed/schlagzeilen", "https://www.handelsblatt.com/", "DE", Category.FINANCE, 92],
 
   // France
   ["LES_ECHOS_FR", "Les Echos", "https://www.lesechos.fr/rss/rss_une.xml", "https://www.lesechos.fr/", "FR", Category.FINANCE, 88],

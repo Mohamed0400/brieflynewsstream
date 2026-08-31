@@ -47,7 +47,7 @@ test("sortNationalityOptionsByEditorialOrder deprioritizes Gulf host nationals",
   const sample = sortNationalityOptionsByEditorialOrder(
     NATIONALITY_OPTIONS.filter((option) => ["KW", "EG", "IN", "SA"].includes(option.code)),
   ).map((option) => option.code);
-  assert.deepEqual(sample, ["EG", "SA", "KW", "IN"]);
+  assert.deepEqual(sample, ["EG", "KW", "SA", "IN"]);
 });
 
 test("Saudi host includes Filipino but not Saudi audience codes", () => {

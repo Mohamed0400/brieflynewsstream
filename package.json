@@ -46,6 +46,8 @@
     "job:translate:live": "dotenv -e .env.live -- tsx src/worker/job-once.ts translate --force",
     "ops:status": "dotenv -e .env -- tsx scripts/ops-status-once.ts",
     "ops:status:live": "dotenv -e .env.live -- tsx scripts/ops-status-once.ts",
+    "ops:volume-audit": "dotenv -e .env -- tsx scripts/ops-volume-audit.ts",
+    "ops:volume-audit:live": "dotenv -e .env.live -- tsx scripts/ops-volume-audit.ts",
     "archive:once": "dotenv -e .env -- tsx src/worker/archive-once.ts",
     "archive:live": "dotenv -e .env.live -- tsx src/worker/archive-once.ts",
     "archive:dry": "dotenv -e .env -- tsx src/worker/archive-once.ts --dry-run",

@@ -95,7 +95,7 @@ const MENA_ROWS = [
     ["SAUDI", "Saudi Arabia", "category/saudi-arabia/feed/", "category/saudi-arabia/", Category.ME_ECONOMY, 80],
     ["UAE", "UAE", "category/uae/feed/", "category/uae/", Category.ME_ECONOMY, 80],
     ["QATAR", "Qatar", "category/qatar/feed/", "category/qatar/", Category.ME_ECONOMY, 78],
-    ["KUWAIT", "Kuwait", "category/kuwait/feed/", "category/kuwait/", Category.ME_ECONOMY, 78],
+    ["KUWAIT", "Kuwait", "category/kuwait/feed/", "category/kuwait/", Category.ME_ECONOMY, 92],
     ["OMAN", "Oman", "category/oman/feed/", "category/oman/", Category.ME_ECONOMY, 78],
   ]),
   ...rowsFor("AGBI", "Arabian Gulf Business Insight", "https://www.agbi.com/", "AE", CATEGORY_BUSINESS_SECTIONS),
@@ -112,18 +112,25 @@ const MENA_ROWS = [
     ["MARKETING", "Marketing", "category/marketing/feed/", "category/marketing/", Category.MARKETS, 74],
   ]),
 
-  // Kuwait and Saudi local density.
-  ...rowsFor("KUWAIT_TIMES", "Kuwait Times", "https://www.kuwaittimes.com/", "KW", CATEGORY_BUSINESS_SECTIONS),
+  // Kuwait and Saudi local density — KW oil/energy/business weighted for investor desk.
+  ...rowsFor("KUWAIT_TIMES", "Kuwait Times", "https://www.kuwaittimes.com/", "KW", [
+    ["BUSINESS", "Business", "category/business/feed/", "category/business/", Category.ME_ECONOMY, 90],
+    ["ECONOMY", "Economy", "category/economy/feed/", "category/economy/", Category.ECONOMICS, 90],
+    ["FINANCE", "Finance", "category/finance/feed/", "category/finance/", Category.FINANCE, 90],
+    ["MARKETS", "Markets", "category/markets/feed/", "category/markets/", Category.MARKETS, 88],
+    ["ENERGY", "Energy", "category/energy/feed/", "category/energy/", Category.OIL, 94],
+    ["BANKING", "Banking", "category/banking/feed/", "category/banking/", Category.FINANCE, 88],
+  ]),
   ...rowsFor("TIMES_KUWAIT", "The Times Kuwait", "https://timeskuwait.com/", "KW", [
-    ["LOCAL", "Local", "category/local/feed/", "category/local/", Category.ME_ECONOMY, 76],
-    ["BUSINESS_EXTRA", "Business Extra", "category/business/feed/?briefly=1", "category/business/", Category.ME_ECONOMY, 82],
-    ["OIL", "Oil", "tag/oil/feed/", "tag/oil/", Category.OIL, 76],
-    ["ECONOMY", "Economy", "tag/economy/feed/", "tag/economy/", Category.ECONOMICS, 76],
+    ["LOCAL", "Local", "category/local/feed/", "category/local/", Category.ME_ECONOMY, 82],
+    ["BUSINESS_EXTRA", "Business Extra", "category/business/feed/?briefly=1", "category/business/", Category.ME_ECONOMY, 90],
+    ["OIL", "Oil", "tag/oil/feed/", "tag/oil/", Category.OIL, 94],
+    ["ECONOMY", "Economy", "tag/economy/feed/", "tag/economy/", Category.ECONOMICS, 90],
   ]),
   ...rowsFor("KUWAIT_LOCAL", "Kuwait Local", "https://www.kuwaitlocal.com/", "KW", [
-    ["NEWS", "News", "news/feed", "news/", Category.ME_ECONOMY, 72],
-    ["BUSINESS", "Business", "news/business/feed", "news/business/", Category.ME_ECONOMY, 72],
-    ["ECONOMY", "Economy", "news/economy/feed", "news/economy/", Category.ECONOMICS, 72],
+    ["NEWS", "News", "news/feed", "news/", Category.ME_ECONOMY, 80],
+    ["BUSINESS", "Business", "news/business/feed", "news/business/", Category.ME_ECONOMY, 84],
+    ["ECONOMY", "Economy", "news/economy/feed", "news/economy/", Category.ECONOMICS, 84],
   ]),
   ...rowsFor("SAUDI_GAZETTE", "Saudi Gazette", "https://saudigazette.com.sa/", "SA", [
     ["SAUDI", "Saudi Arabia", "rss/saudi-arabia", "saudi-arabia/", Category.ME_ECONOMY, 80],

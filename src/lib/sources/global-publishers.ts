@@ -24,11 +24,11 @@ const GLOBAL_ROWS = [
   ["WHITEHOUSE_BRIEFING", "White House Briefing Room", "https://www.whitehouse.gov/briefing-room/feed/", "https://www.whitehouse.gov/briefing-room/", "US", Category.ECONOMICS, 90],
 
   // ECB / EU official
-  ["ECB_BLOG", "ECB Blog", "https://www.ecb.europa.eu/rss/blog.html", "https://www.ecb.europa.eu/press/blog/html/index.en.html", "EU", Category.ECONOMICS, 96],
-  ["ECB_STATS", "ECB Statistical Press", "https://www.ecb.europa.eu/rss/statpress.html", "https://www.ecb.europa.eu/press/pr/stats/html/index.en.html", "EU", Category.ECONOMICS, 98],
-  ["ECB_INTERVIEWS", "ECB Interviews", "https://www.ecb.europa.eu/rss/inter.html", "https://www.ecb.europa.eu/press/inter/html/index.en.html", "EU", Category.ECONOMICS, 95],
-  ["ECB_PAPERS", "ECB Working Papers", "https://www.ecb.europa.eu/rss/wppub.html", "https://www.ecb.europa.eu/pub/economic-research/working-papers/html/index.en.html", "EU", Category.ECONOMICS, 92],
-  ["EC_PRESS", "European Commission Press", "https://ec.europa.eu/commission/presscorner/api/rss?dotcmsid=all&language=en", "https://ec.europa.eu/commission/presscorner/home/en", "EU", Category.ECONOMICS, 94],
+  ["ECB_BLOG", "ECB Blog", "https://www.ecb.europa.eu/rss/blog.html", "https://www.ecb.europa.eu/press/blog/html/index.en.html", "EU", Category.ECONOMICS, 98],
+  ["ECB_STATS", "ECB Statistical Press", "https://www.ecb.europa.eu/rss/statpress.html", "https://www.ecb.europa.eu/press/pr/stats/html/index.en.html", "EU", Category.ECONOMICS, 99],
+  ["ECB_INTERVIEWS", "ECB Interviews", "https://www.ecb.europa.eu/rss/inter.html", "https://www.ecb.europa.eu/press/inter/html/index.en.html", "EU", Category.ECONOMICS, 97],
+  ["ECB_PAPERS", "ECB Working Papers", "https://www.ecb.europa.eu/rss/wppub.html", "https://www.ecb.europa.eu/pub/economic-research/working-papers/html/index.en.html", "EU", Category.ECONOMICS, 94],
+  ["EC_PRESS", "European Commission Press", "https://ec.europa.eu/commission/presscorner/api/rss?dotcmsid=all&language=en", "https://ec.europa.eu/commission/presscorner/home/en", "EU", Category.ECONOMICS, 96],
 
   // International institutions
   ["IMF_NEWS", "IMF News", "https://www.imf.org/en/News/rss", "https://www.imf.org/en/News", "GLOBAL", Category.ECONOMICS, 98],
@@ -56,9 +56,9 @@ const GLOBAL_ROWS = [
   ["GUARDIAN_US_BUSINESS", "The Guardian US Business", "https://www.theguardian.com/us/business/rss", "https://www.theguardian.com/us/business", "US", Category.FINANCE, 86],
   ["INDEPENDENT_UK_BUSINESS", "The Independent Business", "https://www.independent.co.uk/news/business/rss", "https://www.independent.co.uk/news/business", "GB", Category.FINANCE, 82],
   ["CITY_AM", "City AM", "https://www.cityam.com/feed/", "https://www.cityam.com/", "GB", Category.FINANCE, 82],
-  ["FT_HOME", "Financial Times Home", "https://www.ft.com/rss/home", "https://www.ft.com/", "GB", Category.FINANCE, 94],
-  ["FT_MARKETS", "Financial Times Markets", "https://www.ft.com/markets?format=rss", "https://www.ft.com/markets", "GB", Category.FINANCE, 94],
-  ["FT_WORLD", "Financial Times World", "https://www.ft.com/world?format=rss", "https://www.ft.com/world", "GLOBAL", Category.MARKETS, 92],
+  ["FT_HOME", "Financial Times Home", "https://www.ft.com/rss/home", "https://www.ft.com/", "GB", Category.FINANCE, 97],
+  ["FT_MARKETS", "Financial Times Markets", "https://www.ft.com/markets?format=rss", "https://www.ft.com/markets", "GB", Category.FINANCE, 97],
+  ["FT_WORLD", "Financial Times World", "https://www.ft.com/world?format=rss", "https://www.ft.com/world", "GLOBAL", Category.MARKETS, 94],
 
   // US wires / business press
   ["NYT_BUSINESS", "NYTimes Business", "https://rss.nytimes.com/services/xml/rss/nyt/Business.xml", "https://www.nytimes.com/section/business", "US", Category.FINANCE, 92],
@@ -101,20 +101,37 @@ const GLOBAL_ROWS = [
   ["REUTERS_AGENCY_BIZ", "Reuters Agency Business", "https://www.reutersagency.com/feed/?best-topics=business-finance&post_type=best", "https://www.reutersagency.com/", "GLOBAL", Category.FINANCE, 94],
   ["REUTERS_AGENCY_ECON", "Reuters Agency Economy", "https://www.reutersagency.com/feed/?best-topics=economy&post_type=best", "https://www.reutersagency.com/", "GLOBAL", Category.ECONOMICS, 94],
 
-  // Commodities / mining / energy
-  ["OILPRICE", "OilPrice", "https://oilprice.com/rss/main", "https://oilprice.com/", "GLOBAL", Category.OIL, 88],
-  ["MINING_COM", "Mining.com", "https://www.mining.com/feed/", "https://www.mining.com/", "GLOBAL", Category.COMMODITIES, 88],
-  ["BULLIONVAULT", "BullionVault News", "https://www.bullionvault.com/gold-news/rss", "https://www.bullionvault.com/gold-news", "GLOBAL", Category.GOLD, 84],
-  ["RIGZONE", "Rigzone", "https://www.rigzone.com/news/rss.asp", "https://www.rigzone.com/news/", "GLOBAL", Category.OIL, 80],
+  // Asia official / English — China / Taiwan / HK metals & markets desk
+  ["OILPRICE", "OilPrice", "https://oilprice.com/rss/main", "https://oilprice.com/", "GLOBAL", Category.OIL, 94],
+  ["MINING_COM", "Mining.com", "https://www.mining.com/feed/", "https://www.mining.com/", "GLOBAL", Category.COMMODITIES, 92],
+  ["MINING_SILVER", "Mining.com Silver", "https://www.mining.com/commodity/silver/feed/", "https://www.mining.com/commodity/silver/", "GLOBAL", Category.COMMODITIES, 90],
+  ["MINING_COPPER", "Mining.com Copper", "https://www.mining.com/commodity/copper/feed/", "https://www.mining.com/commodity/copper/", "GLOBAL", Category.COMMODITIES, 86],
+  ["BULLIONVAULT", "BullionVault News", "https://www.bullionvault.com/gold-news/rss", "https://www.bullionvault.com/gold-news", "GLOBAL", Category.GOLD, 96],
+  ["GOLD_EAGLE", "Gold Eagle", "https://www.gold-eagle.com/rss.xml", "https://www.gold-eagle.com/", "GLOBAL", Category.GOLD, 92],
+  ["FXSTREET_GOLD", "FXStreet Metals", "https://www.fxstreet.com/rss/news", "https://www.fxstreet.com/news/commodities", "GLOBAL", Category.GOLD, 88],
+  ["RIGZONE", "Rigzone", "https://www.rigzone.com/news/rss.asp", "https://www.rigzone.com/news/", "GLOBAL", Category.OIL, 88],
+  ["WORLD_OIL", "World Oil", "https://www.worldoil.com/rss", "https://www.worldoil.com/", "GLOBAL", Category.OIL, 86],
+  ["OFFSHORE_ENERGY", "Offshore Energy", "https://www.offshore-energy.biz/feed/", "https://www.offshore-energy.biz/", "GLOBAL", Category.ENERGY, 84],
+  ["ENERGY_VOICE", "Energy Voice", "https://www.energyvoice.com/feed/", "https://www.energyvoice.com/", "GLOBAL", Category.ENERGY, 84],
+  ["SPGLOBAL_ENERGY", "S&P Global Commodity Insights", "https://www.spglobal.com/commodityinsights/en/rss-feed/oil", "https://www.spglobal.com/commodityinsights/", "GLOBAL", Category.OIL, 90],
 
-  // Asia official / English
+  // Asia official / English — China / Taiwan / HK metals & markets desk
   ["BOJ_WHATSNEW", "Bank of Japan", "https://www.boj.or.jp/en/rss/whatsnew.xml", "https://www.boj.or.jp/en/", "JP", Category.ECONOMICS, 100],
-  ["CHINA_DAILY_BIZ", "China Daily Business", "https://www.chinadaily.com.cn/rss/business_rss.xml", "https://www.chinadaily.com.cn/business", "CN", Category.FINANCE, 82],
-  ["CHINA_DAILY_CHINA", "China Daily China", "https://www.chinadaily.com.cn/rss/china_rss.xml", "https://www.chinadaily.com.cn/", "CN", Category.MARKETS, 80],
-  ["XINHUA_EN", "Xinhua English World", "https://www.xinhuanet.com/english/rss/worldrss.xml", "https://english.news.cn/", "CN", Category.MARKETS, 80],
-  ["CAIXIN_GLOBAL", "Caixin Global", "https://www.caixinglobal.com/feed/", "https://www.caixinglobal.com/", "CN", Category.FINANCE, 86],
-  ["NIKKEI_ASIA", "Nikkei Asia", "https://asia.nikkei.com/rss/feed/nar", "https://asia.nikkei.com/", "JP", Category.FINANCE, 90],
+  ["CHINA_DAILY_BIZ", "China Daily Business", "https://www.chinadaily.com.cn/rss/business_rss.xml", "https://www.chinadaily.com.cn/business", "CN", Category.FINANCE, 92],
+  ["CHINA_DAILY_CHINA", "China Daily China", "https://www.chinadaily.com.cn/rss/china_rss.xml", "https://www.chinadaily.com.cn/", "CN", Category.MARKETS, 88],
+  ["CHINA_DAILY_WORLD", "China Daily World", "https://www.chinadaily.com.cn/rss/world_rss.xml", "https://www.chinadaily.com.cn/world", "CN", Category.MARKETS, 88],
+  ["XINHUA_EN", "Xinhua English World", "https://www.xinhuanet.com/english/rss/worldrss.xml", "https://english.news.cn/", "CN", Category.MARKETS, 88],
+  ["CAIXIN_GLOBAL", "Caixin Global", "https://www.caixinglobal.com/feed/", "https://www.caixinglobal.com/", "CN", Category.FINANCE, 94],
+  ["SCMP_CHINA", "SCMP China", "https://www.scmp.com/rss/4/feed", "https://www.scmp.com/news/china", "CN", Category.MARKETS, 90],
+  ["NIKKEI_ASIA", "Nikkei Asia", "https://asia.nikkei.com/rss/feed/nar", "https://asia.nikkei.com/", "JP", Category.FINANCE, 92],
   ["NHK_WORLD", "NHK World", "https://www3.nhk.or.jp/nhkworld/en/news/rss/", "https://www3.nhk.or.jp/nhkworld/", "JP", Category.MARKETS, 86],
+
+  // Europe wires / energy / markets (beyond ECB + FT core)
+  ["EURACTIV", "Euractiv", "https://www.euractiv.com/feed/", "https://www.euractiv.com/", "EU", Category.ECONOMICS, 90],
+  ["POLITICO_EU", "Politico Europe", "https://www.politico.eu/feed/", "https://www.politico.eu/", "EU", Category.ECONOMICS, 90],
+  ["EUOBSERVER", "EUobserver", "https://euobserver.com/rss.xml", "https://euobserver.com/", "EU", Category.ECONOMICS, 86],
+  ["DW_BUSINESS", "Deutsche Welle Business", "https://rss.dw.com/xml/rss-en-bus", "https://www.dw.com/en/business/s-12770", "DE", Category.FINANCE, 90],
+  ["THELOCAL_DE_BIZ", "The Local Germany Business", "https://www.thelocal.de/feeds/rss.php", "https://www.thelocal.de/", "DE", Category.ECONOMICS, 82],
 
   // Canada / Australia / others extra
   ["CBC_BUSINESS", "CBC Business", "https://www.cbc.ca/webfeed/rss/rss-business", "https://www.cbc.ca/news/business", "CA", Category.FINANCE, 86],

@@ -4,27 +4,53 @@ import { limits } from "./limits";
 
 const ARABIC_TEXT = /[\u0600-\u06ff]/;
 
-/** Lower rank = translated first. Kuwait and Gulf core markets lead. */
+/** Lower rank = translated first. KW → global → US/EU → CN/TW → GCC/Europe hubs. */
 const TRANSLATION_PRIORITY = new Map<string, number>([
   ["KW", 0],
-  ["SA", 1],
-  ["AE", 2],
-  ["QA", 3],
-  ["BH", 4],
-  ["OM", 5],
-  ["EG", 6],
-  ["JO", 7],
-  ["IQ", 8],
-  ["LB", 9],
-  ["PS", 10],
-  ["YE", 11],
-  ["SY", 12],
-  ["LY", 13],
-  ["MA", 14],
-  ["TN", 15],
-  ["DZ", 16],
-  ["SD", 17],
-  ["EU", 18],
+  ["GLOBAL", 1],
+  ["US", 2],
+  ["EU", 3],
+  ["CN", 4],
+  ["TW", 5],
+  ["HK", 6],
+  ["GB", 7],
+  ["DE", 8],
+  ["FR", 9],
+  ["CH", 10],
+  ["SA", 11],
+  ["AE", 12],
+  ["QA", 13],
+  ["BH", 14],
+  ["OM", 15],
+  ["EG", 16],
+  ["JO", 17],
+  ["IQ", 18],
+  ["LB", 19],
+  ["PS", 20],
+  ["YE", 21],
+  ["SY", 22],
+  ["LY", 23],
+  ["MA", 24],
+  ["TN", 25],
+  ["DZ", 26],
+  ["SD", 27],
+  ["JP", 28],
+  ["NL", 29],
+]);
+
+/** Lower = translate first within the same country bucket. */
+const TRANSLATION_CATEGORY_PRIORITY = new Map<string, number>([
+  ["GOLD", 0],
+  ["OIL", 1],
+  ["ENERGY", 2],
+  ["COMMODITIES", 3],
+  ["FINANCE", 4],
+  ["ECONOMICS", 5],
+  ["MARKETS", 6],
+  ["FX", 7],
+  ["BANKING", 8],
+  ["TRADE", 9],
+  ["ME_ECONOMY", 10],
 ]);
 
 const articleTranslationSchema = z.object({
@@ -143,6 +169,44 @@ export async function getBilingualCoverage(cutoff: Date): Promise<BilingualCover
     },
   });
   return summarizeBilingualCoverage(articles);
+}
+
+/** Articles in the freshness window that still lack a complete en/ar pair. */
+export async function countIncompleteBilingualArticles(cutoff: Date) {
+  const articles = await prisma.article.findMany({
+    where: { publishedAt: { gte: cutoff } },
+    select: {
+      titleEn: true,
+      summaryEn: true,
+      titleAr: true,
+      summaryAr: true,
+    },
+  });
+  return articles.filter((article) => !isBilingualComplete(article)).length;
+}
+
+/** Mark translatedAt on rows that already have both languages (legacy backlog cleanup). */
+export async function backfillTranslatedAt(cutoff: Date) {
+  const rows = await prisma.article.findMany({
+    where: {
+      publishedAt: { gte: cutoff },
+      translatedAt: null,
+    },
+    select: {
+      id: true,
+      titleEn: true,
+      summaryEn: true,
+      titleAr: true,
+      summaryAr: true,
+    },
+  });
+  const ids = rows.filter((row) => isBilingualComplete(row)).map((row) => row.id);
+  if (!ids.length) return 0;
+  await prisma.article.updateMany({
+    where: { id: { in: ids } },
+    data: { translatedAt: new Date() },
+  });
+  return ids.length;
 }
 
 function modelCandidates() {
@@ -395,10 +459,20 @@ export function translationPriority(country: string) {
   return TRANSLATION_PRIORITY.get(country.trim().toUpperCase()) ?? 100;
 }
 
-export function sortArticlesForTranslation<T extends { country: string; publishedAt: Date }>(articles: T[]) {
+export function translationCategoryPriority(category: string | undefined | null) {
+  if (!category) return 50;
+  return TRANSLATION_CATEGORY_PRIORITY.get(String(category).trim().toUpperCase()) ?? 40;
+}
+
+export function sortArticlesForTranslation<
+  T extends { country: string; publishedAt: Date; category?: string | null },
+>(articles: T[]) {
   return [...articles].sort((left, right) => {
     const priorityDelta = translationPriority(left.country) - translationPriority(right.country);
     if (priorityDelta !== 0) return priorityDelta;
+    const categoryDelta =
+      translationCategoryPriority(left.category) - translationCategoryPriority(right.category);
+    if (categoryDelta !== 0) return categoryDelta;
     return right.publishedAt.getTime() - left.publishedAt.getTime();
   });
 }

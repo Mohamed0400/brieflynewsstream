@@ -77,7 +77,8 @@ export const REGION_GROUP_META: ReadonlyArray<{
 
 const REGION_MEMBERS: Record<CountryRegionKey, string[]> = {
   middle_east: [
-    "SA", "AE", "QA", "KW", "BH", "OM",
+    // Kuwait first — editorial desk for gold / energy / Gulf investors.
+    "KW", "SA", "AE", "QA", "BH", "OM",
     "EG", "JO", "LB", "SY", "PS", "IQ", "IR", "YE", "TR",
     "IL",
   ],
@@ -86,14 +87,16 @@ const REGION_MEMBERS: Record<CountryRegionKey, string[]> = {
     "GH", "ZA", "AO", "CI", "TZ", "UG", "SN", "CM", "RW", "ZM", "MU",
   ],
   europe: [
-    "GB", "DE", "FR", "IT", "ES", "NL", "CH", "BE", "AT", "SE", "NO", "DK",
+    // EU desk + major financial hubs first for gold / energy investors.
+    "EU", "GB", "DE", "FR", "CH", "NL", "IT", "ES", "BE", "AT", "SE", "NO", "DK",
     "PL", "UA", "RU", "PT", "IE", "FI", "GR", "CZ", "RO", "HU", "SK", "HR",
-    "RS", "BG", "IS", "EU",
+    "RS", "BG", "IS",
   ],
   americas: ["US", "CA", "MX", "BR", "AR", "CL", "PY", "CO", "PE", "UY", "EC", "VE", "BO", "CR", "PA"],
   asia_pacific: [
-    "IN", "BD", "PH", "LK", "PK", "NP", "ID", "AF", "KZ", "CN", "JP", "KR",
-    "HK", "TW", "MY", "SG", "TH", "VN", "AU", "NZ",
+    // China / Taiwan / HK first for commodities, trade, and metals flow.
+    "CN", "TW", "HK", "JP", "KR", "SG", "IN", "AU", "NZ",
+    "BD", "PH", "LK", "PK", "NP", "ID", "AF", "KZ", "MY", "TH", "VN",
   ],
   global: ["GLOBAL"],
 };
@@ -134,10 +137,10 @@ export function regionEditorialRank(regionKey: CountryRegionKey, code: string) {
 export const EDITORIAL_REGION_PRIORITY: Record<CountryRegionKey, number> = {
   global: 0,
   middle_east: 1,
-  africa: 2,
-  europe: 3,
-  americas: 4,
-  asia_pacific: 5,
+  europe: 2,
+  americas: 3,
+  asia_pacific: 4,
+  africa: 5,
 };
 
 export function regionGroupPriority(key: CountryRegionKey) {
@@ -164,7 +167,7 @@ export type CountryRegionGroup = {
 
 /**
  * Groups supported country codes into browse buckets, each sorted by the
- * editorial region order (GCC: SA, AE, QA, KW, then BH/OM) with alphabetical tail
+ * editorial region order (GCC: KW, SA, AE, QA, then BH/OM) with alphabetical tail
  * for codes outside the curated list. Empty regions are dropped.
  */
 export function groupCountryCodesByRegion(

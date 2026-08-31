@@ -9,6 +9,6 @@ test("Middle East country picker uses editorial order, not alphabetical", () => 
   );
   const middleEast = groups.find((group) => group.key === "middle_east");
   assert.ok(middleEast);
-  assert.equal(middleEast.items[0]?.code, "SA");
+  assert.equal(middleEast.items[0]?.code, "KW");
   assert.equal(middleEast.items.at(-1)?.code, "IL");
 });

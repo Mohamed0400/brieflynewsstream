@@ -36,7 +36,7 @@ test("pricing copy quotes the same daily limits the API enforces", () => {
   assert.match(ar.nextProof, new RegExp(formatPlanCount(PLAN_DEFINITIONS.PRO.dailyRequests)));
   assert.equal(proQuota, "500 requests a day");
   assert.equal(entQuota, "20,000 requests a day");
-  assert.equal(en.ctaEnterprise, "Start with Enterprise");
+  assert.equal(en.ctaEnterprise, "Subscribe to Enterprise");
   assert.match(en.pageLede, /\$150/);
 });
 

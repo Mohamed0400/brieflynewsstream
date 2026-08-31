@@ -32,6 +32,10 @@ Rough day flow:
 
 GHA sets `CRON_FORCE_COLLECT=true`. Without that, `COLLECT_REFRESH_HOURS` can skip every source when a collect starts less than N hours after the previous fetch — the job looks “running” but no new articles appear. Scheduled Collect runs must always re-hit sources.
 
+## Archive hot retention vs live feed
+
+The public feed uses `NEWS_MAX_AGE_HOURS` (default **72**). Supabase hot rows are pruned by `ARCHIVE_HOT_RETENTION_DAYS` on the **archive** cron (Vercel). Set this to **at least 4–5 days** in production so archive does not delete articles still inside the 72h briefing window. If production shows `retention 3d` in the archive job summary, raise `ARCHIVE_HOT_RETENTION_DAYS=5` on Vercel.
+
 ---
 
 ## Collect news jobs

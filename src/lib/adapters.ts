@@ -93,7 +93,7 @@ function collectRssFallback(xml: string, source: Source): CollectedItem[] {
     const published = xmlTag(entry, "pubDate")
       || xmlTag(entry, "published")
       || xmlTag(entry, "updated");
-    const externalId = xmlTag(entry, "guid") || xmlTag(entry, "id") || url;
+    const externalId = rssExternalId(xmlTag(entry, "guid") || xmlTag(entry, "id"), url);
     items.push({
       externalId,
       title,
@@ -105,6 +105,17 @@ function collectRssFallback(xml: string, source: Source): CollectedItem[] {
     });
   });
   return items;
+}
+
+function rssExternalId(value: unknown, url: string) {
+  if (typeof value === "string" && value.trim()) return value.trim();
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    if (typeof record._ === "string" && record._.trim()) return record._.trim();
+    if (typeof record["#text"] === "string" && record["#text"].trim()) return record["#text"].trim();
+  }
+  return url;
 }
 
 function rssPlainText(value: unknown) {
@@ -137,7 +148,7 @@ async function collectRss(source: Source): Promise<CollectedItem[]> {
       "media:content"?: { $?: { url?: string } };
     };
     return [{
-      externalId: item.guid || item.id || url,
+      externalId: rssExternalId(item.guid || item.id, url),
       title,
       url,
       summary: cleanText(item.contentSnippet || item.content || item.summary),

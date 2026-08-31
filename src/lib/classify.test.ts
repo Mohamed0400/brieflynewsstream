@@ -194,9 +194,27 @@ test("stores audience codes as exact, multi-value tokens", () => {
   assert.deepEqual(audienceCodesFromValue(stored), ["IN", "EG"]);
 });
 
-test("audience chips follow Gulf-first editorial order", () => {
+test("high-priority investor sources use relaxed store thresholds", () => {
+  const classified = {
+    accepted: true,
+    relevance: 22,
+    weakMarketOnly: false,
+  };
+  const scores = { marketImpact: 10, finalScore: 30 };
+  assert.equal(shouldStoreArticle(classified, scores), false);
+  assert.equal(
+    shouldStoreArticle(classified, scores, {
+      sourceQuality: 96,
+      defaultCategory: Category.OIL,
+      sourceCountry: "KW",
+    }),
+    true,
+  );
+});
+
+test("audience chips follow Kuwait-first Gulf editorial order", () => {
   const sorted = sortAudienceCodesByEditorialOrder(["QA", "PH", "KW", "SA", "AE"]);
-  assert.deepEqual(sorted, ["SA", "AE", "QA", "KW", "PH"]);
+  assert.deepEqual(sorted, ["KW", "SA", "AE", "QA", "PH"]);
 });
 
 test("display headlines never retain truncation marks", () => {

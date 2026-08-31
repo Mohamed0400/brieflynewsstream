@@ -95,7 +95,7 @@ const sources = [
     country: "KW",
     region: Region.MIDDLE_EAST,
     defaultCategory: Category.ME_ECONOMY,
-    qualityWeight: 76,
+    qualityWeight: 86,
   },
   {
     code: "TIMES_KUWAIT_BUSINESS",
@@ -106,7 +106,7 @@ const sources = [
     country: "KW",
     region: Region.MIDDLE_EAST,
     defaultCategory: Category.ME_ECONOMY,
-    qualityWeight: 84,
+    qualityWeight: 92,
   },
   {
     code: "GULF_NEWS",
@@ -139,7 +139,7 @@ const sources = [
     country: "GLOBAL",
     region: Region.GLOBAL,
     defaultCategory: Category.GOLD,
-    qualityWeight: 89,
+    qualityWeight: 94,
   },
   {
     code: "MINING_GOLD",
@@ -150,7 +150,7 @@ const sources = [
     country: "GLOBAL",
     region: Region.GLOBAL,
     defaultCategory: Category.GOLD,
-    qualityWeight: 90,
+    qualityWeight: 96,
   },
   {
     code: "NORTHERN_MINER",
@@ -161,7 +161,7 @@ const sources = [
     country: "GLOBAL",
     region: Region.GLOBAL,
     defaultCategory: Category.GOLD,
-    qualityWeight: 87,
+    qualityWeight: 92,
   },
   {
     code: "AL_JAZEERA",
@@ -183,7 +183,7 @@ const sources = [
     country: "GLOBAL",
     region: Region.GLOBAL,
     defaultCategory: Category.GOLD,
-    qualityWeight: 91,
+    qualityWeight: 98,
   },
   {
     code: "WORLD_GOLD_COUNCIL",
@@ -194,7 +194,7 @@ const sources = [
     country: "GLOBAL",
     region: Region.GLOBAL,
     defaultCategory: Category.GOLD,
-    qualityWeight: 97,
+    qualityWeight: 99,
   },
   {
     code: "CBK",

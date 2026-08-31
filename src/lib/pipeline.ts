@@ -47,6 +47,12 @@ export type PipelineResult = {
   rawCollected: number;
   articlesCreated: number;
   rejected: number;
+  rejections: {
+    stale: number;
+    notAccepted: number;
+    blocked: number;
+    lowQuality: number;
+  };
   translated: number;
   editionItems: number;
   errors: Array<{ source: string; error: string }>;
@@ -54,6 +60,18 @@ export type PipelineResult = {
 
 /** Safety cap on repeated translate batches per run; each pass covers TRANSLATE_BATCH_SIZE articles. */
 export const MAX_TRANSLATION_PASSES = limits.translateMaxPasses;
+
+function emptyRejections() {
+  return { stale: 0, notAccepted: 0, blocked: 0, lowQuality: 0 };
+}
+
+function reject(
+  result: PipelineResult,
+  reason: keyof PipelineResult["rejections"],
+) {
+  result.rejected += 1;
+  result.rejections[reason] += 1;
+}
 
 async function drainTranslations(result: PipelineResult, maxPasses = limits.translateMaxPasses) {
   const drained = await drainPendingTranslations(maxPasses);
@@ -110,7 +128,7 @@ async function storeCollectedItems(source: Source, items: Awaited<ReturnType<typ
 
   const normalized = freshItems.map((item) => ({
     ...item,
-    externalId: item.externalId.slice(0, 500),
+    externalId: String(item.externalId ?? item.url).slice(0, 500),
     audienceCodes: item.audienceCodes ?? "",
   }));
   const existingRows = await prisma.rawArticle.findMany({
@@ -371,7 +389,7 @@ async function normalizePendingBatch(result: PipelineResult) {
     // Defense in depth: never materialize rows outside the live window even if
     // abandonStaleRawArticles raced with insert or was skipped by a caller.
     if (raw.publishedAt.getTime() < cutoff.getTime()) {
-      result.rejected += 1;
+      reject(result, "stale");
       await markProcessed();
       continue;
     }
@@ -385,7 +403,7 @@ async function normalizePendingBatch(result: PipelineResult) {
       raw.source.adapter === "gemini-nationality-search" &&
       Boolean(raw.audienceCodes);
     if (!classified.accepted && !nationalityNews) {
-      result.rejected += 1;
+      reject(result, "notAccepted");
       await markProcessed();
       continue;
     }
@@ -470,13 +488,17 @@ async function normalizePendingBatch(result: PipelineResult) {
     });
 
     if (isBlockedContent(title, summary)) {
-      result.rejected += 1;
+      reject(result, "blocked");
       await markProcessed();
       continue;
     }
 
-    if (!nationalityNews && !shouldStoreArticle(classified, scores)) {
-      result.rejected += 1;
+    if (!nationalityNews && !shouldStoreArticle(classified, scores, {
+      sourceQuality: raw.source.qualityWeight,
+      defaultCategory: raw.source.defaultCategory,
+      sourceCountry: raw.source.country,
+    })) {
+      reject(result, "lowQuality");
       await markProcessed();
       continue;
     }
@@ -785,6 +807,7 @@ export async function runPipeline(options: {
     rawCollected: 0,
     articlesCreated: 0,
     rejected: 0,
+    rejections: emptyRejections(),
     translated: 0,
     editionItems: 0,
     errors: [],

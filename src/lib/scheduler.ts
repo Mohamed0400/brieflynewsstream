@@ -2,7 +2,7 @@ import cron from "node-cron";
 import { prisma } from "./prisma";
 import { describeQueryFailure } from "./api";
 import { kuwaitDate } from "./market";
-import { buildDailyEdition, MAX_TRANSLATION_PASSES, runPipeline } from "./pipeline";
+import { buildDailyEdition, MAX_TRANSLATION_PASSES, runPipeline, type PipelineResult } from "./pipeline";
 import { limits } from "./limits";
 
 export const JOB_COLLECT = "collect";
@@ -213,11 +213,22 @@ function summarizePipeline(result: {
   translated: number;
   editionItems: number;
   sourcesFailed: number;
+  rejected?: number;
+  rejections?: PipelineResult["rejections"];
   deferred?: number;
 }) {
+  const rejectionBits = result.rejections
+    ? [
+      result.rejections.notAccepted ? `${result.rejections.notAccepted} off-topic` : null,
+      result.rejections.lowQuality ? `${result.rejections.lowQuality} low-quality` : null,
+      result.rejections.blocked ? `${result.rejections.blocked} blocked` : null,
+      result.rejections.stale ? `${result.rejections.stale} stale` : null,
+    ].filter(Boolean)
+    : [];
   return [
     `${result.rawCollected} collected`,
     `${result.articlesCreated} created`,
+    result.rejected ? `${result.rejected} rejected${rejectionBits.length ? ` (${rejectionBits.join(", ")})` : ""}` : null,
     `${result.translated} translated`,
     `${result.editionItems} in today's edition`,
     result.sourcesFailed ? `${result.sourcesFailed} source errors` : null,
@@ -318,8 +329,12 @@ async function executeJob(key: string) {
       translate: false,
       triggerCollectIfStale: false,
     });
-    const { drainPendingTranslations } = await import("./article-translation");
+    const { backfillTranslatedAt, drainPendingTranslations } = await import("./article-translation");
     const { countPendingRawArticles, drainRawBacklog } = await import("./pipeline");
+    const freshnessCutoff = new Date(
+      Date.now() - Math.max(1, limits.newsMaxAgeHours) * 3_600_000,
+    );
+    await backfillTranslatedAt(freshnessCutoff);
     const backlog = await countPendingRawArticles();
     let normalizeSummary = "normalize skipped";
     if (backlog > 0) {
@@ -330,6 +345,7 @@ async function executeJob(key: string) {
         rawCollected: 0,
         articlesCreated: 0,
         rejected: 0,
+        rejections: { stale: 0, notAccepted: 0, blocked: 0, lowQuality: 0 },
         translated: 0,
         editionItems: 0,
         errors: [],

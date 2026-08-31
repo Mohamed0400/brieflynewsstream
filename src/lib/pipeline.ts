@@ -3,6 +3,8 @@ import { Category, Prisma, Region, type Source } from "@prisma/client";
 import { prisma } from "./prisma";
 import { collectSource, isTrustedGroundedUrl } from "./adapters";
 import { translatePendingArticles, drainPendingTranslations, seedBilingualFields, isArabicText } from "./article-translation";
+import { arabicLiveSources } from "./arabic-country-sources";
+import { syncArabicLiveSources } from "./source-sync";
 import { editorializeArticles } from "./editorial";
 import {
   calculateScores,
@@ -117,6 +119,32 @@ export async function ensureLiveSources() {
   await syncLiveCountrySources(allLiveCountrySources());
 }
 
+export async function ensureArabicSources() {
+  await syncArabicLiveSources(arabicLiveSources());
+}
+
+/** Arabic pipeline rows are complete when Arabic title + summary exist — no Gemini. */
+function finalizeArabicPipelineFields(title: string, summary: string) {
+  const seeded = seedBilingualFields(title, summary);
+  const titleAr = isArabicText(seeded.titleAr) ? seeded.titleAr : (isArabicText(title) ? title : title);
+  const summaryAr = isArabicText(seeded.summaryAr)
+    ? seeded.summaryAr
+    : (isArabicText(summary) ? summary : (summary || titleAr));
+  const complete = isArabicText(titleAr) && isArabicText(summaryAr);
+  return {
+    language: "ar" as const,
+    titleEn: null as string | null,
+    summaryEn: null as string | null,
+    titleAr,
+    summaryAr,
+    translatedAt: complete ? new Date() : null,
+  };
+}
+
+function isArabicPipelineSource(source: Pick<Source, "collectPipeline">) {
+  return source.collectPipeline === "arabic";
+}
+
 async function storeCollectedItems(source: Source, items: Awaited<ReturnType<typeof collectSource>>) {
   if (!items.length) return;
 
@@ -188,9 +216,12 @@ async function storeCollectedItems(source: Source, items: Awaited<ReturnType<typ
 }
 
 async function collectOneSource(source: Source, result: PipelineResult, forceCollect = false) {
+  const refreshHours = isArabicPipelineSource(source)
+    ? limits.arabicCollectRefreshHours
+    : limits.collectRefreshHours;
   if (!shouldFetchSource(source, {
     forceCollect,
-    collectRefreshHours: limits.collectRefreshHours,
+    collectRefreshHours: refreshHours,
     nationalitySearchIntervalHours: limits.nationalitySearchIntervalHours,
   })) {
     result.sourcesOk += 1;
@@ -220,13 +251,22 @@ async function collectAll(
   result: PipelineResult,
   forceCollect = false,
   deadline = Number.POSITIVE_INFINITY,
+  pipeline: "main" | "arabic" = "main",
 ) {
-  const sources = await prisma.source.findMany({ where: { enabled: true } });
+  const sources = await prisma.source.findMany({
+    where: {
+      enabled: true,
+      collectPipeline: pipeline,
+    },
+  });
   const ordered = sortSourcesOldestStaleFirst(sources);
   const gemini = ordered.filter((source) => source.adapter.startsWith("gemini"));
   const standard = ordered.filter((source) => !source.adapter.startsWith("gemini"));
+  const concurrency = pipeline === "arabic"
+    ? limits.arabicCollectConcurrency
+    : limits.collectConcurrency;
   const withinBudget = () => shouldStartAnotherFetch(Date.now(), deadline);
-  await mapPool(standard, limits.collectConcurrency, (source) => (
+  await mapPool(standard, concurrency, (source) => (
     collectOneSource(source, result, forceCollect)
   ), {
     shouldStart: withinBudget,
@@ -352,12 +392,16 @@ async function fillThinCountries(result: PipelineResult, deadline = Number.POSIT
   });
 }
 
-async function normalizePendingBatch(result: PipelineResult) {
+async function normalizePendingBatch(
+  result: PipelineResult,
+  pipeline?: "main" | "arabic",
+) {
   const cutoff = newsFreshnessCutoff();
   const pending = await prisma.rawArticle.findMany({
     where: {
       processedAt: null,
       publishedAt: { gte: cutoff },
+      ...(pipeline ? { source: { collectPipeline: pipeline } } : {}),
     },
     include: { source: true },
     orderBy: { publishedAt: "desc" },
@@ -402,7 +446,8 @@ async function normalizePendingBatch(result: PipelineResult) {
     const nationalityNews =
       raw.source.adapter === "gemini-nationality-search" &&
       Boolean(raw.audienceCodes);
-    if (!classified.accepted && !nationalityNews) {
+    const arabicDesk = isArabicPipelineSource(raw.source) && isArabicText(title);
+    if (!classified.accepted && !nationalityNews && !arabicDesk) {
       reject(result, "notAccepted");
       await markProcessed();
       continue;
@@ -440,7 +485,19 @@ async function normalizePendingBatch(result: PipelineResult) {
           },
         });
         const titleChanged = existing?.title !== title;
-        const seeded = seedBilingualFields(title, summary);
+        const fields = isArabicPipelineSource(raw.source)
+          ? finalizeArabicPipelineFields(title, summary)
+          : (() => {
+              const seeded = seedBilingualFields(title, summary);
+              return {
+                language: seeded.language,
+                titleEn: seeded.titleEn,
+                summaryEn: seeded.summaryEn,
+                titleAr: seeded.titleAr,
+                summaryAr: seeded.summaryAr,
+                translatedAt: null as Date | null,
+              };
+            })();
         // Never regress a live article's publishedAt when a stale raw rematch hits.
         const publishedAt = existing?.publishedAt && existing.publishedAt > raw.publishedAt
           ? existing.publishedAt
@@ -454,18 +511,19 @@ async function normalizePendingBatch(result: PipelineResult) {
             audienceCodes: raw.audienceCodes,
             imageUrl: raw.imageUrl,
             publishedAt,
-            language: seeded.language,
+            language: fields.language,
             ...(titleChanged ? {
-              titleEn: seeded.titleEn ?? existing?.titleEn,
-              summaryEn: seeded.summaryEn ?? existing?.summaryEn,
-              titleAr: seeded.titleAr,
-              summaryAr: seeded.summaryAr,
-              translatedAt: null,
+              titleEn: fields.titleEn ?? existing?.titleEn,
+              summaryEn: fields.summaryEn ?? existing?.summaryEn,
+              titleAr: fields.titleAr,
+              summaryAr: fields.summaryAr,
+              translatedAt: fields.translatedAt,
             } : {
-              titleEn: existing?.titleEn || seeded.titleEn,
-              summaryEn: existing?.summaryEn || seeded.summaryEn,
-              titleAr: isArabicText(existing?.titleAr) ? existing?.titleAr : seeded.titleAr,
-              summaryAr: isArabicText(existing?.summaryAr) ? existing?.summaryAr : seeded.summaryAr,
+              titleEn: existing?.titleEn || fields.titleEn,
+              summaryEn: existing?.summaryEn || fields.summaryEn,
+              titleAr: isArabicText(existing?.titleAr) ? existing?.titleAr : fields.titleAr,
+              summaryAr: isArabicText(existing?.summaryAr) ? existing?.summaryAr : fields.summaryAr,
+              translatedAt: existing?.translatedAt ?? fields.translatedAt,
             }),
           },
         });
@@ -493,7 +551,7 @@ async function normalizePendingBatch(result: PipelineResult) {
       continue;
     }
 
-    if (!nationalityNews && !shouldStoreArticle(classified, scores, {
+    if (!nationalityNews && !arabicDesk && !shouldStoreArticle(classified, scores, {
       sourceQuality: raw.source.qualityWeight,
       defaultCategory: raw.source.defaultCategory,
       sourceCountry: raw.source.country,
@@ -503,7 +561,19 @@ async function normalizePendingBatch(result: PipelineResult) {
       continue;
     }
 
-    const seeded = seedBilingualFields(title, summary);
+    const fields = isArabicPipelineSource(raw.source)
+      ? finalizeArabicPipelineFields(title, summary)
+      : (() => {
+          const seeded = seedBilingualFields(title, summary);
+          return {
+            language: seeded.language,
+            titleEn: seeded.titleEn,
+            summaryEn: seeded.summaryEn,
+            titleAr: seeded.titleAr,
+            summaryAr: seeded.summaryAr,
+            translatedAt: null as Date | null,
+          };
+        })();
     try {
       await prisma.$transaction([
         prisma.article.create({
@@ -521,11 +591,12 @@ async function normalizePendingBatch(result: PipelineResult) {
             secondaryTags: classified.secondaryTags.join(","),
             country,
             region,
-            language: seeded.language,
-            titleEn: seeded.titleEn,
-            summaryEn: seeded.summaryEn,
-            titleAr: seeded.titleAr,
-            summaryAr: seeded.summaryAr,
+            language: fields.language,
+            titleEn: fields.titleEn,
+            summaryEn: fields.summaryEn,
+            titleAr: fields.titleAr,
+            summaryAr: fields.summaryAr,
+            translatedAt: fields.translatedAt,
             publishedAt: raw.publishedAt,
             contentHash: hash,
             storyKey: key,
@@ -575,7 +646,7 @@ export async function countFreshPendingRawArticles() {
 
 export async function drainRawBacklog(
   result: PipelineResult,
-  options: { skipTranslation?: boolean; maxPasses?: number } = {},
+  options: { skipTranslation?: boolean; maxPasses?: number; collectPipeline?: "main" | "arabic" } = {},
 ) {
   // Translate/recover used to normalize without this gate and spent hours
   // materializing June–2009 RSS backlog into Article — starving the live feed.
@@ -602,11 +673,11 @@ export async function drainRawBacklog(
 async function normalizePending(
   result: PipelineResult,
   maxPasses = limits.normalizePasses,
-  options: { skipTranslation?: boolean } = {},
+  options: { skipTranslation?: boolean; collectPipeline?: "main" | "arabic" } = {},
 ) {
   const passes = Math.max(0, maxPasses);
   for (let pass = 0; pass < passes; pass += 1) {
-    const processed = await normalizePendingBatch(result);
+    const processed = await normalizePendingBatch(result, options.collectPipeline);
     if (!options.skipTranslation && processed > 0) {
       const translation = await translatePendingArticles({
         limit: Math.min(processed, limits.translateBatch),
@@ -799,7 +870,16 @@ export async function runPipeline(options: {
   forceCollect?: boolean;
   skipCollect?: boolean;
   skipTranslation?: boolean;
+  skipEdition?: boolean;
+  skipFillThin?: boolean;
+  collectPipeline?: "main" | "arabic";
 } = {}): Promise<PipelineResult> {
+  const pipeline = options.collectPipeline ?? "main";
+  const isArabic = pipeline === "arabic";
+  const pipelineOptions = {
+    skipTranslation: isArabic || options.skipTranslation,
+    collectPipeline: pipeline,
+  };
   const result: PipelineResult = {
     sourcesOk: 0,
     sourcesFailed: 0,
@@ -813,41 +893,59 @@ export async function runPipeline(options: {
     errors: [],
   };
   if (!options.skipCollect) {
-    await ensureLiveSources();
+    if (isArabic) {
+      await ensureArabicSources();
+    } else {
+      await ensureLiveSources();
+    }
   }
-  // Drop raw rows that can never appear in the live window, then only lightly
-  // drain before fetch so a 20k+ backlog cannot starve RSS refresh.
   const abandoned = await abandonStaleRawArticles();
   if (abandoned > 0) {
     console.log(`Abandoned ${abandoned} stale raw articles outside the ${limits.newsMaxAgeHours}h news window.`);
   }
   const rawBacklog = await countPendingRawArticles();
-  if (rawBacklog > limits.normalizeBatch) {
+  if (rawBacklog > limits.normalizeBatch && !isArabic) {
     console.log(`Draining ${rawBacklog} pending raw articles before collect.`);
-    await drainRawBacklog(result, options);
+    await drainRawBacklog(result, pipelineOptions);
   } else {
-    await normalizePending(result, limits.normalizePreCollectPasses, options);
+    await normalizePending(result, limits.normalizePreCollectPasses, pipelineOptions);
   }
   if (!options.skipCollect) {
-    const deadline = collectDeadline(Date.now(), limits.collectBudgetMs);
-    await collectAll(result, options.forceCollect, deadline);
-    await normalizePending(result, limits.normalizePasses, options);
-    if (shouldStartAnotherFetch(Date.now(), deadline)) {
+    const budgetMs = isArabic ? limits.arabicCollectBudgetMs : limits.collectBudgetMs;
+    const deadline = collectDeadline(Date.now(), budgetMs);
+    await collectAll(result, options.forceCollect, deadline, pipeline);
+    await normalizePending(result, limits.normalizePasses, pipelineOptions);
+    if (!isArabic && !options.skipFillThin && shouldStartAnotherFetch(Date.now(), deadline)) {
       await fillThinCountries(result, deadline);
     }
     if (result.deferred) {
       console.log(`Collect budget reached; deferred ${result.deferred} sources to the next run.`);
     }
-    await normalizePending(result, limits.normalizePasses, options);
+    await normalizePending(result, limits.normalizePasses, pipelineOptions);
   }
   await fillMissingStoryKeys();
   await refreshExistingScores();
-  if (!options.skipTranslation) {
+  if (!pipelineOptions.skipTranslation) {
     await drainTranslations(result);
   }
-  result.editionItems = await buildDailyEdition(kuwaitDate(), { force: options.forceEdition });
-  if (!options.skipTranslation) {
+  if (!isArabic && !options.skipEdition) {
+    result.editionItems = await buildDailyEdition(kuwaitDate(), { force: options.forceEdition });
+  }
+  if (!pipelineOptions.skipTranslation) {
     await drainTranslations(result, Math.min(5, limits.translateMaxPasses));
   }
   return result;
+}
+
+/** Dedicated Arabic ingest — no Gemini translation, separate source catalog. */
+export async function runArabicPipeline(options: {
+  forceCollect?: boolean;
+} = {}) {
+  return runPipeline({
+    collectPipeline: "arabic",
+    forceCollect: options.forceCollect,
+    skipTranslation: true,
+    skipEdition: true,
+    skipFillThin: true,
+  });
 }

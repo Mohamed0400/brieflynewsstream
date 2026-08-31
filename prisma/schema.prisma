@@ -93,6 +93,8 @@ model Source {
   region          Region
   defaultCategory Category?
   qualityWeight   Int           @default(70)
+  sourceLocale    String        @default("en")
+  collectPipeline String        @default("main")
   enabled         Boolean       @default(true)
   lastFetchedAt   DateTime?
   lastError       String?
@@ -102,6 +104,7 @@ model Source {
   updatedAt       DateTime      @updatedAt
 
   @@index([enabled, country])
+  @@index([collectPipeline, enabled])
 }
 
 model RawArticle {

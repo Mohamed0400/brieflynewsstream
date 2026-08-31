@@ -11,6 +11,10 @@ export type CountrySourceSeed = {
   region: Region;
   defaultCategory: Category;
   qualityWeight: number;
+  /** Feed language — Arabic pipeline sources use "ar". */
+  sourceLocale?: "ar" | "en";
+  /** "arabic" = separate collect job, no translation drain. */
+  collectPipeline?: "main" | "arabic";
 };
 
 /** North Africa markets that already use MIDDLE_EAST on curated rows. */
@@ -80,4 +84,48 @@ export function rowsToSources(rows: readonly PublisherRow[]): CountrySourceSeed[
   return rows.map(([code, name, url, homepageUrl, country, category, weight]) =>
     publisherRss(code, name, url, homepageUrl, country, category, weight),
   );
+}
+
+/** Native Arabic RSS publisher for the dedicated Arabic collect pipeline. */
+export function arabicPublisherRss(
+  code: string,
+  name: string,
+  url: string,
+  homepageUrl: string,
+  country: string,
+  defaultCategory: Category,
+  qualityWeight: number,
+): CountrySourceSeed {
+  return {
+    ...publisherRss(code, name, url, homepageUrl, country, defaultCategory, qualityWeight),
+    sourceLocale: "ar",
+    collectPipeline: "arabic",
+  };
+}
+
+/** Google News Arabic search feed for the dedicated Arabic collect pipeline. */
+export function arabicGoogleNewsRss(
+  code: string,
+  name: string,
+  query: string,
+  homepageUrl: string,
+  country: string,
+  region: Region,
+  defaultCategory: Category,
+  qualityWeight: number,
+  rssUrl: string,
+): CountrySourceSeed {
+  return {
+    code,
+    name,
+    url: rssUrl,
+    homepageUrl,
+    adapter: "rss",
+    country,
+    region,
+    defaultCategory,
+    qualityWeight,
+    sourceLocale: "ar",
+    collectPipeline: "arabic",
+  };
 }

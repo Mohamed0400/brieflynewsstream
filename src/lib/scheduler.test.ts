@@ -9,6 +9,7 @@ import {
   isValidCron,
   isZombieLock,
   JOB_COLLECT,
+  JOB_COLLECT_ARABIC,
   JOB_PUBLISH,
   JOB_TRANSLATE,
   JOB_ARCHIVE,
@@ -33,14 +34,17 @@ test("default schedule presets are valid five-field cron", () => {
 
 test("production cron jobs collect, translate, publish, and archive", () => {
   const keys = DEFAULT_SCHEDULED_JOBS.map((job) => job.key);
-  assert.deepEqual(keys, [JOB_COLLECT, JOB_TRANSLATE, JOB_OPS_HEAL, JOB_PUBLISH, JOB_ARCHIVE]);
+  assert.deepEqual(keys, [JOB_COLLECT, JOB_COLLECT_ARABIC, JOB_TRANSLATE, JOB_OPS_HEAL, JOB_PUBLISH, JOB_ARCHIVE]);
   const collect = DEFAULT_SCHEDULED_JOBS.find((job) => job.key === JOB_COLLECT);
+  const collectArabic = DEFAULT_SCHEDULED_JOBS.find((job) => job.key === JOB_COLLECT_ARABIC);
   const translate = DEFAULT_SCHEDULED_JOBS.find((job) => job.key === JOB_TRANSLATE);
   const opsHeal = DEFAULT_SCHEDULED_JOBS.find((job) => job.key === JOB_OPS_HEAL);
   const publish = DEFAULT_SCHEDULED_JOBS.find((job) => job.key === JOB_PUBLISH);
   const archive = DEFAULT_SCHEDULED_JOBS.find((job) => job.key === JOB_ARCHIVE);
   assert.ok(collect);
+  assert.ok(collectArabic);
   assert.ok(translate);
+  assert.equal(isValidCron(collectArabic?.cron ?? ""), true);
   assert.ok(opsHeal);
   assert.equal(opsHeal?.cron, "*/15 * * * *");
   assert.equal(collect?.cron, COLLECT_THREE_TIMES_DAILY);

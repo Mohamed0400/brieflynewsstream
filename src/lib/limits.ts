@@ -88,6 +88,12 @@ export const limits = {
   translateConcurrency: Math.max(1, intEnv("TRANSLATE_CONCURRENCY", 4)),
   /** Max translate drain loops per collect or translate job. */
   translateMaxPasses: Math.max(1, intEnv("TRANSLATE_MAX_PASSES", 25)),
+  /** Arabic-only pipeline: parallel fetches (smaller catalog). */
+  arabicCollectConcurrency: Math.max(1, intEnv("ARABIC_COLLECT_CONCURRENCY", 6)),
+  /** Arabic-only pipeline wall-clock budget. Default 20 minutes. */
+  arabicCollectBudgetMs: intEnv("ARABIC_COLLECT_BUDGET_MS", 1_200_000),
+  /** Arabic-only pipeline refresh hours (force still overrides). */
+  arabicCollectRefreshHours: Math.max(1, intEnv("ARABIC_COLLECT_REFRESH_HOURS", 2)),
   /** Editions list page size default. */
   editionsList: intEnv("EDITIONS_LIST_LIMIT", 90),
 };

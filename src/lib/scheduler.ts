@@ -2,10 +2,12 @@ import cron from "node-cron";
 import { prisma } from "./prisma";
 import { describeQueryFailure } from "./api";
 import { kuwaitDate } from "./market";
-import { buildDailyEdition, MAX_TRANSLATION_PASSES, runPipeline, type PipelineResult } from "./pipeline";
+import { buildDailyEdition, MAX_TRANSLATION_PASSES, runPipeline, runArabicPipeline, type PipelineResult } from "./pipeline";
+import { isArabicCollectEnabled } from "./arabic-country-sources";
 import { limits } from "./limits";
 
 export const JOB_COLLECT = "collect";
+export const JOB_COLLECT_ARABIC = "collect-arabic";
 export const JOB_PUBLISH = "publish-daily";
 export const JOB_TRANSLATE = "translate";
 export const JOB_ARCHIVE = "archive";
@@ -18,6 +20,7 @@ export const LOCK_MS = 4 * 60 * 60 * 1000;
 /** Per-job lock windows — short jobs must not inherit the 4h collect lock. */
 export const JOB_LOCK_MS: Record<string, number> = {
   [JOB_COLLECT]: LOCK_MS,
+  [JOB_COLLECT_ARABIC]: 45 * 60 * 1000,
   [JOB_TRANSLATE]: 20 * 60 * 1000,
   [JOB_PUBLISH]: 20 * 60 * 1000,
   [JOB_ARCHIVE]: 45 * 60 * 1000,
@@ -151,6 +154,12 @@ export const DEFAULT_SCHEDULED_JOBS = [
     name: "Collect news",
     description: "Fetch every country source three times daily, store articles, fill markets below 3 stories, translate, and refresh today's edition.",
     cron: COLLECT_THREE_TIMES_DAILY,
+  },
+  {
+    key: JOB_COLLECT_ARABIC,
+    name: "Collect Arabic news",
+    description: "Separate Arabic-only ingest (Kuwait, global, China, Europe). No Gemini translation. Toggle with ARABIC_COLLECT_ENABLED.",
+    cron: "0 5,9,13,17,21 * * *",
   },
   {
     key: JOB_TRANSLATE,
@@ -373,6 +382,14 @@ async function executeJob(key: string) {
     const result = await runArchiveAndPrune({ prune: true });
     if (!result.ok && !result.skipped) throw new Error(result.message);
     return result.message;
+  }
+  if (key === JOB_COLLECT_ARABIC) {
+    if (!isArabicCollectEnabled()) {
+      return "Arabic collect disabled (set ARABIC_COLLECT_ENABLED=true to run)";
+    }
+    return summarizePipeline(await runArabicPipeline({
+      forceCollect: process.env.ARABIC_COLLECT_FORCE === "true" || process.env.CRON_FORCE_COLLECT === "true",
+    }));
   }
   return summarizePipeline(await runPipeline({
     forceEdition: true,

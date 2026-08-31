@@ -1,10 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { arabicLiveSources, isArabicCollectEnabled } from "./arabic-country-sources";
+import {
+  arabicLiveSources,
+  arabicSourceCatalogStats,
+  isArabicCollectEnabled,
+} from "./arabic-country-sources";
 
 test("arabic live catalog is Arabic-only and on the arabic pipeline", () => {
   const sources = arabicLiveSources();
-  assert.ok(sources.length >= 50, `expected at least 50 Arabic sources, got ${sources.length}`);
+  assert.ok(sources.length >= 700, `expected at least 700 Arabic sources, got ${sources.length}`);
   const codes = new Set<string>();
   const urls = new Set<string>();
   for (const source of sources) {
@@ -22,6 +26,13 @@ test("arabic catalog covers Kuwait, global, China, and Europe desk", () => {
   for (const code of ["KW", "GLOBAL", "CN", "EU"]) {
     assert.ok(countries.has(code), `missing desk country ${code}`);
   }
+});
+
+test("arabic catalog includes crypto and blockchain coverage", () => {
+  const stats = arabicSourceCatalogStats();
+  assert.ok((stats.byCategory.CRYPTO ?? 0) >= 80, `expected 80+ crypto feeds, got ${stats.byCategory.CRYPTO ?? 0}`);
+  const kw = stats.byCountry.KW ?? 0;
+  assert.ok(kw >= 20, `expected 20+ Kuwait feeds, got ${kw}`);
 });
 
 test("isArabicCollectEnabled respects kill switch", () => {

@@ -46,8 +46,11 @@ Workflow: **Collect Arabic news** (`.github/workflows/collect-arabic.yml`)
 
 ## Source catalog
 
-- Native publishers: `src/lib/sources/arabic-publishers.ts`
-- Google News Arabic: `src/lib/arabic-country-sources.ts`
+- **975** Arabic-only feeds (31 native RSS + 944 Google News `hl=ar`)
+- Native publishers: `src/lib/sources/arabic-publishers.ts` (incl. Cointelegraph, BeInCrypto, Argaam)
+- Generated matrix: `src/lib/sources/arabic-google-sources.ts`
+- **213** crypto/blockchain feeds (`Category.CRYPTO`)
+- **29** Kuwait-focused feeds
 - All codes prefixed `AR_` / `AR_GN_`
 - DB field: `Source.collectPipeline = "arabic"`, `sourceLocale = "ar"`
 

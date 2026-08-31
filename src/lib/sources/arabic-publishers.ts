@@ -105,6 +105,24 @@ export const ARABIC_NATIVE_PUBLISHERS = [
     Category.ME_ECONOMY,
     82,
   ),
+  arabicPublisherRss(
+    "AR_ARGAAM_SA",
+    "Argaam Saudi Finance",
+    "https://www.argaam.com/ar/rss/allnews",
+    "https://www.argaam.com/",
+    "SA",
+    Category.MARKETS,
+    90,
+  ),
+  arabicPublisherRss(
+    "AR_EQTISADIAH_SA",
+    "Al Eqtisadiah Saudi",
+    "https://www.aleqt.com/rss",
+    "https://www.aleqt.com/",
+    "SA",
+    Category.FINANCE,
+    88,
+  ),
 
   // Pan-Arab business wires
   arabicPublisherRss(
@@ -171,6 +189,37 @@ export const ARABIC_NATIVE_PUBLISHERS = [
     87,
   ),
   arabicPublisherRss(
+    "AR_INVESTING_CRYPTO",
+    "Investing.com Arabic Crypto",
+    "https://sa.investing.com/rss/news_301.rss",
+    "https://sa.investing.com/crypto/",
+    "GLOBAL",
+    Category.CRYPTO,
+    86,
+  ),
+
+  // Crypto / blockchain Arabic
+  arabicPublisherRss(
+    "AR_COINTELEGRAPH",
+    "Cointelegraph Arabic",
+    "https://ar.cointelegraph.com/rss",
+    "https://ar.cointelegraph.com/",
+    "GLOBAL",
+    Category.CRYPTO,
+    90,
+  ),
+  arabicPublisherRss(
+    "AR_BEINCRYPTO",
+    "BeInCrypto Arabic",
+    "https://ar.beincrypto.com/feed/",
+    "https://ar.beincrypto.com/",
+    "GLOBAL",
+    Category.CRYPTO,
+    86,
+  ),
+
+  // International Arabic desks
+  arabicPublisherRss(
     "AR_BBC_AR",
     "BBC Arabic",
     "https://feeds.bbci.co.uk/arabic/rss.xml",
@@ -232,5 +281,14 @@ export const ARABIC_NATIVE_PUBLISHERS = [
     "GLOBAL",
     Category.FINANCE,
     86,
+  ),
+  arabicPublisherRss(
+    "AR_ELMUNDO_TECH",
+    "Al Arabiya Technology Arabic",
+    "https://www.alarabiya.net/.rss/ar/technology.xml",
+    "https://www.alarabiya.net/ar/technology",
+    "GLOBAL",
+    Category.TECH,
+    82,
   ),
 ] as const;

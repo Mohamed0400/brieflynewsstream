@@ -44,13 +44,15 @@ const TRANSLATION_CATEGORY_PRIORITY = new Map<string, number>([
   ["OIL", 1],
   ["ENERGY", 2],
   ["COMMODITIES", 3],
-  ["FINANCE", 4],
-  ["ECONOMICS", 5],
-  ["MARKETS", 6],
-  ["FX", 7],
-  ["BANKING", 8],
-  ["TRADE", 9],
-  ["ME_ECONOMY", 10],
+  ["CRYPTO", 4],
+  ["FINANCE", 5],
+  ["FINANCE", 6],
+  ["ECONOMICS", 7],
+  ["MARKETS", 8],
+  ["FX", 9],
+  ["BANKING", 10],
+  ["TRADE", 11],
+  ["ME_ECONOMY", 12],
 ]);
 
 const articleTranslationSchema = z.object({

@@ -2,6 +2,7 @@ import type { Account, AccountRole, PlanTier } from "@prisma/client";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { ATTRIBUTION_COOKIE, parseAttributionCookie } from "./attribution";
+import { isNeonAuthEnabled } from "./auth-provider";
 import { getOpsSettings } from "./ops-settings";
 import { prisma } from "./prisma";
 import { createServerSupabaseClient } from "./supabase/server";
@@ -9,6 +10,12 @@ import { superAdminEmails } from "./supabase/env";
 import { profileFromAuthMetadata, type SignupProfile } from "./signup-profile";
 
 export type AccountWithMeta = Account;
+
+export type SessionUser = {
+  id: string;
+  email: string;
+  user_metadata?: Record<string, unknown>;
+};
 
 function desiredRole(email: string): AccountRole {
   return superAdminEmails().includes(email.toLowerCase())
@@ -95,14 +102,29 @@ export async function getOrCreateAccount(input: {
   return created;
 }
 
-export async function getSessionUser() {
+export async function getSessionUser(): Promise<SessionUser | null> {
+  if (isNeonAuthEnabled()) {
+    const { neonAuth } = await import("./neon-auth/server");
+    const { data, error } = await neonAuth.getSession();
+    if (error || !data?.user?.email) return null;
+    return {
+      id: data.user.id,
+      email: data.user.email,
+      user_metadata: (data.user as { user_metadata?: Record<string, unknown> }).user_metadata,
+    };
+  }
+
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
     error,
   } = await supabase.auth.getUser();
-  if (error || !user) return null;
-  return user;
+  if (error || !user?.email) return null;
+  return {
+    id: user.id,
+    email: user.email,
+    user_metadata: user.user_metadata as Record<string, unknown> | undefined,
+  };
 }
 
 export async function requireAccount(): Promise<

@@ -22,18 +22,18 @@ export const limits = {
   /** Max items kept from one RSS feed. 0 = all. */
   rss: intEnv("COLLECT_RSS_LIMIT", 0),
   /** Max items kept from generated Google News RSS feeds. Keep low — GNews fan-out × 3k+ sources drives egress. */
-  googleNewsRss: intEnv("COLLECT_GNEWS_LIMIT", 8),
+  googleNewsRss: intEnv("COLLECT_GNEWS_LIMIT", 5),
   /** Parallel RSS/HTML fetches per collect run. Lower = less Prisma/DB egress per job. */
-  collectConcurrency: Math.max(1, intEnv("COLLECT_CONCURRENCY", 4)),
+  collectConcurrency: Math.max(1, intEnv("COLLECT_CONCURRENCY", 2)),
   /**
    * Wall-clock budget for starting source fetches (collectAll + fillThinCountries).
-   * 0 = no deadline. Default 40 minutes so a GitHub job can finish normalize/edition.
+   * 0 = no deadline. Default 30 minutes (egress-throttled; raise only with headroom).
    */
-  collectBudgetMs: intEnv("COLLECT_BUDGET_MS", 2_400_000),
+  collectBudgetMs: intEnv("COLLECT_BUDGET_MS", 1_800_000),
   /** Skip sources fetched (ok or error) within this many hours (unless forced). */
-  collectRefreshHours: Math.max(1, intEnv("COLLECT_REFRESH_HOURS", 4)),
+  collectRefreshHours: Math.max(1, intEnv("COLLECT_REFRESH_HOURS", 12)),
   /** Minimum live articles each catalog country should hold in the freshness window. */
-  minCountryArticles: Math.max(1, intEnv("MIN_COUNTRY_ARTICLES", 3)),
+  minCountryArticles: Math.max(1, intEnv("MIN_COUNTRY_ARTICLES", 2)),
   /** Max items kept from one HTML listing page. 0 = all. */
   html: intEnv("COLLECT_HTML_LIMIT", 0),
   /** Max items kept from one sitemap. 0 = all. */
@@ -89,11 +89,11 @@ export const limits = {
   /** Max translate drain loops per collect or translate job. */
   translateMaxPasses: Math.max(1, intEnv("TRANSLATE_MAX_PASSES", 25)),
   /** Arabic-only pipeline: parallel fetches (smaller catalog). */
-  arabicCollectConcurrency: Math.max(1, intEnv("ARABIC_COLLECT_CONCURRENCY", 6)),
-  /** Arabic-only pipeline wall-clock budget. Default 20 minutes. */
-  arabicCollectBudgetMs: intEnv("ARABIC_COLLECT_BUDGET_MS", 1_200_000),
+  arabicCollectConcurrency: Math.max(1, intEnv("ARABIC_COLLECT_CONCURRENCY", 3)),
+  /** Arabic-only pipeline wall-clock budget. Default 15 minutes. */
+  arabicCollectBudgetMs: intEnv("ARABIC_COLLECT_BUDGET_MS", 900_000),
   /** Arabic-only pipeline refresh hours (force still overrides). */
-  arabicCollectRefreshHours: Math.max(1, intEnv("ARABIC_COLLECT_REFRESH_HOURS", 2)),
+  arabicCollectRefreshHours: Math.max(1, intEnv("ARABIC_COLLECT_REFRESH_HOURS", 4)),
   /** Editions list page size default. */
   editionsList: intEnv("EDITIONS_LIST_LIMIT", 90),
 };

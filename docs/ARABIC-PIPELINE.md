@@ -14,13 +14,18 @@ No Gemini translation — articles are stored with `language=ar` and Arabic titl
 
 ## Kill switch
 
-Set in Vercel / GitHub secrets:
+Set in Vercel / GitHub variables:
 
 ```bash
-ARABIC_COLLECT_ENABLED=false   # stops cron + worker (default off locally)
-ARABIC_COLLECT_ENABLED=true    # enable scheduled runs
+ARABIC_COLLECT_ENABLED=false   # stops cron + worker (default off locally) — last resort
+ARABIC_COLLECT_ENABLED=true    # enable scheduled runs (GHA default)
 ARABIC_COLLECT_FORCE=true      # refetch every source each run (GHA sets this)
+
+# Prefer pausing MAIN collect under egress pressure — keep Arabic online:
+MAIN_COLLECT_ENABLED=false
 ```
+
+See [EGRESS-GUARD.md](./EGRESS-GUARD.md).
 
 ## Run locally
 
@@ -40,9 +45,10 @@ curl -X POST "$SITE_URL/api/cron/collect-arabic" \
 
 Workflow: **Collect Arabic news** (`.github/workflows/collect-arabic.yml`)
 
-- 5× daily between main collect slots
+- **3× daily** (egress-throttled; was 5×)
 - Does **not** run translate or confirm
 - Independent concurrency group `collect-arabic-news`
+- Highest priority under Free-plan limits — pause **main** collect first
 
 ## Source catalog
 

@@ -1,4 +1,5 @@
 import { getSessionUser } from "./account";
+import { isNeonAuthEnabled } from "./auth-provider";
 import { AUTH_TIMEOUT_MS, withAuthTimeout } from "./supabase/auth-timeout";
 import { createServerSupabaseClient } from "./supabase/server";
 
@@ -7,6 +8,13 @@ export const CONSOLE_SESSION_COOKIE = "market_news_console";
 
 /** Validates JWT with Auth server; bounded so gate pages do not hang SSR. */
 export async function hasConsoleSession() {
+  if (isNeonAuthEnabled()) {
+    try {
+      return Boolean(await getSessionUser());
+    } catch {
+      return false;
+    }
+  }
   const supabase = await createServerSupabaseClient();
   try {
     const { data } = await withAuthTimeout(supabase.auth.getUser(), AUTH_TIMEOUT_MS.gateSessionCheck);

@@ -3,7 +3,7 @@ import { prisma } from "./prisma";
 import { describeQueryFailure } from "./api";
 import { kuwaitDate } from "./market";
 import { buildDailyEdition, MAX_TRANSLATION_PASSES, runPipeline, runArabicPipeline, type PipelineResult } from "./pipeline";
-import { isArabicCollectEnabled } from "./arabic-country-sources";
+import { isArabicCollectEnabled, isMainCollectEnabled } from "./collect-enabled";
 import { limits } from "./limits";
 
 export const JOB_COLLECT = "collect";
@@ -158,8 +158,8 @@ export const DEFAULT_SCHEDULED_JOBS = [
   {
     key: JOB_COLLECT_ARABIC,
     name: "Collect Arabic news",
-    description: "Separate Arabic-only ingest (Kuwait, global, China, Europe). No Gemini translation. Toggle with ARABIC_COLLECT_ENABLED.",
-    cron: "0 5,9,13,17,21 * * *",
+    description: "Priority Arabic-only ingest (Kuwait, global, China, Europe). No Gemini. Toggle ARABIC_COLLECT_ENABLED; pause MAIN collect first under egress pressure.",
+    cron: "0 5,11,17 * * *",
   },
   {
     key: JOB_TRANSLATE,
@@ -390,6 +390,9 @@ async function executeJob(key: string) {
     return summarizePipeline(await runArabicPipeline({
       forceCollect: process.env.ARABIC_COLLECT_FORCE === "true" || process.env.CRON_FORCE_COLLECT === "true",
     }));
+  }
+  if (key === JOB_COLLECT && !isMainCollectEnabled()) {
+    return "Main collect disabled (set MAIN_COLLECT_ENABLED=true to run; pause this first under egress pressure — keep Arabic)";
   }
   return summarizePipeline(await runPipeline({
     forceEdition: true,

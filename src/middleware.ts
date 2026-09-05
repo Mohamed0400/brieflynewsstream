@@ -2,11 +2,22 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { ADMIN_APP_PATH, isAdminAppPath, isCustomerConsolePath } from "@/lib/admin-app";
 import { apiCorsHeaders, preflightApi } from "@/lib/api-cors";
+import { isNeonAuthEnabled } from "@/lib/auth-provider";
 import {
   isPublicConsoleApi,
   skipsMiddlewareAuthRefresh,
 } from "@/lib/console-public-routes";
 import { updateSession } from "@/lib/supabase/middleware";
+
+async function neonSessionUser(): Promise<{ id: string; email?: string | null } | null> {
+  try {
+    const { neonAuth } = await import("@/lib/neon-auth/server");
+    const { data } = await neonAuth.getSession();
+    return data?.user ?? null;
+  } catch {
+    return null;
+  }
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -27,14 +38,61 @@ export async function middleware(request: NextRequest) {
     isCustomerConsolePath(pathname) ||
     isAdminAppPath(pathname) ||
     pathname.startsWith("/api/console") ||
-    pathname.startsWith("/auth");
+    pathname.startsWith("/auth") ||
+    pathname.startsWith("/api/auth");
 
   if (!needsAuthRefresh) return NextResponse.next();
 
-  // Public gate pages/API must not call Supabase Auth in middleware — getUser() can
-  // exceed Vercel's middleware budget and 504 login/signup. Pages redirect if already signed in.
   if (skipsMiddlewareAuthRefresh(pathname)) {
     return NextResponse.next();
+  }
+
+  if (isNeonAuthEnabled()) {
+    const user = await neonSessionUser();
+    const passthrough = NextResponse.next({ request });
+
+    if (pathname.startsWith("/api/auth")) {
+      return passthrough;
+    }
+
+    if (pathname.startsWith("/auth/")) {
+      return passthrough;
+    }
+
+    if (pathname.startsWith("/api/console")) {
+      if (!isPublicConsoleApi(pathname) && !user) {
+        return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+      }
+      return passthrough;
+    }
+
+    if (isAdminAppPath(pathname)) {
+      const isPublic = pathname === ADMIN_APP_PATH;
+      if (!user && !isPublic) {
+        const login = request.nextUrl.clone();
+        login.pathname = ADMIN_APP_PATH;
+        login.search = "";
+        return NextResponse.redirect(login);
+      }
+      return passthrough;
+    }
+
+    if (isCustomerConsolePath(pathname)) {
+      if (!user) {
+        const login = request.nextUrl.clone();
+        login.pathname = "/console/login";
+        login.searchParams.set("next", pathname);
+        return NextResponse.redirect(login);
+      }
+      if (pathname === "/console") {
+        const overview = request.nextUrl.clone();
+        overview.pathname = "/console/overview";
+        overview.search = "";
+        return NextResponse.redirect(overview);
+      }
+    }
+
+    return passthrough;
   }
 
   const { user, supabaseResponse } = await updateSession(request);
@@ -83,6 +141,7 @@ export const config = {
   matcher: [
     "/api/v1/:path*",
     "/api/console/:path*",
+    "/api/auth/:path*",
     "/console",
     "/console/:path*",
     "/consoleofbrieflynewsstreamapi",

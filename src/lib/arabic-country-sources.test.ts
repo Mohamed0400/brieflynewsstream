@@ -37,10 +37,14 @@ test("arabic catalog includes crypto and blockchain coverage", () => {
 
 test("isArabicCollectEnabled respects kill switch", () => {
   const prev = process.env.ARABIC_COLLECT_ENABLED;
+  const prevForce = process.env.ARABIC_COLLECT_FORCE;
+  delete process.env.ARABIC_COLLECT_FORCE;
   process.env.ARABIC_COLLECT_ENABLED = "false";
   assert.equal(isArabicCollectEnabled(), false);
   process.env.ARABIC_COLLECT_ENABLED = "true";
   assert.equal(isArabicCollectEnabled(), true);
   if (prev === undefined) delete process.env.ARABIC_COLLECT_ENABLED;
   else process.env.ARABIC_COLLECT_ENABLED = prev;
+  if (prevForce === undefined) delete process.env.ARABIC_COLLECT_FORCE;
+  else process.env.ARABIC_COLLECT_FORCE = prevForce;
 });

@@ -1,18 +1,24 @@
 import { NextResponse } from "next/server";
+import { isNeonAuthEnabled } from "@/lib/auth-provider";
 import {
   CONSOLE_SESSION_COOKIE,
   isTrustedConsoleOrigin,
 } from "@/lib/console-auth";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
-/** Sign out of Supabase Auth and clear any legacy console cookie. */
+/** Sign out of Auth provider and clear any legacy console cookie. */
 export async function DELETE(request: Request) {
   if (!isTrustedConsoleOrigin(request)) {
     return NextResponse.json({ error: "invalid_origin" }, { status: 403 });
   }
 
-  const supabase = await createServerSupabaseClient();
-  await supabase.auth.signOut();
+  if (isNeonAuthEnabled()) {
+    const { neonAuth } = await import("@/lib/neon-auth/server");
+    await neonAuth.signOut();
+  } else {
+    const supabase = await createServerSupabaseClient();
+    await supabase.auth.signOut();
+  }
 
   const response = NextResponse.json({ ok: true });
   response.cookies.set(CONSOLE_SESSION_COOKIE, "", {
@@ -25,7 +31,7 @@ export async function DELETE(request: Request) {
   return response;
 }
 
-/** Auth is handled client-side via Supabase. Keep POST as a clear 410. */
+/** Auth is handled via console password routes. Keep POST as a clear 410. */
 export async function POST() {
   return NextResponse.json(
     {

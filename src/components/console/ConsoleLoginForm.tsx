@@ -73,17 +73,28 @@ export function ConsoleLoginForm({
     setInfo("");
   }
 
+  async function clearAuthSession() {
+    try {
+      await fetch("/api/console/session", { method: "DELETE" });
+    } catch {
+      try {
+        const supabase = createBrowserSupabaseClient();
+        await supabase.auth.signOut();
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
   async function afterAuthenticated(payload: ConsoleAccountPayload) {
     if (isBlockedAccountStatus(payload.account.status)) {
-      const supabase = createBrowserSupabaseClient();
-      await supabase.auth.signOut();
+      await clearAuthSession();
       setError(copy.accountUnavailable);
       return;
     }
     if (isOps) {
       if (payload.account.role !== "SUPER_ADMIN") {
-        const supabase = createBrowserSupabaseClient();
-        await supabase.auth.signOut();
+        await clearAuthSession();
         setError(copy.opsDenied);
         return;
       }

@@ -1,16 +1,16 @@
 name: Collect Arabic news
 
-# Separate Arabic-only pipeline — no Gemini translation.
-# Kill switch: set ARABIC_COLLECT_ENABLED=false in repo secrets or skip workflow.
+# Arabic-first desk — highest priority under Free-plan egress.
+# No Gemini translation. Keep this running when pausing main collect.
+# Kill switch (last resort only): ARABIC_COLLECT_ENABLED=false
+# Prefer pausing MAIN collect first (MAIN_COLLECT_ENABLED=false).
 
 on:
   schedule:
-    # Five times daily Asia/Kuwait (UTC+3): 8 AM, 12 PM, 4 PM, 8 PM, 12 AM
+    # Three times daily Asia/Kuwait (UTC+3): 8 AM, 2 PM, 8 PM (was 5× — Free egress guard)
     - cron: "0 5 * * *"
-    - cron: "0 9 * * *"
-    - cron: "0 13 * * *"
+    - cron: "0 11 * * *"
     - cron: "0 17 * * *"
-    - cron: "0 21 * * *"
   workflow_dispatch:
 
 concurrency:
@@ -20,20 +20,20 @@ concurrency:
 env:
   APP_TIMEZONE: Asia/Kuwait
   NEXT_PUBLIC_APP_ENV: live
-  ARABIC_COLLECT_ENABLED: "true"
+  ARABIC_COLLECT_ENABLED: ${{ vars.ARABIC_COLLECT_ENABLED || 'true' }}
   ARABIC_COLLECT_FORCE: "true"
-  ARABIC_COLLECT_CONCURRENCY: "4"
-  ARABIC_COLLECT_BUDGET_MS: "1200000"
-  ARABIC_COLLECT_REFRESH_HOURS: "2"
-  COLLECT_GNEWS_LIMIT: "8"
-  NORMALIZE_BATCH_SIZE: "1500"
-  NORMALIZE_PASSES: "6"
+  ARABIC_COLLECT_CONCURRENCY: "3"
+  ARABIC_COLLECT_BUDGET_MS: "900000"
+  ARABIC_COLLECT_REFRESH_HOURS: "4"
+  COLLECT_GNEWS_LIMIT: "6"
+  NORMALIZE_BATCH_SIZE: "1000"
+  NORMALIZE_PASSES: "4"
   DATABASE_URL: ${{ secrets.DATABASE_URL }}
   DIRECT_URL: ${{ secrets.DIRECT_URL }}
   ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
   CRON_SECRET: ${{ secrets.CRON_SECRET }}
   SITE_URL: ${{ secrets.SITE_URL }}
-  PRISMA_CONNECTION_LIMIT: "6"
+  PRISMA_CONNECTION_LIMIT: "4"
 
 jobs:
   collect-arabic:
@@ -43,7 +43,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Egress gate (ARABIC_COLLECT_ENABLED)
+        id: gate
+        run: |
+          flag="${ARABIC_COLLECT_ENABLED:-true}"
+          echo "ARABIC_COLLECT_ENABLED=$flag"
+          if [ "$flag" = "false" ] || [ "$flag" = "0" ] || [ "$flag" = "off" ]; then
+            echo "::warning::Arabic collect paused. Prefer pausing MAIN collect first under egress pressure."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "## Arabic collect paused"
+              echo "Set repo variable \`ARABIC_COLLECT_ENABLED=true\` to resume."
+              echo "Ops rule: pause **main** collect before Arabic."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Check secrets
+        if: steps.gate.outputs.enabled == 'true'
         run: |
           if [ -z "$DATABASE_URL" ] && [ -z "$CRON_SECRET" ] && [ -z "$ADMIN_API_KEY" ]; then
             echo "::error::Need DATABASE_URL (+ DIRECT_URL) or CRON_SECRET/ADMIN_API_KEY."
@@ -51,33 +69,36 @@ jobs:
           fi
 
       - uses: actions/setup-node@v4
+        if: steps.gate.outputs.enabled == 'true'
         with:
           node-version: 20
           cache: npm
 
       - name: Install dependencies
+        if: steps.gate.outputs.enabled == 'true'
         run: npm ci
 
       - name: Generate Prisma client
+        if: steps.gate.outputs.enabled == 'true'
         env:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/ci?schema=public
           DIRECT_URL: postgresql://postgres:postgres@127.0.0.1:5432/ci?schema=public
         run: npx prisma generate
 
       - name: Collect Arabic via database pipeline
-        if: ${{ env.DATABASE_URL != '' }}
+        if: steps.gate.outputs.enabled == 'true' && env.DATABASE_URL != ''
         run: |
           set -o pipefail
           npx tsx src/worker/run-once-arabic.ts --force | tee arabic-collect-result.json
           {
-            echo "## Arabic collect"
+            echo "## Arabic collect (priority desk)"
             echo '```json'
             cat arabic-collect-result.json
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Collect Arabic via HTTP cron
-        if: ${{ env.DATABASE_URL == '' }}
+        if: steps.gate.outputs.enabled == 'true' && env.DATABASE_URL == ''
         run: |
           token="${CRON_SECRET:-$ADMIN_API_KEY}"
           base="${SITE_URL:-https://www.brieflynewsstream.com}"

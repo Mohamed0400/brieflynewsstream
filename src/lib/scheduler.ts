@@ -355,7 +355,7 @@ async function executeJob(key: string) {
         rawCollected: 0,
         articlesCreated: 0,
         rejected: 0,
-        rejections: { stale: 0, notAccepted: 0, blocked: 0, lowQuality: 0 },
+        rejections: { stale: 0, notAccepted: 0, blocked: 0, lowQuality: 0, runCap: 0 },
         translated: 0,
         editionItems: 0,
         errors: [],

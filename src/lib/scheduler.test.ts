@@ -90,6 +90,32 @@ test("isLockExpired is true only when lockedUntil is at or before now", () => {
 test("job-specific lock windows keep short jobs from inheriting collect duration", () => {
   assert.ok(jobLockMs(JOB_COLLECT) >= LOCK_MS);
   assert.ok(jobLockMs(JOB_TRANSLATE) < jobLockMs(JOB_COLLECT));
+  // Arabic GHA timeout is 90m; lock must cover the full run + unwind.
+  assert.ok(jobLockMs(JOB_COLLECT_ARABIC) >= 90 * 60 * 1000);
+});
+
+test("shouldClearStaleLock releases expired arabic locks and keeps live heartbeats", () => {
+  const now = new Date("2026-09-05T18:00:00.000Z");
+  const arabicLockMs = jobLockMs(JOB_COLLECT_ARABIC);
+  assert.equal(shouldClearStaleLock({
+    key: JOB_COLLECT_ARABIC,
+    lastStatus: "running",
+    lockedUntil: new Date(now.getTime() - 1),
+    lastRunAt: new Date(now.getTime() - 10 * 60 * 1000),
+  }, now), true);
+  assert.equal(shouldClearStaleLock({
+    key: JOB_COLLECT_ARABIC,
+    lastStatus: "running",
+    lockedUntil: new Date(now.getTime() + arabicLockMs - 30_000),
+    lastRunAt: new Date(now.getTime() - 60 * 60 * 1000),
+  }, now), false);
+  // Past max runtime even with a fresh-looking lock → clear.
+  assert.equal(shouldClearStaleLock({
+    key: JOB_COLLECT_ARABIC,
+    lastStatus: "running",
+    lockedUntil: new Date(now.getTime() + arabicLockMs - 30_000),
+    lastRunAt: new Date(now.getTime() - arabicLockMs - 1),
+  }, now), true);
 });
 
 test("isZombieLock uses heartbeat age from lockedUntil inversion", () => {

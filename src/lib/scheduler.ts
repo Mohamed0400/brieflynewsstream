@@ -20,7 +20,8 @@ export const LOCK_MS = 4 * 60 * 60 * 1000;
 /** Per-job lock windows — short jobs must not inherit the 4h collect lock. */
 export const JOB_LOCK_MS: Record<string, number> = {
   [JOB_COLLECT]: LOCK_MS,
-  [JOB_COLLECT_ARABIC]: 45 * 60 * 1000,
+  /** Match GHA collect-arabic timeout (90m) + unwind buffer; heartbeats renew within this window. */
+  [JOB_COLLECT_ARABIC]: 2 * 60 * 60 * 1000,
   [JOB_TRANSLATE]: 20 * 60 * 1000,
   [JOB_PUBLISH]: 20 * 60 * 1000,
   [JOB_ARCHIVE]: 45 * 60 * 1000,

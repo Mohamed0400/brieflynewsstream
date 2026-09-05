@@ -22,7 +22,20 @@ Only disable Arabic as a last resort.
 ## Cadence (GHA)
 
 - **Arabic:** 3×/day (08:00, 14:00, 20:00 Kuwait)
-- **Main:** 1×/day (06:00 Kuwait), concurrency 2, `COLLECT_GNEWS_LIMIT=5`
+- **Arabic watchdog (soft-heal):** hourly — re-collects **only** if Arabic feed/job is ≥5h stale or last run failed; never enables MAIN collect
+- **Ops heal:** every 2h — clears zombie `collect` / `collect-arabic` locks + abandons stale raw
+- **Main:** 1×/day (06:00 Kuwait), concurrency 2, `COLLECT_GNEWS_LIMIT=5` — keep `MAIN_COLLECT_ENABLED=false` under Free egress
+
+## Self-healing (no manual re-trigger)
+
+| Layer | What it does |
+|-------|----------------|
+| Lock TTL + heartbeats | Arabic lock window is 2h (covers 90m GHA timeout); zombies clear when heartbeats stop or `lockedUntil` expires |
+| GHA `if: always()` cleanup | `collect-arabic` / watchdog mark `collect-arabic` interrupted if still running after cancel/timeout |
+| Ops heal | Clears expired/zombie locks every 2h |
+| Watchdog Arabic | Soft-heal freshness: skip when fresh; run Arabic collect when stale |
+
+Kill switches stay as above — do **not** set `MAIN_COLLECT_ENABLED=true` to “fix” freshness; use Arabic collect / watchdog.
 
 ## Always-on code guards
 

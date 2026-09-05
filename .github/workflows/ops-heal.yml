@@ -1,7 +1,8 @@
 name: Ops heal
 
-# Clears zombie locks and abandons stale raw between full collects so the feed
-# cannot stay blocked until the next Collect news run.
+# Clears zombie locks (including collect-arabic) and abandons stale raw between
+# full collects so the feed cannot stay blocked until the next Collect run.
+# Arabic freshness re-collect belongs to Watchdog Arabic (hourly, soft-heal).
 
 on:
   schedule:

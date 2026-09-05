@@ -45,10 +45,21 @@ curl -X POST "$SITE_URL/api/cron/collect-arabic" \
 
 Workflow: **Collect Arabic news** (`.github/workflows/collect-arabic.yml`)
 
-- **3× daily** (egress-throttled; was 5×)
+- **3× daily** (egress-throttled; was 5×) + `workflow_dispatch`
+- Timeout **90 minutes**; DB lock window **2 hours** (heartbeats renew)
+- `if: always()` cleanup marks `collect-arabic` interrupted if still running after cancel/timeout
 - Does **not** run translate or confirm
 - Independent concurrency group `collect-arabic-news`
 - Highest priority under Free-plan limits — pause **main** collect first
+
+### Self-healing
+
+| Workflow | Cadence | Behavior |
+|----------|---------|----------|
+| **Watchdog Arabic** | Hourly | Soft-heal: re-collect only if Arabic ≥5h stale or last job failed |
+| **Ops heal** | Every 2h | Clears zombie `collect-arabic` / `collect` locks |
+
+No manual re-trigger required for stuck locks or missed slots. Kill switches: `ARABIC_COLLECT_ENABLED` (last resort), `MAIN_COLLECT_ENABLED=false` (preferred under egress pressure).
 
 ## Source catalog
 

@@ -26,7 +26,8 @@ Migrating to Neon does **not** remove the Free egress ceiling — these guards s
 
 | Workflow | When (Kuwait) |
 |----------|----------------|
-| **Ops heal** | Every 2 hours |
+| **Watchdog Arabic** *(soft-heal)* | Every hour — collect **only if** Arabic ≥5h stale / job failed |
+| **Ops heal** | Every 2 hours — zombie locks + stale raw |
 | **Collect Arabic** *(priority)* | 8:00 AM · 2:00 PM · 8:00 PM |
 | **Collect news** *(main / bilingual)* | 6:00 AM only *(1×/day; kill with `MAIN_COLLECT_ENABLED=false`)* |
 | **Translate news** | 8:00 AM · 12:00 PM · 4:00 PM · 8:00 PM *(skips if collect is live)* |
@@ -36,7 +37,8 @@ Rough day flow:
 - **8:00 AM** — Arabic collect + translate backfill  
 - **2:00 PM** — Arabic collect  
 - **8:00 PM** — Arabic collect + translate backfill  
-- **Ops heal** — every 2 hours in between  
+- **Watchdog Arabic** — hourly soft-heal if a slot was missed/cancelled  
+- **Ops heal** — every 2 hours clears stuck locks  
 
 ---
 
@@ -64,7 +66,11 @@ File: `.github/workflows/collect.yml`
 
 ## Collect Arabic (priority)
 
-File: `.github/workflows/collect-arabic.yml` — 3× daily; independent concurrency group; no translate/confirm.
+File: `.github/workflows/collect-arabic.yml` — 3× daily; independent concurrency group; no translate/confirm; 90m timeout; `if: always()` lock cleanup.
+
+## Watchdog Arabic (self-heal)
+
+File: `.github/workflows/watchdog-arabic.yml` — hourly. Clears stale locks, then runs Arabic collect **only** when newest `language=ar` article `createdAt` (or last job) is older than **5 hours**, or last status is `error`/`interrupted`. Soft-skip when fresh. Does **not** enable MAIN collect.
 
 ## Translate news
 
@@ -72,15 +78,18 @@ File: `.github/workflows/translate.yml` — backfill between collects; skips whi
 
 ## Ops heal
 
-File: `.github/workflows/ops-heal.yml` — zombie locks + abandon stale raw every 2 hours.
+File: `.github/workflows/ops-heal.yml` — zombie locks (incl. `collect-arabic`) + abandon stale raw every 2 hours.
 
 ---
 
 ## If the feed looks stuck
 
-1. Actions → **Ops heal** → Run workflow  
-2. Actions → **Collect Arabic news** → Run workflow *(priority)*  
-3. Actions → **Collect news** → Run workflow *(only if main is enabled and egress allows)*  
-4. Actions → **Translate news** → Run workflow  
+Automation should recover within ~1–5 hours via watchdog + ops-heal. Manual fallback:
 
-Do **not** cancel Collect early unless it is clearly stuck with zero source fetches.
+1. Actions → **Ops heal** → Run workflow  
+2. Actions → **Watchdog Arabic** → Run workflow *(soft-heal; no-ops if fresh)*  
+3. Actions → **Collect Arabic news** → Run workflow *(priority)*  
+4. Actions → **Collect news** → Run workflow *(only if main is enabled and egress allows)*  
+5. Actions → **Translate news** → Run workflow  
+
+Do **not** cancel Collect early unless it is clearly stuck with zero source fetches. Do **not** flip `MAIN_COLLECT_ENABLED=true` just to unstick Arabic.

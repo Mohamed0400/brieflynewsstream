@@ -1,19 +1,17 @@
-name: Collect Arabic news
+name: Watchdog Arabic
 
-# Arabic-first desk — highest priority under Free-plan egress.
-# No Gemini translation. Keep this running when pausing main collect.
-# Kill switch (last resort only): ARABIC_COLLECT_ENABLED=false
-# Prefer pausing MAIN collect first (MAIN_COLLECT_ENABLED=false).
+# Soft-heal: clear zombie Arabic/collect locks and re-collect only when the
+# Arabic desk is stale (≥5h) or the last job failed — never runs MAIN collect.
+# Saves Neon egress vs adding more full scheduled collects.
 
 on:
   schedule:
-    # Three times daily Asia/Kuwait (UTC+3): 8 AM, 2 PM, 8 PM (was 5× — Free egress guard)
-    - cron: "0 5 * * *"
-    - cron: "0 11 * * *"
-    - cron: "0 17 * * *"
+    # Hourly UTC — catches missed/cancelled 3×/day slots before overnight gaps
+    - cron: "15 * * * *"
   workflow_dispatch:
 
 concurrency:
+  # Share with Collect Arabic so watchdog never steals a live desk lock
   group: collect-arabic-news
   cancel-in-progress: false
 
@@ -36,8 +34,8 @@ env:
   PRISMA_CONNECTION_LIMIT: "4"
 
 jobs:
-  collect-arabic:
-    name: Collect Arabic desk sources
+  watchdog:
+    name: Soft-heal Arabic freshness
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
@@ -49,12 +47,11 @@ jobs:
           flag="${ARABIC_COLLECT_ENABLED:-true}"
           echo "ARABIC_COLLECT_ENABLED=$flag"
           if [ "$flag" = "false" ] || [ "$flag" = "0" ] || [ "$flag" = "off" ]; then
-            echo "::warning::Arabic collect paused. Prefer pausing MAIN collect first under egress pressure."
+            echo "::warning::Arabic watchdog paused (ARABIC_COLLECT_ENABLED=$flag)."
             echo "enabled=false" >> "$GITHUB_OUTPUT"
             {
-              echo "## Arabic collect paused"
+              echo "## Arabic watchdog paused"
               echo "Set repo variable \`ARABIC_COLLECT_ENABLED=true\` to resume."
-              echo "Ops rule: pause **main** collect before Arabic."
             } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "enabled=true" >> "$GITHUB_OUTPUT"
@@ -85,36 +82,44 @@ jobs:
           DIRECT_URL: postgresql://postgres:postgres@127.0.0.1:5432/ci?schema=public
         run: npx prisma generate
 
-      - name: Collect Arabic via database pipeline
+      - name: Watchdog via database
         if: steps.gate.outputs.enabled == 'true' && env.DATABASE_URL != ''
         run: |
           set -o pipefail
-          npx tsx src/worker/run-once-arabic.ts --force | tee arabic-collect-result.json
+          # Soft-heal: exit 0 when feed is fresh; only runs Arabic collect when stale.
+          npx tsx src/worker/watchdog-arabic-once.ts --force | tee watchdog-arabic-result.json
           {
-            echo "## Arabic collect (priority desk)"
+            echo "## Arabic freshness watchdog"
             echo '```json'
-            cat arabic-collect-result.json
+            cat watchdog-arabic-result.json
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Collect Arabic via HTTP cron
+      - name: Watchdog via HTTP ops-heal (locks only)
         if: steps.gate.outputs.enabled == 'true' && env.DATABASE_URL == ''
         run: |
           token="${CRON_SECRET:-$ADMIN_API_KEY}"
           base="${SITE_URL:-https://www.brieflynewsstream.com}"
-          curl -fsS -X POST "$base/api/cron/collect-arabic" \
+          # Without DATABASE_URL we can only clear locks via HTTP; full collect needs DB or collect-arabic workflow.
+          curl -fsS -X POST "$base/api/cron/ops-heal" \
             -H "Authorization: Bearer $token" \
             -H "Content-Type: application/json" \
-            --max-time 300 | tee arabic-collect-result.json
+            --max-time 300 | tee watchdog-arabic-result.json
+          {
+            echo "## Arabic watchdog (HTTP ops-heal fallback)"
+            echo "DATABASE_URL missing — cleared locks via ops-heal. Trigger **Collect Arabic news** manually if feed is still stale."
+            echo '```json'
+            cat watchdog-arabic-result.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
-      # SIGTERM handler in run-once-arabic clears locks; GHA cancel/timeout may skip it.
-      - name: Mark interrupted if Arabic lock still running
+      - name: Release Arabic lock if this run left it stuck
         if: always() && (failure() || cancelled()) && steps.gate.outputs.enabled == 'true' && env.DATABASE_URL != ''
         run: |
-          npx tsx src/worker/release-lock-once.ts collect-arabic --force | tee arabic-lock-cleanup.json || true
+          npx tsx src/worker/release-lock-once.ts collect-arabic --force | tee release-lock-result.json || true
           {
-            echo "## Arabic lock cleanup"
+            echo "## Lock cleanup"
             echo '```json'
-            cat arabic-lock-cleanup.json 2>/dev/null || echo '{"ok":false}'
+            cat release-lock-result.json 2>/dev/null || echo '{"ok":false}'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"

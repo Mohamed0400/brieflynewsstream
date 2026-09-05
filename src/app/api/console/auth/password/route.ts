@@ -112,20 +112,22 @@ async function neonPasswordAuth(body: PasswordAuthBody, origin: string) {
     );
   }
 
-  const user = data?.user;
+  const user = data?.user as
+    | { id: string; email?: string | null; emailVerified?: boolean | null }
+    | null
+    | undefined;
   if (!user?.email) {
     return NextResponse.json({ ok: true, needsConfirmation: true });
   }
 
-  // Neon may require email verification before a session exists.
+  // Shared Neon SMTP uses OTP codes; require verification before session console access.
   const { data: sessionData } = await neonAuth.getSession();
-  if (!sessionData?.user) {
-    const account = await getOrCreateAccount({
+  if (!sessionData?.user || user.emailVerified === false) {
+    await getOrCreateAccount({
       authUserId: user.id,
       email: user.email,
       profile: parsed.profile,
     });
-    void account;
     return NextResponse.json({ ok: true, needsConfirmation: true });
   }
 

@@ -16,8 +16,10 @@ import {
   isAuthApiBlocked,
   isAuthApiDuplicate,
   recoverPasswordViaServer,
+  resendVerificationEmailViaServer,
   signInViaServer,
   signUpViaServer,
+  verifyEmailOtpViaServer,
 } from "@/lib/console-auth-client";
 import type { ConsoleAccountPayload } from "@/lib/account-client";
 import { ADMIN_OPERATIONS_PATH } from "@/lib/admin-app";
@@ -46,6 +48,7 @@ export function ConsoleLoginForm({
   const [mode, setMode] = useState<Mode>(initialMode || variant);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState("");
   const [country, setCountry] = useState("");
   const [address, setAddress] = useState("");
   const [mobilePhone, setMobilePhone] = useState("");
@@ -71,6 +74,9 @@ export function ConsoleLoginForm({
     setMode(next);
     setError("");
     setInfo("");
+    if (next !== "check-email") {
+      setOtp("");
+    }
   }
 
   async function clearAuthSession() {
@@ -144,6 +150,21 @@ export function ConsoleLoginForm({
         return;
       }
 
+      if (mode === "check-email") {
+        const result = await verifyEmailOtpViaServer({
+          email: normalizedEmail,
+          otp: otp.trim(),
+        });
+        if (result.account) {
+          await afterAuthenticated({ account: result.account });
+          return;
+        }
+        setInfo(copy.confirmVerifiedSignIn);
+        setOtp("");
+        setMode("signin");
+        return;
+      }
+
       if (mode === "forgot") {
         await recoverPasswordViaServer(normalizedEmail);
         setInfo(copy.resetSent);
@@ -175,6 +196,22 @@ export function ConsoleLoginForm({
     }
   }
 
+  async function resendConfirmation() {
+    setError("");
+    setInfo("");
+    setLoading(true);
+    const normalizedEmail = email.trim().toLowerCase();
+    try {
+      await resendVerificationEmailViaServer(normalizedEmail);
+      setInfo(copy.confirmResent);
+    } catch (requestError) {
+      const message = requestError instanceof Error ? requestError.message : copy.authFailed;
+      setError(message || copy.authFailed);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const heading =
     mode === "check-email" ? copy.confirmTitle
     : mode === "forgot" ? copy.forgotTitle
@@ -182,23 +219,101 @@ export function ConsoleLoginForm({
 
   const submitLabel =
     mode === "signup" ? copy.signupSubmit
+    : mode === "check-email" ? copy.confirmSubmit
     : mode === "forgot" ? copy.forgotSubmit
     : copy.submit;
 
   const helpId =
-    mode === "signin" || mode === "signup" || mode === "forgot" ? "login-help" : undefined;
+    mode === "signin" || mode === "signup" || mode === "forgot" || mode === "check-email"
+      ? "login-help"
+      : undefined;
   const describedBy = error ? "login-error" : info ? "login-info" : helpId;
 
   if (mode === "check-email") {
     return (
-      <div className="console-gate-form console-gate-confirm" role="status">
+      <form
+        onSubmit={submit}
+        className="console-gate-form console-gate-confirm"
+        aria-describedby={describedBy}
+      >
         <h2 className="console-gate-form-title">{copy.confirmTitle}</h2>
         <p className="console-gate-help">{info || copy.confirmSent}</p>
-        <p className="console-gate-help">{copy.confirmHint}</p>
-        <Link href={withConsoleLang("/console/login", copy.lang)} className="console-gate-link">
-          {copy.backToSignIn}
-        </Link>
-      </div>
+        <p id="login-help" className="console-gate-help">{copy.confirmHint}</p>
+
+        <div className="console-gate-field">
+          <label htmlFor="confirm-email">{copy.emailLabel}</label>
+          <input
+            id="confirm-email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            inputMode="email"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            className="console-gate-input"
+            dir="ltr"
+            spellCheck={false}
+            aria-invalid={Boolean(error)}
+          />
+        </div>
+
+        <div className="console-gate-field">
+          <label htmlFor="otp">{copy.confirmCodeLabel}</label>
+          <input
+            id="otp"
+            name="otp"
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            required
+            minLength={4}
+            maxLength={12}
+            value={otp}
+            onChange={(event) => setOtp(event.target.value.replace(/\s+/g, ""))}
+            className="console-gate-input"
+            dir="ltr"
+            spellCheck={false}
+            aria-invalid={Boolean(error)}
+          />
+        </div>
+
+        {error && (
+          <p id="login-error" role="alert" className="console-gate-error">
+            {error}
+          </p>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="console-gate-submit"
+          aria-busy={loading}
+        >
+          {loading ? (
+            <>
+              <BrandLoader size="sm" decorative />
+              <span>{copy.submitting}</span>
+            </>
+          ) : (
+            submitLabel
+          )}
+        </button>
+
+        <div className="console-gate-links">
+          <button
+            type="button"
+            className="console-gate-link"
+            disabled={loading || !email.trim()}
+            onClick={() => void resendConfirmation()}
+          >
+            {copy.confirmResend}
+          </button>
+          <Link href={withConsoleLang("/console/login", copy.lang)} className="console-gate-link">
+            {copy.backToSignIn}
+          </Link>
+        </div>
+      </form>
     );
   }
 

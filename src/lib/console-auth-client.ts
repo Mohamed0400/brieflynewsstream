@@ -10,8 +10,8 @@ type AuthApiError = {
   message?: string;
 };
 
-async function readAuthResponse(response: Response): Promise<AuthApiError & Partial<ConsoleAccountPayload> & { needsConfirmation?: boolean }> {
-  return response.json().catch(() => ({})) as Promise<AuthApiError & Partial<ConsoleAccountPayload> & { needsConfirmation?: boolean }>;
+async function readAuthResponse(response: Response): Promise<AuthApiError & Partial<ConsoleAccountPayload> & { needsConfirmation?: boolean; needsSignIn?: boolean }> {
+  return response.json().catch(() => ({})) as Promise<AuthApiError & Partial<ConsoleAccountPayload> & { needsConfirmation?: boolean; needsSignIn?: boolean }>;
 }
 
 export async function signInViaServer(input: {
@@ -70,6 +70,43 @@ export async function recoverPasswordViaServer(email: string): Promise<void> {
   const payload = await readAuthResponse(response);
   if (!response.ok) {
     throw new AuthApiRequestError(payload.message || "Unable to send reset email.", payload.error, response.status);
+  }
+}
+
+export async function verifyEmailOtpViaServer(input: {
+  email: string;
+  otp: string;
+}): Promise<{ account?: ConsoleAccountPayload["account"]; needsSignIn?: boolean }> {
+  const response = await withAuthTimeout(
+    fetch("/api/console/auth/verify-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: "verify", ...input }),
+    }),
+    AUTH_TIMEOUT_MS.serverAuth + 5_000,
+  );
+  const payload = await readAuthResponse(response);
+  if (!response.ok) {
+    throw new AuthApiRequestError(payload.message || "Unable to verify email.", payload.error, response.status);
+  }
+  if (payload.account) {
+    return { account: payload.account };
+  }
+  return { needsSignIn: true };
+}
+
+export async function resendVerificationEmailViaServer(email: string): Promise<void> {
+  const response = await withAuthTimeout(
+    fetch("/api/console/auth/verify-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: "resend", email }),
+    }),
+    AUTH_TIMEOUT_MS.resetEmail + 5_000,
+  );
+  const payload = await readAuthResponse(response);
+  if (!response.ok) {
+    throw new AuthApiRequestError(payload.message || "Unable to resend confirmation email.", payload.error, response.status);
   }
 }
 

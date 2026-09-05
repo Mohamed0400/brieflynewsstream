@@ -20,6 +20,7 @@ test("public console session API skips middleware auth refresh", () => {
   assert.equal(isPublicConsoleApi("/api/console/account"), true);
   assert.equal(isPublicConsoleApi("/api/console/auth/password"), true);
   assert.equal(isPublicConsoleApi("/api/console/auth/recover"), true);
+  assert.equal(isPublicConsoleApi("/api/console/auth/verify-email"), true);
 });
 
 test("auth confirm and error routes skip middleware auth refresh", () => {

@@ -1,6 +1,7 @@
 import type { Account, AccountRole, PlanTier } from "@prisma/client";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { planAccountLink } from "./account-link";
 import { ATTRIBUTION_COOKIE, parseAttributionCookie } from "./attribution";
 import { isNeonAuthEnabled } from "./auth-provider";
 import { getOpsSettings } from "./ops-settings";
@@ -64,14 +65,26 @@ export async function getOrCreateAccount(input: {
   const role = desiredRole(email);
   const profile = profileFields(input.profile);
 
-  const existing = await prisma.account.findUnique({
-    where: { authUserId: input.authUserId },
+  const [byAuthUserId, byEmailOldest] = await Promise.all([
+    prisma.account.findUnique({ where: { authUserId: input.authUserId } }),
+    prisma.account.findFirst({
+      where: { email },
+      orderBy: { createdAt: "asc" },
+    }),
+  ]);
+
+  const plan = planAccountLink({
+    authUserId: input.authUserId,
+    byAuthUserId,
+    byEmailOldest,
   });
-  if (existing) {
+
+  if (plan.action === "use") {
+    const existing = byAuthUserId!;
     const nextProfile = {
-      ...(!existing.country ? profile.country ? { country: profile.country } : {} : {}),
-      ...(!existing.address ? profile.address ? { address: profile.address } : {} : {}),
-      ...(!existing.mobilePhone ? profile.mobilePhone ? { mobilePhone: profile.mobilePhone } : {} : {}),
+      ...(!existing.country && profile.country ? { country: profile.country } : {}),
+      ...(!existing.address && profile.address ? { address: profile.address } : {}),
+      ...(!existing.mobilePhone && profile.mobilePhone ? { mobilePhone: profile.mobilePhone } : {}),
     };
     const shouldPromote = role === "SUPER_ADMIN" && existing.role !== "SUPER_ADMIN";
     if (existing.email !== email || shouldPromote || Object.keys(nextProfile).length > 0) {
@@ -85,6 +98,49 @@ export async function getOrCreateAccount(input: {
       });
     }
     return existing;
+  }
+
+  if (plan.action === "relink") {
+    return prisma.$transaction(async (tx) => {
+      if (plan.releaseAuthUserIdFrom) {
+        await tx.account.update({
+          where: { id: plan.releaseAuthUserIdFrom },
+          data: { authUserId: `migrated-away:${plan.releaseAuthUserIdFrom}` },
+        });
+      }
+
+      const existing = await tx.account.findUniqueOrThrow({
+        where: { id: plan.accountId },
+      });
+      const nextProfile = {
+        ...(!existing.country && profile.country ? { country: profile.country } : {}),
+        ...(!existing.address && profile.address ? { address: profile.address } : {}),
+        ...(!existing.mobilePhone && profile.mobilePhone ? { mobilePhone: profile.mobilePhone } : {}),
+      };
+      const shouldPromote = role === "SUPER_ADMIN" && existing.role !== "SUPER_ADMIN";
+      const updated = await tx.account.update({
+        where: { id: plan.accountId },
+        data: {
+          authUserId: input.authUserId,
+          email,
+          ...(shouldPromote ? { role: "SUPER_ADMIN" as const } : {}),
+          ...nextProfile,
+        },
+      });
+
+      if (plan.deleteAccountId && plan.deleteAccountId !== plan.accountId) {
+        const [keys, subs, invoices] = await Promise.all([
+          tx.apiKey.count({ where: { accountId: plan.deleteAccountId } }),
+          tx.subscription.count({ where: { accountId: plan.deleteAccountId } }),
+          tx.invoice.count({ where: { accountId: plan.deleteAccountId } }),
+        ]);
+        if (keys === 0 && subs === 0 && invoices === 0) {
+          await tx.account.delete({ where: { id: plan.deleteAccountId } });
+        }
+      }
+
+      return updated;
+    });
   }
 
   const attribution = await signupAttributionFields();

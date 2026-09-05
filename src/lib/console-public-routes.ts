@@ -12,6 +12,7 @@ export const PUBLIC_CONSOLE_API_PATHS = [
   "/api/console/account",
   "/api/console/auth/password",
   "/api/console/auth/recover",
+  "/api/console/auth/verify-email",
 ] as const;
 
 export const PUBLIC_AUTH_PATHS = [

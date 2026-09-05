@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getOrCreateAccount } from "@/lib/account";
+import { userFromNeonAuthData } from "@/lib/account-link";
 import { isNeonAuthEnabled } from "@/lib/auth-provider";
 import { consoleAuthCallbackUrl } from "@/lib/auth-redirect";
 import { isTrustedConsoleOrigin } from "@/lib/console-auth";
@@ -127,7 +128,7 @@ export async function POST(request: Request) {
   }
 
   const { data: sessionData } = await neonAuth.getSession();
-  const user = sessionData?.user || data?.user;
+  const user = sessionData?.user || userFromNeonAuthData(data);
   if (!user?.email) {
     return NextResponse.json({ ok: true, needsSignIn: true });
   }

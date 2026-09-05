@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getOrCreateAccount } from "@/lib/account";
+import { userFromNeonAuthData } from "@/lib/account-link";
 import { isNeonAuthEnabled } from "@/lib/auth-provider";
 import { consoleAuthCallbackUrl } from "@/lib/auth-redirect";
 import { isTrustedConsoleOrigin } from "@/lib/console-auth";
@@ -50,15 +51,18 @@ async function neonPasswordAuth(body: PasswordAuthBody, origin: string) {
   const password = body.password!;
 
   if (mode === "signin") {
-    const { error } = await neonAuth.signIn.email({ email, password });
+    // Prefer user from signIn response — getSession() reads request cookies and
+    // cannot see session_token set on this same response (first-login race).
+    const { data, error } = await neonAuth.signIn.email({ email, password });
     if (error) {
       return NextResponse.json(
         { error: "auth_failed", message: error.message || "Unable to authenticate." },
         { status: 401 },
       );
     }
+    const fromSignIn = userFromNeonAuthData(data);
     const { data: session } = await neonAuth.getSession();
-    const user = session?.user;
+    const user = session?.user || fromSignIn;
     if (!user?.email) {
       return NextResponse.json(
         { error: "auth_failed", message: "Unable to authenticate." },
@@ -112,10 +116,9 @@ async function neonPasswordAuth(body: PasswordAuthBody, origin: string) {
     );
   }
 
-  const user = data?.user as
+  const user = userFromNeonAuthData(data) as
     | { id: string; email?: string | null; emailVerified?: boolean | null }
-    | null
-    | undefined;
+    | null;
   if (!user?.email) {
     return NextResponse.json({ ok: true, needsConfirmation: true });
   }

@@ -24,8 +24,9 @@ env:
   GOOGLE_GROUNDED_SEARCH_ENABLED: "false"
   GOOGLE_EDITORIAL_ENABLED: "false"
   MIN_COUNTRY_ARTICLES: "3"
-  COLLECT_CONCURRENCY: "6"
+  COLLECT_CONCURRENCY: "4"
   COLLECT_BUDGET_MS: "2400000"
+  COLLECT_GNEWS_LIMIT: "8"
   # Short backoff for HTTP backups only. GHA sets CRON_FORCE_COLLECT so every
   # scheduled collect re-hits sources even if the previous run finished recently.
   COLLECT_REFRESH_HOURS: "2"

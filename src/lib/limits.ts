@@ -21,9 +21,9 @@ export function applyLimit<T>(items: T[], limit: number): T[] {
 export const limits = {
   /** Max items kept from one RSS feed. 0 = all. */
   rss: intEnv("COLLECT_RSS_LIMIT", 0),
-  /** Max items kept from generated Google News RSS feeds. */
-  googleNewsRss: intEnv("COLLECT_GNEWS_LIMIT", 12),
-  /** Parallel RSS/HTML fetches per collect run. */
+  /** Max items kept from generated Google News RSS feeds. Keep low — GNews fan-out × 3k+ sources drives egress. */
+  googleNewsRss: intEnv("COLLECT_GNEWS_LIMIT", 8),
+  /** Parallel RSS/HTML fetches per collect run. Lower = less Prisma/DB egress per job. */
   collectConcurrency: Math.max(1, intEnv("COLLECT_CONCURRENCY", 4)),
   /**
    * Wall-clock budget for starting source fetches (collectAll + fillThinCountries).

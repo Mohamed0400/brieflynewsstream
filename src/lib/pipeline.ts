@@ -427,8 +427,13 @@ async function normalizePendingBatch(
   );
 
   for (const raw of pending) {
+    // Drop rawJson as soon as we finish with the row — keeps egress/DB size down.
+    // Title/url/summary already live on the RawArticle columns (and Article if created).
     const markProcessed = () =>
-      prisma.rawArticle.update({ where: { id: raw.id }, data: { processedAt: new Date() } });
+      prisma.rawArticle.update({
+        where: { id: raw.id },
+        data: { processedAt: new Date(), rawJson: "{}" },
+      });
 
     // Defense in depth: never materialize rows outside the live window even if
     // abandonStaleRawArticles raced with insert or was skipped by a caller.
@@ -625,7 +630,7 @@ export async function abandonStaleRawArticles() {
       processedAt: null,
       publishedAt: { lt: cutoff },
     },
-    data: { processedAt: new Date() },
+    data: { processedAt: new Date(), rawJson: "{}" },
   });
   return abandoned.count;
 }

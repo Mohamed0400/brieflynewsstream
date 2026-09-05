@@ -50,6 +50,18 @@ export function archiveRetentionDays() {
   return Math.min(30, Math.floor(raw));
 }
 
+/**
+ * Processed RawArticle rows are egress/disk heavy (rawJson churn) and are not
+ * needed after normalize. Keep them much shorter than Article hot retention.
+ * Clamped to [1, archiveRetentionDays()] so raw never outlives articles.
+ */
+export function archiveRawRetentionDays() {
+  const articleDays = archiveRetentionDays();
+  const raw = Number(process.env.ARCHIVE_RAW_RETENTION_DAYS || "2");
+  if (!Number.isFinite(raw) || raw < 1) return Math.min(2, articleDays);
+  return Math.min(articleDays, Math.floor(raw));
+}
+
 export function r2Configured() {
   return Boolean(
     process.env.R2_ACCOUNT_ID?.trim()

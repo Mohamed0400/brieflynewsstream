@@ -39,7 +39,7 @@ npm run seed:live
 
 1. **Collect** pulls public RSS, HTML, sitemap, and optional Gemini grounded search. Country-local RSS covers the 70 ISO markets (publisher feeds where they return XML; Google News RSS where they do not).
 2. **Classify** drops off-topic items before insert and tags category, country, and nationality audience.
-3. **Store** writes the original publisher title/summary plus the source-language pair (`titleEn` or `titleAr`). The live feed uses a short freshness window (default 72 hours). Hot rows in Supabase are pruned after `ARCHIVE_HOT_RETENTION_DAYS` (default **5**) so the free DB stays under ~500 MB. Optional Cloudflare R2 cold storage is documented in [R2-CLOUDFLARE-SETUP.md](./R2-CLOUDFLARE-SETUP.md).
+3. **Store** writes the original publisher title/summary plus the source-language pair (`titleEn` or `titleAr`). The live feed uses a short freshness window (default 72 hours). Hot **articles** in Supabase are pruned after `ARCHIVE_HOT_RETENTION_DAYS` (default **5**); processed `RawArticle` rows after `ARCHIVE_RAW_RETENTION_DAYS` (default **2**) so the free DB stays under ~500 MB and egress stays bounded. Optional Cloudflare R2 cold storage is documented in [R2-CLOUDFLARE-SETUP.md](./R2-CLOUDFLARE-SETUP.md).
 4. **Translate** fills the other language in the background and sets `translatedAt` when both sides exist.
 5. **Score** ranks market impact.
 6. **Daily edition** stores a ranked Top N for the calendar day in `APP_TIMEZONE`.

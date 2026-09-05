@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import {
   type ArchivedArticle,
   type ArchiveDayManifest,
+  archiveRawRetentionDays,
   archiveRetentionDays,
   dayManifestKey,
   dayObjectKey,
@@ -81,6 +82,7 @@ export type ArchiveRunResult = {
   mode: "archive-and-prune" | "prune-only" | "noop";
   message: string;
   retentionDays: number;
+  rawRetentionDays: number;
   cutoffIso: string;
   daysArchived: number;
   articlesArchived: number;
@@ -88,7 +90,46 @@ export type ArchiveRunResult = {
   rawDeleted: number;
 };
 
-async function pruneHotWindow(cutoff: Date, articleIds?: string[]) {
+async function countPrunableRaw(articleCutoff: Date, rawCutoff: Date) {
+  const [processedPastRaw, anyPastArticle] = await Promise.all([
+    prisma.rawArticle.count({
+      where: {
+        processedAt: { not: null, lt: rawCutoff },
+      },
+    }),
+    prisma.rawArticle.count({
+      where: { publishedAt: { lt: articleCutoff } },
+    }),
+  ]);
+  // Upper bound: rows may match both predicates; callers only need "any work?".
+  return Math.max(processedPastRaw, anyPastArticle);
+}
+
+async function pruneProcessedRaw(rawCutoff: Date) {
+  // Chunk by processedAt so large free-tier DBs do not lock forever.
+  let rawDeleted = 0;
+  for (;;) {
+    const batch = await prisma.rawArticle.findMany({
+      where: { processedAt: { not: null, lt: rawCutoff } },
+      select: { id: true },
+      take: 500,
+      orderBy: { processedAt: "asc" },
+    });
+    if (!batch.length) break;
+    const deleted = await prisma.rawArticle.deleteMany({
+      where: { id: { in: batch.map((row) => row.id) } },
+    });
+    rawDeleted += deleted.count;
+    if (deleted.count === 0) break;
+  }
+  return rawDeleted;
+}
+
+async function pruneHotWindow(
+  articleCutoff: Date,
+  rawCutoff: Date,
+  articleIds?: string[],
+) {
   let articlesDeleted = 0;
   if (articleIds?.length) {
     const chunkSize = 500;
@@ -101,7 +142,7 @@ async function pruneHotWindow(cutoff: Date, articleIds?: string[]) {
     // Chunked delete by publishedAt so large windows do not lock forever.
     for (;;) {
       const batch = await prisma.article.findMany({
-        where: { publishedAt: { lt: cutoff } },
+        where: { publishedAt: { lt: articleCutoff } },
         select: { id: true },
         take: 500,
         orderBy: { publishedAt: "asc" },
@@ -115,36 +156,46 @@ async function pruneHotWindow(cutoff: Date, articleIds?: string[]) {
     }
   }
 
-  const raw = await prisma.rawArticle.deleteMany({
-    where: { publishedAt: { lt: cutoff } },
+  // Aggressive: drop processed RawArticle rows after raw retention (default 2d).
+  let rawDeleted = await pruneProcessedRaw(rawCutoff);
+
+  // Safety: any raw (pending or processed) older than the Article hot window.
+  const staleRaw = await prisma.rawArticle.deleteMany({
+    where: { publishedAt: { lt: articleCutoff } },
   });
-  return { articlesDeleted, rawDeleted: raw.count };
+  rawDeleted += staleRaw.count;
+
+  return { articlesDeleted, rawDeleted };
 }
 
 /**
  * Hot retention for Supabase. With R2 configured: upload day files then prune.
  * Without R2: prune-only so the free DB stays under the size limit.
- * See docs/R2-CLOUDFLARE-SETUP.md.
+ * Processed RawArticles use a shorter window (ARCHIVE_RAW_RETENTION_DAYS) to
+ * cut egress/disk after normalize — see docs/R2-CLOUDFLARE-SETUP.md.
  */
 export async function runArchiveAndPrune(options: {
   dryRun?: boolean;
   prune?: boolean;
 } = {}): Promise<ArchiveRunResult> {
   const retentionDays = archiveRetentionDays();
+  const rawRetentionDays = archiveRawRetentionDays();
   const cutoff = kuwaitDayStartUtc(retentionDays);
+  const rawCutoff = kuwaitDayStartUtc(rawRetentionDays);
   const dryRun = Boolean(options.dryRun);
   const prune = options.prune !== false;
   const useR2 = r2Configured();
 
   if (!useR2) {
     const overdue = await prisma.article.count({ where: { publishedAt: { lt: cutoff } } });
-    const overdueRaw = await prisma.rawArticle.count({ where: { publishedAt: { lt: cutoff } } });
+    const overdueRaw = await countPrunableRaw(cutoff, rawCutoff);
     if (!overdue && !overdueRaw) {
       return {
         ok: true,
         mode: "noop",
-        message: `Nothing older than ${retentionDays} days to prune (R2 not configured).`,
+        message: `Nothing older than ${retentionDays}d articles / ${rawRetentionDays}d processed raw to prune (R2 not configured).`,
         retentionDays,
+        rawRetentionDays,
         cutoffIso: cutoff.toISOString(),
         daysArchived: 0,
         articlesArchived: 0,
@@ -156,8 +207,9 @@ export async function runArchiveAndPrune(options: {
       return {
         ok: true,
         mode: "prune-only",
-        message: `Dry run: would prune ${overdue} articles and ${overdueRaw} raw rows older than ${retentionDays} days (R2 not configured).`,
+        message: `Dry run: would prune ${overdue} articles (>${retentionDays}d) and up to ${overdueRaw} raw rows (processed >${rawRetentionDays}d or published >${retentionDays}d) (R2 not configured).`,
         retentionDays,
+        rawRetentionDays,
         cutoffIso: cutoff.toISOString(),
         daysArchived: 0,
         articlesArchived: 0,
@@ -165,12 +217,13 @@ export async function runArchiveAndPrune(options: {
         rawDeleted: 0,
       };
     }
-    const deleted = await pruneHotWindow(cutoff);
+    const deleted = await pruneHotWindow(cutoff, rawCutoff);
     return {
       ok: true,
       mode: "prune-only",
-      message: `R2 not configured; pruned ${deleted.articlesDeleted} hot articles and ${deleted.rawDeleted} raw rows (retention ${retentionDays}d). See docs/R2-CLOUDFLARE-SETUP.md.`,
+      message: `R2 not configured; pruned ${deleted.articlesDeleted} hot articles and ${deleted.rawDeleted} raw rows (articles ${retentionDays}d / processed raw ${rawRetentionDays}d). See docs/R2-CLOUDFLARE-SETUP.md.`,
       retentionDays,
+      rawRetentionDays,
       cutoffIso: cutoff.toISOString(),
       daysArchived: 0,
       articlesArchived: 0,
@@ -187,21 +240,34 @@ export async function runArchiveAndPrune(options: {
   });
 
   if (!candidates.length) {
-    const rawOnly = prune && !dryRun
-      ? await prisma.rawArticle.deleteMany({ where: { publishedAt: { lt: cutoff } } })
-      : { count: 0 };
+    if (prune && !dryRun) {
+      const deleted = await pruneHotWindow(cutoff, rawCutoff);
+      return {
+        ok: true,
+        mode: deleted.rawDeleted || deleted.articlesDeleted ? "archive-and-prune" : "noop",
+        message: deleted.rawDeleted
+          ? `No articles to archive; deleted ${deleted.rawDeleted} stale raw rows (processed ${rawRetentionDays}d / published ${retentionDays}d).`
+          : `Nothing older than ${retentionDays} days to archive.`,
+        retentionDays,
+        rawRetentionDays,
+        cutoffIso: cutoff.toISOString(),
+        daysArchived: 0,
+        articlesArchived: 0,
+        articlesDeleted: deleted.articlesDeleted,
+        rawDeleted: deleted.rawDeleted,
+      };
+    }
     return {
       ok: true,
-      mode: rawOnly.count ? "archive-and-prune" : "noop",
-      message: rawOnly.count
-        ? `No articles to archive; deleted ${rawOnly.count} stale raw rows.`
-        : `Nothing older than ${retentionDays} days to archive.`,
+      mode: "noop",
+      message: `Nothing older than ${retentionDays} days to archive.`,
       retentionDays,
+      rawRetentionDays,
       cutoffIso: cutoff.toISOString(),
       daysArchived: 0,
       articlesArchived: 0,
       articlesDeleted: 0,
-      rawDeleted: dryRun ? 0 : rawOnly.count,
+      rawDeleted: 0,
     };
   }
 
@@ -247,7 +313,7 @@ export async function runArchiveAndPrune(options: {
   let articlesDeleted = 0;
   let rawDeleted = 0;
   if (prune && !dryRun && archivedIds.length) {
-    const deleted = await pruneHotWindow(cutoff, archivedIds);
+    const deleted = await pruneHotWindow(cutoff, rawCutoff, archivedIds);
     articlesDeleted = deleted.articlesDeleted;
     rawDeleted = deleted.rawDeleted;
   }
@@ -259,6 +325,7 @@ export async function runArchiveAndPrune(options: {
       ? `Dry run: would archive ${articlesArchived} articles across ${daysArchived} days (cutoff ${cutoff.toISOString()}).`
       : `Archived ${articlesArchived} articles across ${daysArchived} days; deleted ${articlesDeleted} hot rows and ${rawDeleted} raw rows.`,
     retentionDays,
+    rawRetentionDays,
     cutoffIso: cutoff.toISOString(),
     daysArchived,
     articlesArchived,

@@ -34,7 +34,13 @@ GHA sets `CRON_FORCE_COLLECT=true`. Without that, `COLLECT_REFRESH_HOURS` can sk
 
 ## Archive hot retention vs live feed
 
-The public feed uses `NEWS_MAX_AGE_HOURS` (default **72**). Supabase hot rows are pruned by `ARCHIVE_HOT_RETENTION_DAYS` on the **archive** cron (Vercel). Set this to **at least 4–5 days** in production so archive does not delete articles still inside the 72h briefing window. If production shows `retention 3d` in the archive job summary, raise `ARCHIVE_HOT_RETENTION_DAYS=5` on Vercel.
+The public feed uses `NEWS_MAX_AGE_HOURS` (default **72**). Supabase hot **articles** are pruned by `ARCHIVE_HOT_RETENTION_DAYS` (default **5**) on the **archive** cron (Vercel). **Processed** `RawArticle` rows use a shorter `ARCHIVE_RAW_RETENTION_DAYS` (default **2**) — they are not needed after normalize and are a major egress/disk driver when left for 5 days.
+
+Set article retention to **at least 4–5 days** in production so archive does not delete articles still inside the 72h briefing window. If production shows `retention 3d` in the archive job summary, raise `ARCHIVE_HOT_RETENTION_DAYS=5` on Vercel.
+
+### Egress / Free-plan Auth lock (`exceed_egress_quota`)
+
+Free plan includes **5 GB** unified egress. Collecting **~3400** enabled sources (incl. **~981** Arabic) with force-refresh GHA jobs + Prisma row churn can burn that quota; Auth then returns 402 until you **upgrade to Pro**, **disable Spend Cap** (Pro), or **wait for the billing cycle reset**. Keep `COLLECT_GNEWS_LIMIT` ≤ 8 and concurrency modest on Free. Arabic desk kill switch: `ARABIC_COLLECT_ENABLED=false` (do not flip silently — that drops the Arabic catalog).
 
 ---
 

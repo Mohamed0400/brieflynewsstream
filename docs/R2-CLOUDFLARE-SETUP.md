@@ -11,7 +11,7 @@ Use this doc when you are ready to keep history outside the free Supabase 500 MB
 
 | Layer | Role | Default without R2 |
 |-------|------|--------------------|
-| **Hot (Supabase)** | Live API + `/news` | Keep ≤ `ARCHIVE_HOT_RETENTION_DAYS` (default **5**) |
+| **Hot (Supabase)** | Live API + `/news` | Keep ≤ `ARCHIVE_HOT_RETENTION_DAYS` (default **5**); processed RawArticles ≤ `ARCHIVE_RAW_RETENTION_DAYS` (default **2**) |
 | **Cold (Cloudflare R2)** | Long-term gzip JSONL by day | Optional — skipped until credentials exist |
 
 Without R2, articles older than the hot window are **deleted** from Postgres so the free DB stays under ~500 MB. With R2, the same rows are uploaded first, then deleted from Supabase, and remain readable on `/archive` and the archive API.
@@ -76,6 +76,7 @@ R2_BUCKET_NAME="briefly-newsstream-archive"
 
 # Hot window in Supabase (days). Default 5 keeps free-plan size in check.
 ARCHIVE_HOT_RETENTION_DAYS="5"
+ARCHIVE_RAW_RETENTION_DAYS="2"
 ```
 
 `r2Configured()` requires the four `R2_*` values. If any are empty, archive upload is skipped; **prune still runs**.

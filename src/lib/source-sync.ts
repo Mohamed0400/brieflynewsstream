@@ -88,7 +88,7 @@ export async function syncArabicLiveSources(sources: CountrySourceSeed[]) {
           country: seed.country,
           region: seed.region,
           defaultCategory: seed.defaultCategory,
-          qualityWeight: Math.max(existingByUrl.qualityWeight, seed.qualityWeight),
+          qualityWeight: Math.max(existingByUrl.qualityWeight, raw.qualityWeight),
           sourceLocale: "ar",
           collectPipeline: "arabic",
           enabled: true,

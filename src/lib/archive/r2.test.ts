@@ -5,13 +5,13 @@ import {
   archiveRetentionDays,
 } from "./r2";
 
-test("archiveRetentionDays defaults to 5 and clamps", () => {
+test("archiveRetentionDays defaults to 3 and clamps", () => {
   const prev = process.env.ARCHIVE_HOT_RETENTION_DAYS;
   delete process.env.ARCHIVE_HOT_RETENTION_DAYS;
-  assert.equal(archiveRetentionDays(), 5);
+  assert.equal(archiveRetentionDays(), 3);
 
   process.env.ARCHIVE_HOT_RETENTION_DAYS = "0";
-  assert.equal(archiveRetentionDays(), 5);
+  assert.equal(archiveRetentionDays(), 3);
 
   process.env.ARCHIVE_HOT_RETENTION_DAYS = "12";
   assert.equal(archiveRetentionDays(), 12);
@@ -23,19 +23,19 @@ test("archiveRetentionDays defaults to 5 and clamps", () => {
   else process.env.ARCHIVE_HOT_RETENTION_DAYS = prev;
 });
 
-test("archiveRawRetentionDays defaults to 2 and never exceeds article retention", () => {
+test("archiveRawRetentionDays defaults to 1 and never exceeds article retention", () => {
   const prevHot = process.env.ARCHIVE_HOT_RETENTION_DAYS;
   const prevRaw = process.env.ARCHIVE_RAW_RETENTION_DAYS;
 
-  process.env.ARCHIVE_HOT_RETENTION_DAYS = "5";
+  process.env.ARCHIVE_HOT_RETENTION_DAYS = "3";
   delete process.env.ARCHIVE_RAW_RETENTION_DAYS;
-  assert.equal(archiveRawRetentionDays(), 2);
-
-  process.env.ARCHIVE_RAW_RETENTION_DAYS = "1";
   assert.equal(archiveRawRetentionDays(), 1);
 
+  process.env.ARCHIVE_RAW_RETENTION_DAYS = "2";
+  assert.equal(archiveRawRetentionDays(), 2);
+
   process.env.ARCHIVE_RAW_RETENTION_DAYS = "10";
-  assert.equal(archiveRawRetentionDays(), 5);
+  assert.equal(archiveRawRetentionDays(), 3);
 
   process.env.ARCHIVE_HOT_RETENTION_DAYS = "1";
   process.env.ARCHIVE_RAW_RETENTION_DAYS = "2";

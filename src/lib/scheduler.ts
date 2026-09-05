@@ -185,7 +185,7 @@ export const DEFAULT_SCHEDULED_JOBS = [
     key: JOB_ARCHIVE,
     name: "Prune hot window",
     description:
-      "Delete Supabase articles older than ARCHIVE_HOT_RETENTION_DAYS (default 5) and processed RawArticles older than ARCHIVE_RAW_RETENTION_DAYS (default 2). If R2 is configured, upload cold archive first — see docs/R2-CLOUDFLARE-SETUP.md.",
+      "Delete hot articles older than ARCHIVE_HOT_RETENTION_DAYS (default 3) and processed RawArticles older than ARCHIVE_RAW_RETENTION_DAYS (default 1). Enforces row caps (20k articles / 25k raw). If R2 is configured, upload cold archive first — see docs/NEON-FREE-LIMITS.md.",
     cron: "30 3 * * *",
   },
 ] as const;

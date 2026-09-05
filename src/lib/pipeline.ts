@@ -54,6 +54,7 @@ export type PipelineResult = {
     notAccepted: number;
     blocked: number;
     lowQuality: number;
+    runCap: number;
   };
   translated: number;
   editionItems: number;
@@ -64,7 +65,7 @@ export type PipelineResult = {
 export const MAX_TRANSLATION_PASSES = limits.translateMaxPasses;
 
 function emptyRejections() {
-  return { stale: 0, notAccepted: 0, blocked: 0, lowQuality: 0 };
+  return { stale: 0, notAccepted: 0, blocked: 0, lowQuality: 0, runCap: 0 };
 }
 
 function reject(
@@ -562,6 +563,18 @@ async function normalizePendingBatch(
       sourceCountry: raw.source.country,
     })) {
       reject(result, "lowQuality");
+      await markProcessed();
+      continue;
+    }
+
+    // Neon Free: stop creating new articles once this run hits the soft cap.
+    // Still mark raw processed so backlog does not pile up; next collect refetches.
+    if (
+      pipeline === "arabic"
+      && limits.arabicMaxArticlesPerRun > 0
+      && result.articlesCreated >= limits.arabicMaxArticlesPerRun
+    ) {
+      reject(result, "runCap");
       await markProcessed();
       continue;
     }

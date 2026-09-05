@@ -1,5 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import {
+  articleCountCap,
+  countCapFloorDate,
+  countCapMinAgeHours,
+  excessOverCap,
+  rawArticleCountCap,
+} from "@/lib/archive/caps";
+import {
   type ArchivedArticle,
   type ArchiveDayManifest,
   archiveRawRetentionDays,
@@ -88,6 +95,11 @@ export type ArchiveRunResult = {
   articlesArchived: number;
   articlesDeleted: number;
   rawDeleted: number;
+  /** Extra deletes from hard row caps (after age retention). */
+  articlesCapDeleted?: number;
+  rawCapDeleted?: number;
+  articleCap?: number;
+  rawCap?: number;
 };
 
 async function countPrunableRaw(articleCutoff: Date, rawCutoff: Date) {
@@ -169,10 +181,135 @@ async function pruneHotWindow(
 }
 
 /**
- * Hot retention for Supabase. With R2 configured: upload day files then prune.
+ * Hard row caps after age retention. Deletes oldest eligible rows only;
+ * never touches articles newer than the soft floor (default 36h).
+ */
+export async function enforceCountCaps(options: {
+  dryRun?: boolean;
+} = {}): Promise<{
+  articlesCapDeleted: number;
+  rawCapDeleted: number;
+  articleCap: number;
+  rawCap: number;
+  articleTotal: number;
+  rawTotal: number;
+}> {
+  const articleCap = articleCountCap();
+  const rawCap = rawArticleCountCap();
+  const dryRun = Boolean(options.dryRun);
+  const floor = countCapFloorDate();
+
+  const [articleTotal, rawTotal] = await Promise.all([
+    prisma.article.count(),
+    prisma.rawArticle.count(),
+  ]);
+
+  let articlesCapDeleted = 0;
+  let rawCapDeleted = 0;
+
+  const articleExcess = excessOverCap(articleTotal, articleCap);
+  if (articleExcess > 0) {
+    // Fetch a generous oldest batch; filter soft floor in app so we never
+    // delete the last 24–48h even when over cap.
+    const candidates = await prisma.article.findMany({
+      where: { publishedAt: { lt: floor } },
+      select: { id: true },
+      orderBy: { publishedAt: "asc" },
+      take: Math.min(articleExcess + 500, 10_000),
+    });
+    const toDelete = candidates.slice(0, articleExcess);
+    if (!dryRun && toDelete.length) {
+      const chunkSize = 500;
+      for (let i = 0; i < toDelete.length; i += chunkSize) {
+        const chunk = toDelete.slice(i, i + chunkSize);
+        const deleted = await prisma.article.deleteMany({
+          where: { id: { in: chunk.map((row) => row.id) } },
+        });
+        articlesCapDeleted += deleted.count;
+      }
+    } else {
+      articlesCapDeleted = toDelete.length;
+    }
+  }
+
+  const rawExcess = excessOverCap(rawTotal, rawCap);
+  if (rawExcess > 0) {
+    // Prefer processed raws first (safe); then any oldest by publishedAt.
+    const processed = await prisma.rawArticle.findMany({
+      where: { processedAt: { not: null } },
+      select: { id: true },
+      orderBy: { processedAt: "asc" },
+      take: Math.min(rawExcess + 500, 10_000),
+    });
+    let ids = processed.map((row) => row.id).slice(0, rawExcess);
+    if (ids.length < rawExcess) {
+      const more = await prisma.rawArticle.findMany({
+        where: {
+          id: { notIn: ids.length ? ids : ["__none__"] },
+          publishedAt: { lt: floor },
+        },
+        select: { id: true },
+        orderBy: { publishedAt: "asc" },
+        take: rawExcess - ids.length,
+      });
+      ids = ids.concat(more.map((row) => row.id));
+    }
+    if (!dryRun && ids.length) {
+      const chunkSize = 500;
+      for (let i = 0; i < ids.length; i += chunkSize) {
+        const chunk = ids.slice(i, i + chunkSize);
+        const deleted = await prisma.rawArticle.deleteMany({
+          where: { id: { in: chunk } },
+        });
+        rawCapDeleted += deleted.count;
+      }
+    } else {
+      rawCapDeleted = ids.length;
+    }
+  }
+
+  return {
+    articlesCapDeleted,
+    rawCapDeleted,
+    articleCap,
+    rawCap,
+    articleTotal,
+    rawTotal,
+  };
+}
+
+function withCapFields(
+  base: ArchiveRunResult,
+  caps: Awaited<ReturnType<typeof enforceCountCaps>>,
+): ArchiveRunResult {
+  const articlesDeleted = base.articlesDeleted + (caps.articlesCapDeleted || 0);
+  const rawDeleted = base.rawDeleted + (caps.rawCapDeleted || 0);
+  const capNote =
+    caps.articlesCapDeleted || caps.rawCapDeleted
+      ? ` Cap backstop: −${caps.articlesCapDeleted} articles / −${caps.rawCapDeleted} raw (caps ${caps.articleCap}/${caps.rawCap}, floor ${countCapMinAgeHours()}h).`
+      : "";
+  return {
+    ...base,
+    message: `${base.message}${capNote}`,
+    articlesDeleted,
+    rawDeleted,
+    articlesCapDeleted: caps.articlesCapDeleted,
+    rawCapDeleted: caps.rawCapDeleted,
+    articleCap: caps.articleCap,
+    rawCap: caps.rawCap,
+    mode:
+      base.mode === "noop" && (caps.articlesCapDeleted || caps.rawCapDeleted)
+        ? "prune-only"
+        : base.mode,
+  };
+}
+
+/**
+ * Hot retention for Neon/Supabase Free. With R2 configured: upload day files then prune.
  * Without R2: prune-only so the free DB stays under the size limit.
  * Processed RawArticles use a shorter window (ARCHIVE_RAW_RETENTION_DAYS) to
- * cut egress/disk after normalize — see docs/R2-CLOUDFLARE-SETUP.md.
+ * cut egress/disk after normalize — see docs/R2-CLOUDFLARE-SETUP.md / docs/NEON-FREE-LIMITS.md.
+ * After age prune, hard row caps delete oldest excess (soft floor on articles).
  */
 export async function runArchiveAndPrune(options: {
   dryRun?: boolean;
@@ -186,11 +323,24 @@ export async function runArchiveAndPrune(options: {
   const prune = options.prune !== false;
   const useR2 = r2Configured();
 
+  const finish = async (base: ArchiveRunResult): Promise<ArchiveRunResult> => {
+    if (!prune) return base;
+    const caps = await enforceCountCaps({ dryRun });
+    if (dryRun) {
+      return withCapFields({
+        ...base,
+        articlesDeleted: 0,
+        rawDeleted: 0,
+      }, { ...caps });
+    }
+    return withCapFields(base, caps);
+  };
+
   if (!useR2) {
     const overdue = await prisma.article.count({ where: { publishedAt: { lt: cutoff } } });
     const overdueRaw = await countPrunableRaw(cutoff, rawCutoff);
     if (!overdue && !overdueRaw) {
-      return {
+      return finish({
         ok: true,
         mode: "noop",
         message: `Nothing older than ${retentionDays}d articles / ${rawRetentionDays}d processed raw to prune (R2 not configured).`,
@@ -201,10 +351,10 @@ export async function runArchiveAndPrune(options: {
         articlesArchived: 0,
         articlesDeleted: 0,
         rawDeleted: 0,
-      };
+      });
     }
     if (dryRun || !prune) {
-      return {
+      return finish({
         ok: true,
         mode: "prune-only",
         message: `Dry run: would prune ${overdue} articles (>${retentionDays}d) and up to ${overdueRaw} raw rows (processed >${rawRetentionDays}d or published >${retentionDays}d) (R2 not configured).`,
@@ -215,13 +365,13 @@ export async function runArchiveAndPrune(options: {
         articlesArchived: 0,
         articlesDeleted: 0,
         rawDeleted: 0,
-      };
+      });
     }
     const deleted = await pruneHotWindow(cutoff, rawCutoff);
-    return {
+    return finish({
       ok: true,
       mode: "prune-only",
-      message: `R2 not configured; pruned ${deleted.articlesDeleted} hot articles and ${deleted.rawDeleted} raw rows (articles ${retentionDays}d / processed raw ${rawRetentionDays}d). See docs/R2-CLOUDFLARE-SETUP.md.`,
+      message: `R2 not configured; pruned ${deleted.articlesDeleted} hot articles and ${deleted.rawDeleted} raw rows (articles ${retentionDays}d / processed raw ${rawRetentionDays}d). See docs/NEON-FREE-LIMITS.md.`,
       retentionDays,
       rawRetentionDays,
       cutoffIso: cutoff.toISOString(),
@@ -229,7 +379,7 @@ export async function runArchiveAndPrune(options: {
       articlesArchived: 0,
       articlesDeleted: deleted.articlesDeleted,
       rawDeleted: deleted.rawDeleted,
-    };
+    });
   }
 
   const candidates = await prisma.article.findMany({
@@ -242,7 +392,7 @@ export async function runArchiveAndPrune(options: {
   if (!candidates.length) {
     if (prune && !dryRun) {
       const deleted = await pruneHotWindow(cutoff, rawCutoff);
-      return {
+      return finish({
         ok: true,
         mode: deleted.rawDeleted || deleted.articlesDeleted ? "archive-and-prune" : "noop",
         message: deleted.rawDeleted
@@ -255,9 +405,9 @@ export async function runArchiveAndPrune(options: {
         articlesArchived: 0,
         articlesDeleted: deleted.articlesDeleted,
         rawDeleted: deleted.rawDeleted,
-      };
+      });
     }
-    return {
+    return finish({
       ok: true,
       mode: "noop",
       message: `Nothing older than ${retentionDays} days to archive.`,
@@ -268,7 +418,7 @@ export async function runArchiveAndPrune(options: {
       articlesArchived: 0,
       articlesDeleted: 0,
       rawDeleted: 0,
-    };
+    });
   }
 
   const byDay = new Map<string, typeof candidates>();
@@ -318,7 +468,7 @@ export async function runArchiveAndPrune(options: {
     rawDeleted = deleted.rawDeleted;
   }
 
-  return {
+  return finish({
     ok: true,
     mode: "archive-and-prune",
     message: dryRun
@@ -331,5 +481,5 @@ export async function runArchiveAndPrune(options: {
     articlesArchived,
     articlesDeleted: dryRun ? 0 : articlesDeleted,
     rawDeleted: dryRun ? 0 : rawDeleted,
-  };
+  });
 }

@@ -40,11 +40,14 @@ Kill switches stay as above â€” do **not** set `MAIN_COLLECT_ENABLED=true` to â€
 ## Always-on code guards
 
 - Strip `rawJson` after normalize (`pipeline.ts`)
-- Short `ARCHIVE_RAW_RETENTION_DAYS` (default **2**)
-- Modest GNews / concurrency defaults in `limits.ts`
+- Short `ARCHIVE_RAW_RETENTION_DAYS` (default **1**; max **2**)
+- Hot articles `ARCHIVE_HOT_RETENTION_DAYS` (default **3**)
+- Row caps: `ARCHIVE_ARTICLE_COUNT_CAP=20000`, `ARCHIVE_RAW_COUNT_CAP=25000` (soft floor 36h)
+- Modest GNews / concurrency / normalize defaults in `limits.ts`
+- `ARABIC_MAX_ARTICLES_PER_RUN` (default **2500**)
 
-## Neon note
+## Neon Free
 
-Moving `DATABASE_URL` to Neon does **not** remove the Free egress ceiling. Keep these guards after cutover.
+Moving `DATABASE_URL` to Neon does **not** remove Free ceilings (0.5 GB storage, 5 GB egress, 100 CU-hours). Keep these guards after cutover. Full numbers: [NEON-FREE-LIMITS.md](./NEON-FREE-LIMITS.md).
 
 See also: [CRONJOBS.md](./CRONJOBS.md), [ARABIC-PIPELINE.md](./ARABIC-PIPELINE.md), [NEON-CUTOVER.md](./NEON-CUTOVER.md).

@@ -16,7 +16,7 @@ Free plan (Supabase **or** Neon) includes ~**5 GB** unified egress. Collecting ~
 2. **Keep Arabic collect running** — `ARABIC_COLLECT_ENABLED=true` (default in GHA)
 3. Only pause Arabic as a last resort (`ARABIC_COLLECT_ENABLED=false`)
 
-Also keep: `COLLECT_GNEWS_LIMIT` ≤ 5–6, low concurrency, short `ARCHIVE_RAW_RETENTION_DAYS` (default 2), and `rawJson` stripped after normalize.
+Also keep: `COLLECT_GNEWS_LIMIT` ≤ 5, low concurrency, short `ARCHIVE_RAW_RETENTION_DAYS` (default **1**), hot articles **3d**, and `rawJson` stripped after normalize. Full Neon Free targets: [NEON-FREE-LIMITS.md](./NEON-FREE-LIMITS.md).
 
 Migrating to Neon does **not** remove the Free egress ceiling — these guards stay mandatory.
 
@@ -48,9 +48,9 @@ GHA sets `CRON_FORCE_COLLECT=true` / `ARABIC_COLLECT_FORCE=true` on scheduled ru
 
 ## Archive hot retention vs live feed
 
-The public feed uses `NEWS_MAX_AGE_HOURS` (default **72**). Hot **articles** are pruned by `ARCHIVE_HOT_RETENTION_DAYS` (default **5**) on the **archive** cron (Vercel). **Processed** `RawArticle` rows use a shorter `ARCHIVE_RAW_RETENTION_DAYS` (default **2**) — they are not needed after normalize and are a major egress/disk driver when left for 5 days.
+The public feed uses `NEWS_MAX_AGE_HOURS` (default **72**). Hot **articles** are pruned by `ARCHIVE_HOT_RETENTION_DAYS` (default **3**) on the archive cron (Vercel) **and** GHA ops-heal / Arabic collect / watchdog prune steps. **Processed** `RawArticle` rows use `ARCHIVE_RAW_RETENTION_DAYS` (default **1**, max **2**). After age prune, hard row caps (`ARCHIVE_ARTICLE_COUNT_CAP` / `ARCHIVE_RAW_COUNT_CAP`) delete oldest excess while never touching the last **36h** of articles.
 
-Set article retention to **at least 4–5 days** in production so archive does not delete articles still inside the 72h briefing window. If production shows `retention 3d` in the archive job summary, raise `ARCHIVE_HOT_RETENTION_DAYS=5` on Vercel.
+Default **3d** article retention matches the 72h briefing window on Neon Free. Raise only if you have storage headroom (or R2 cold archive). See [NEON-FREE-LIMITS.md](./NEON-FREE-LIMITS.md).
 
 ---
 
@@ -78,7 +78,7 @@ File: `.github/workflows/translate.yml` — backfill between collects; skips whi
 
 ## Ops heal
 
-File: `.github/workflows/ops-heal.yml` — zombie locks (incl. `collect-arabic`) + abandon stale raw every 2 hours.
+File: `.github/workflows/ops-heal.yml` — zombie locks (incl. `collect-arabic`) + abandon stale raw every 2 hours, then **prune** hot window / row caps (Neon Free backstop).
 
 ---
 

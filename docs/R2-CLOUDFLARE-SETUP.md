@@ -1,7 +1,7 @@
 # Cloudflare R2 cold archive setup
 
 The archive code is already in the repo (`src/lib/archive/*`, `/archive` pages, `GET /api/v1/archive`, cron job `archive`).  
-**The app runs fine without R2.** Until you finish this guide, daily jobs **prune** Supabase only (default hot window: **5 days**) and do not upload cold storage.
+**The app runs fine without R2.** Until you finish this guide, daily jobs **prune** Postgres only (default hot window: **3 days**) and do not upload cold storage.
 
 Use this doc when you are ready to keep history outside the free Supabase 500 MB limit.
 
@@ -11,7 +11,7 @@ Use this doc when you are ready to keep history outside the free Supabase 500 MB
 
 | Layer | Role | Default without R2 |
 |-------|------|--------------------|
-| **Hot (Supabase)** | Live API + `/news` | Keep ≤ `ARCHIVE_HOT_RETENTION_DAYS` (default **5**); processed RawArticles ≤ `ARCHIVE_RAW_RETENTION_DAYS` (default **2**) |
+| **Hot (Postgres / Neon)** | Live API + `/news` | Keep ≤ `ARCHIVE_HOT_RETENTION_DAYS` (default **3**); processed RawArticles ≤ `ARCHIVE_RAW_RETENTION_DAYS` (default **1**) |
 | **Cold (Cloudflare R2)** | Long-term gzip JSONL by day | Optional — skipped until credentials exist |
 
 Without R2, articles older than the hot window are **deleted** from Postgres so the free DB stays under ~500 MB. With R2, the same rows are uploaded first, then deleted from Supabase, and remain readable on `/archive` and the archive API.
@@ -75,8 +75,8 @@ R2_BUCKET_NAME="briefly-newsstream-archive"
 # R2_ENDPOINT="https://<ACCOUNT_ID>.r2.cloudflarestorage.com"
 
 # Hot window in Supabase (days). Default 5 keeps free-plan size in check.
-ARCHIVE_HOT_RETENTION_DAYS="5"
-ARCHIVE_RAW_RETENTION_DAYS="2"
+ARCHIVE_HOT_RETENTION_DAYS="3"
+ARCHIVE_RAW_RETENTION_DAYS="1"
 ```
 
 `r2Configured()` requires the four `R2_*` values. If any are empty, archive upload is skipped; **prune still runs**.
@@ -162,7 +162,7 @@ Until R2 is configured, those pages show “not configured” / empty — live `
 - [ ] Enable R2 in Cloudflare dashboard
 - [ ] Create bucket `briefly-newsstream-archive`
 - [ ] Create R2 API token (read/write)
-- [ ] Set `R2_*` + `ARCHIVE_HOT_RETENTION_DAYS=5` on Vercel
+- [ ] Set `R2_*` + `ARCHIVE_HOT_RETENTION_DAYS=3` on Vercel
 - [ ] Redeploy
 - [ ] `npm run archive:dry` then `npm run archive:live`
 - [ ] Open `/archive` and confirm a day appears

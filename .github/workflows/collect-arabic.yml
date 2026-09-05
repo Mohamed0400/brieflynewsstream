@@ -22,18 +22,28 @@ env:
   NEXT_PUBLIC_APP_ENV: live
   ARABIC_COLLECT_ENABLED: ${{ vars.ARABIC_COLLECT_ENABLED || 'true' }}
   ARABIC_COLLECT_FORCE: "true"
-  ARABIC_COLLECT_CONCURRENCY: "3"
+  ARABIC_COLLECT_CONCURRENCY: "2"
   ARABIC_COLLECT_BUDGET_MS: "900000"
   ARABIC_COLLECT_REFRESH_HOURS: "4"
-  COLLECT_GNEWS_LIMIT: "6"
+  ARABIC_MAX_ARTICLES_PER_RUN: "2500"
+  COLLECT_GNEWS_LIMIT: "5"
   NORMALIZE_BATCH_SIZE: "1000"
   NORMALIZE_PASSES: "4"
+  ARCHIVE_HOT_RETENTION_DAYS: "3"
+  ARCHIVE_RAW_RETENTION_DAYS: "1"
+  ARCHIVE_ARTICLE_COUNT_CAP: "20000"
+  ARCHIVE_RAW_COUNT_CAP: "25000"
+  ARCHIVE_COUNT_CAP_MIN_AGE_HOURS: "36"
   DATABASE_URL: ${{ secrets.DATABASE_URL }}
   DIRECT_URL: ${{ secrets.DIRECT_URL }}
   ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
   CRON_SECRET: ${{ secrets.CRON_SECRET }}
   SITE_URL: ${{ secrets.SITE_URL }}
   PRISMA_CONNECTION_LIMIT: "4"
+  R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+  R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+  R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+  R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
 
 jobs:
   collect-arabic:
@@ -94,6 +104,18 @@ jobs:
             echo "## Arabic collect (priority desk)"
             echo '```json'
             cat arabic-collect-result.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Prune hot window after Arabic collect
+        if: steps.gate.outputs.enabled == 'true' && env.DATABASE_URL != ''
+        run: |
+          set -o pipefail
+          npx tsx src/worker/archive-once.ts | tee arabic-prune-result.json
+          {
+            echo "## Post-collect prune (Neon Free)"
+            echo '```json'
+            cat arabic-prune-result.json
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 

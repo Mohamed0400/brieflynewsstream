@@ -44,9 +44,9 @@ function requiredEnv(name: string) {
 }
 
 export function archiveRetentionDays() {
-  // Default 5 days keeps the free Supabase DB (~500 MB) under control without R2.
-  const raw = Number(process.env.ARCHIVE_HOT_RETENTION_DAYS || "5");
-  if (!Number.isFinite(raw) || raw < 1) return 5;
+  // Neon Free (~0.5 GB): default 3d covers NEWS_MAX_AGE_HOURS=72 without overstoring.
+  const raw = Number(process.env.ARCHIVE_HOT_RETENTION_DAYS || "3");
+  if (!Number.isFinite(raw) || raw < 1) return 3;
   return Math.min(30, Math.floor(raw));
 }
 
@@ -54,11 +54,12 @@ export function archiveRetentionDays() {
  * Processed RawArticle rows are egress/disk heavy (rawJson churn) and are not
  * needed after normalize. Keep them much shorter than Article hot retention.
  * Clamped to [1, archiveRetentionDays()] so raw never outlives articles.
+ * Neon Free default: 1 day (max recommended 2).
  */
 export function archiveRawRetentionDays() {
   const articleDays = archiveRetentionDays();
-  const raw = Number(process.env.ARCHIVE_RAW_RETENTION_DAYS || "2");
-  if (!Number.isFinite(raw) || raw < 1) return Math.min(2, articleDays);
+  const raw = Number(process.env.ARCHIVE_RAW_RETENTION_DAYS || "1");
+  if (!Number.isFinite(raw) || raw < 1) return Math.min(1, articleDays);
   return Math.min(articleDays, Math.floor(raw));
 }
 

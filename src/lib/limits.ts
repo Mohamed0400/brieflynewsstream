@@ -52,15 +52,15 @@ export const limits = {
   nationalityMaxAgeHours: intEnv("NATIONALITY_NEWS_MAX_AGE_HOURS", 48),
   /** Default items in the two-minute nationality rotation. */
   nationalityFeed: intEnv("NATIONALITY_FEED_LIMIT", 12),
-  /** Max raw articles normalized per pipeline pass. 0 = all pending in one pass. */
-  normalizeBatch: intEnv("NORMALIZE_BATCH_SIZE", 2500),
+  /** Max raw articles normalized per pipeline pass. 0 = all pending in one pass. Neon Free: 1000. */
+  normalizeBatch: intEnv("NORMALIZE_BATCH_SIZE", 1000),
   /** Max normalize passes per collect run (each pass takes normalizeBatch rows). */
-  normalizePasses: Math.max(1, intEnv("NORMALIZE_PASSES", 8)),
+  normalizePasses: Math.max(1, intEnv("NORMALIZE_PASSES", 4)),
   /**
    * Extra normalize passes when a rawArticle backlog exists (processedAt is null).
-   * 32 passes × 2500 batch ≈ 80k rows per recovery-oriented run.
+   * Keep modest on Neon Free — backlog recovery still possible via ops-heal.
    */
-  normalizeBacklogPasses: Math.max(1, intEnv("NORMALIZE_BACKLOG_PASSES", 32)),
+  normalizeBacklogPasses: Math.max(1, intEnv("NORMALIZE_BACKLOG_PASSES", 16)),
   /**
    * Normalize passes before RSS fetch. Keep this small so a huge backlog cannot
    * burn the whole GitHub job before sources are refreshed.
@@ -88,12 +88,17 @@ export const limits = {
   translateConcurrency: Math.max(1, intEnv("TRANSLATE_CONCURRENCY", 4)),
   /** Max translate drain loops per collect or translate job. */
   translateMaxPasses: Math.max(1, intEnv("TRANSLATE_MAX_PASSES", 25)),
-  /** Arabic-only pipeline: parallel fetches (smaller catalog). */
-  arabicCollectConcurrency: Math.max(1, intEnv("ARABIC_COLLECT_CONCURRENCY", 3)),
+  /** Arabic-only pipeline: parallel fetches (smaller catalog). Neon Free: keep ≤2–3. */
+  arabicCollectConcurrency: Math.max(1, intEnv("ARABIC_COLLECT_CONCURRENCY", 2)),
   /** Arabic-only pipeline wall-clock budget. Default 15 minutes. */
   arabicCollectBudgetMs: intEnv("ARABIC_COLLECT_BUDGET_MS", 900_000),
   /** Arabic-only pipeline refresh hours (force still overrides). */
   arabicCollectRefreshHours: Math.max(1, intEnv("ARABIC_COLLECT_REFRESH_HOURS", 4)),
+  /**
+   * Soft cap on new Article rows created per Arabic pipeline run (0 = no cap).
+   * Prevents a single force collect from blowing Neon Free storage.
+   */
+  arabicMaxArticlesPerRun: intEnv("ARABIC_MAX_ARTICLES_PER_RUN", 2_500),
   /** Editions list page size default. */
   editionsList: intEnv("EDITIONS_LIST_LIMIT", 90),
 };

@@ -27,6 +27,16 @@ env:
   TRANSLATE_BATCH_SIZE: "80"
   TRANSLATE_MAX_PASSES: "8"
   TRANSLATE_CONCURRENCY: "4"
+  # Neon Free prune-only (R2 usually unset) — see docs/NEON-FREE-LIMITS.md
+  ARCHIVE_HOT_RETENTION_DAYS: "3"
+  ARCHIVE_RAW_RETENTION_DAYS: "1"
+  ARCHIVE_ARTICLE_COUNT_CAP: "20000"
+  ARCHIVE_RAW_COUNT_CAP: "25000"
+  ARCHIVE_COUNT_CAP_MIN_AGE_HOURS: "36"
+  R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+  R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+  R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+  R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
 
 jobs:
   heal:
@@ -68,6 +78,19 @@ jobs:
             echo "## Ops heal"
             echo '```json'
             cat heal-result.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Prune hot window (Neon Free backstop)
+        if: ${{ env.DATABASE_URL != '' }}
+        run: |
+          set -o pipefail
+          # Age retention + row caps. Without R2 this is prune-only (safe on Free).
+          npx tsx src/worker/archive-once.ts | tee prune-result.json
+          {
+            echo "## Archive / prune"
+            echo '```json'
+            cat prune-result.json
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 

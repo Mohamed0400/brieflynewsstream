@@ -2,8 +2,9 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "@/lib/toast";
+import type { AuthProvider } from "@/lib/auth-provider";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { AUTH_TIMEOUT_MS, isAuthTimeoutError, withAuthTimeout } from "@/lib/supabase/auth-timeout";
 import { withConsoleLang, type ConsoleLoginCopy } from "@/lib/console-translation";
@@ -11,8 +12,16 @@ import { BrandLoader } from "@/components/media/BrandLoader";
 
 type ResetPhase = "checking" | "ready" | "need-link";
 
-export function ConsoleResetPasswordForm({ copy }: { copy: ConsoleLoginCopy }) {
+export function ConsoleResetPasswordForm({
+  copy,
+  authProvider = "supabase",
+}: {
+  copy: ConsoleLoginCopy;
+  authProvider?: AuthProvider;
+}) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const neonToken = searchParams.get("token")?.trim() || "";
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
@@ -20,6 +29,11 @@ export function ConsoleResetPasswordForm({ copy }: { copy: ConsoleLoginCopy }) {
   const [phase, setPhase] = useState<ResetPhase>("checking");
 
   useEffect(() => {
+    if (authProvider === "neon") {
+      setPhase(neonToken ? "ready" : "need-link");
+      return;
+    }
+
     let cancelled = false;
     const supabase = createBrowserSupabaseClient();
 
@@ -45,7 +59,7 @@ export function ConsoleResetPasswordForm({ copy }: { copy: ConsoleLoginCopy }) {
       cancelled = true;
       subscription.unsubscribe();
     };
-  }, [copy.networkError]);
+  }, [authProvider, neonToken, copy.networkError]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -60,6 +74,29 @@ export function ConsoleResetPasswordForm({ copy }: { copy: ConsoleLoginCopy }) {
     }
     setLoading(true);
     try {
+      if (authProvider === "neon") {
+        if (!neonToken) {
+          setPhase("need-link");
+          return;
+        }
+        const response = await withAuthTimeout(
+          fetch("/api/console/auth/reset-password", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: neonToken, password }),
+          }),
+          AUTH_TIMEOUT_MS.passwordUpdate,
+        );
+        const payload = await response.json().catch(() => ({})) as { message?: string };
+        if (!response.ok) {
+          setError(payload.message || copy.authFailed);
+          return;
+        }
+        router.push(withConsoleLang("/console/login", copy.lang));
+        router.refresh();
+        return;
+      }
+
       const supabase = createBrowserSupabaseClient();
       const { error: updateError } = await withAuthTimeout(
         supabase.auth.updateUser({ password }),

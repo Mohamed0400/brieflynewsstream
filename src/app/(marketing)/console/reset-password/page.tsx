@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { ConsoleAuthShell } from "@/components/console/ConsoleAuthShell";
 import { ConsoleResetPasswordForm } from "@/components/console/ConsoleResetPasswordForm";
+import { BrandLoader } from "@/components/media/BrandLoader";
+import { authProvider } from "@/lib/auth-provider";
 import { getConsoleLoginLang } from "@/lib/console-lang";
 import { consoleLoginCopy } from "@/lib/console-translation";
 
@@ -24,6 +27,7 @@ export default async function ConsoleResetPasswordPage({
 }) {
   const lang = await getConsoleLoginLang((await searchParams).lang);
   const copy = consoleLoginCopy(lang);
+  const provider = authProvider();
 
   return (
     <ConsoleAuthShell
@@ -32,7 +36,15 @@ export default async function ConsoleResetPasswordPage({
       titleId="console-reset-title"
       title={copy.resetTitle}
     >
-      <ConsoleResetPasswordForm copy={copy} />
+      <Suspense
+        fallback={(
+          <div className="console-gate-form console-gate-confirm" role="status">
+            <BrandLoader size="sm" label={copy.resetChecking} showLabel />
+          </div>
+        )}
+      >
+        <ConsoleResetPasswordForm copy={copy} authProvider={provider} />
+      </Suspense>
     </ConsoleAuthShell>
   );
 }

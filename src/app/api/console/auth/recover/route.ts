@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { isNeonAuthEnabled } from "@/lib/auth-provider";
-import { consoleAuthCallbackUrl } from "@/lib/auth-redirect";
+import { consoleAuthCallbackUrl, consolePasswordResetUrl } from "@/lib/auth-redirect";
 import { isTrustedConsoleOrigin } from "@/lib/console-auth";
 import { neonAuth, assertNeonAuthEnv } from "@/lib/neon-auth/server";
 import { AUTH_TIMEOUT_MS, withAuthRetry } from "@/lib/supabase/auth-timeout";
@@ -26,20 +26,15 @@ export async function POST(request: Request) {
 
   if (isNeonAuthEnabled()) {
     assertNeonAuthEnv();
-    // Better Auth: requestPasswordReset / forgetPassword (Managed Neon Auth beta).
+    // Better Auth: email links Neon Auth `/reset-password/:token`, then redirects here with `?token=`.
     const authApi = neonAuth as {
       requestPasswordReset?: (input: { email: string; redirectTo?: string }) => Promise<{ error?: { message?: string } | null }>;
       forgetPassword?: (input: { email: string; redirectTo?: string }) => Promise<{ error?: { message?: string } | null }>;
     };
+    const redirectTo = consolePasswordResetUrl(origin);
     const reset =
-      authApi.requestPasswordReset?.({
-        email,
-        redirectTo: consoleAuthCallbackUrl(origin, "/console/reset-password"),
-      }) ??
-      authApi.forgetPassword?.({
-        email,
-        redirectTo: consoleAuthCallbackUrl(origin, "/console/reset-password"),
-      });
+      authApi.requestPasswordReset?.({ email, redirectTo }) ??
+      authApi.forgetPassword?.({ email, redirectTo });
     if (!reset) {
       return NextResponse.json(
         {

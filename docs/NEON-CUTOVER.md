@@ -1,60 +1,59 @@
-# Neon cutover checklist
+# DO Postgres + Neon Auth cutover
 
-**Status today:** Neon project `falling-fog-29508824` (branch `production`) has **Auth enabled** and (after migrate) Prisma schema. Production Vercel still points at **Supabase** until you flip env vars. Neon CLI `deploy` ≠ app migration.
+**Current production architecture**
 
-## Do not half-cutover
+| Concern | Provider |
+|---------|----------|
+| App data (Prisma: news, accounts, billing, jobs) | **DigitalOcean Managed Postgres** `gs-news` (`fra1`) |
+| Login / signup / sessions | **Neon Auth** on project `cool-bread-17251650` (`gs-news-auth`) |
 
-Never set `AUTH_PROVIDER=neon` on Vercel while `DATABASE_URL` still points at a locked/empty Supabase (or empty Neon without migrations). Signup creates `Account` rows in Postgres — Auth and DB must move together.
+Neon is **Auth-only**. Do **not** point `DATABASE_URL` at Neon for article collect — that burned Free egress on the previous Neon project (`falling-fog-29508824`).
 
-## Free egress still applies
-
-Neon Free ≈ **5 GB** egress. Keep [EGRESS-GUARD.md](./EGRESS-GUARD.md): pause **main** collect first; keep **Arabic**.
-
-## Shipped in code
-
-- `AUTH_PROVIDER=supabase` (default) | `neon`
-- Neon Auth handler: `/api/auth/[...path]`
-- Console password / recover / session dual-path when `AUTH_PROVIDER=neon`
-- Middleware dual-path for console when Neon is selected
-- Kill switches: `MAIN_COLLECT_ENABLED`, `ARABIC_COLLECT_ENABLED`
-
-## Vercel env (production cutover)
+## Env (Vercel Production + local)
 
 ```bash
-# Point Prisma at Neon (pooled + unpooled)
-DATABASE_URL="postgresql://…-pooler…/neondb?sslmode=require"
-DIRECT_URL="postgresql://…/neondb?sslmode=require"   # unpooled / DATABASE_URL_UNPOOLED
+# Data → DigitalOcean (public URI, ssl required)
+DATABASE_URL="postgresql://doadmin:…@gs-news-do-user-….ondigitalocean.com:25060/defaultdb?sslmode=require"
+DIRECT_URL="postgresql://doadmin:…@gs-news-do-user-….ondigitalocean.com:25060/defaultdb?sslmode=require"
 
+# Auth → Neon Auth (new project)
 AUTH_PROVIDER=neon
 NEON_AUTH_BASE_URL="https://….neonauth….aws.neon.tech/neondb/auth"
+NEON_AUTH_JWKS_URL="https://….neonauth….aws.neon.tech/neondb/auth/.well-known/jwks.json"
 NEON_AUTH_COOKIE_SECRET="<openssl rand -base64 32>"
-# Optional:
-# NEON_AUTH_JWKS_URL="…"
 
-# Keep Supabase keys only if you still need a rollback window; otherwise remove after cutover.
+MAIN_COLLECT_ENABLED=false
 ```
 
-Also add trusted domains in Neon Auth for `https://www.brieflynewsstream.com` and localhost:
+Local files (gitignored):
 
-```bash
-neon neon-auth domain add https://www.brieflynewsstream.com
-neon neon-auth domain allow-localhost
-```
+- `.env.do` — DO connection
+- `.env.neon-auth` — Neon Auth URLs + cookie secret
+- `.env` — merged for local app (DO `DATABASE_URL` + Neon Auth keys)
 
-## Schema + data
+GitHub Actions secrets `DATABASE_URL` / `DIRECT_URL` must be the **DO** URI (same as Vercel).
 
-1. `npx dotenv -e .env.neon -- prisma migrate deploy` (schema on Neon — done in this session if migrate succeeded)
-2. **Data dump/restore** from Supabase → Neon when Supabase is reachable again (or from a prior backup). Until then, Neon has schema + Auth but **no news corpus**.
-3. Sync Arabic sources after cutover: `ARABIC_COLLECT_ENABLED=true npm run sync:arabic-sources` against Neon URL
-4. Update GitHub Actions secrets `DATABASE_URL` / `DIRECT_URL` to Neon
+## Trusted domains (Neon Auth)
 
-## Auth notes
+- `https://www.brieflynewsstream.com`
+- `https://brieflynewsstream.com`
+- `http://localhost:3000`
 
-- Existing Supabase password users **cannot** be migrated (different hash). Users must **sign up again** on Neon.
-- Password reset via SDK is still beta on Managed Better Auth — prefer Neon console / UI if recover fails.
-- Smoke locally: set `AUTH_PROVIDER=neon` + Neon vars in `.env.local` (do not commit secrets), then signup/signin on `/console/signup`.
+## Billing continuity
+
+`Account`, `Subscription`, `Invoice`, `Payment`, and `ApiKey` were restored onto DO. Password hashes do **not** migrate across Neon Auth projects — users sign up/in again on the new Auth project; [`getOrCreateAccount`](../src/lib/account.ts) remaps by **email** so the restored Account (and Subscription) attach to the new Neon user id.
+
+## Ops
+
+- Keep Arabic collect + watchdog; keep `MAIN_COLLECT_ENABLED=false`.
+- Retention/prune envs still apply on DO (storage headroom, not Neon Free egress).
+- DO cluster docs/skill: `gs-news` (no product name in the DO cluster title).
 
 ## Rollback
 
-1. Set Vercel `AUTH_PROVIDER=supabase` and restore Supabase `DATABASE_URL` / Auth keys
-2. Or set `MAIN_COLLECT_ENABLED=false` if only egress is the problem and Auth still works
+1. Point `DATABASE_URL` / `DIRECT_URL` back to a reachable Postgres dump source if needed.
+2. Point `NEON_AUTH_*` at the previous Auth project only if that project still has quota and users.
+
+## Note on project IDs
+
+Requested Neon project `small-shadow-30014112` was **not** visible on the logged-in Neon org (`org-snowy-meadow-53369181`). Auth was provisioned on **`cool-bread-17251650`** (`gs-news-auth`) instead. If you own `small-shadow-30014112` under another Neon login, re-link and swap `NEON_AUTH_*` to that project.

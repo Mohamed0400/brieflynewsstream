@@ -1,6 +1,10 @@
-# Neon Free limits (production)
+# Neon Free limits (Auth project only)
 
-**Goal:** Never exceed Neon Free caps — especially **storage (0.5 GB)**, also **egress (5 GB/mo)** and **compute (100 CU-hours/mo)**.
+**Production data** lives on **DigitalOcean Managed Postgres** (`gs-news`). See [NEON-CUTOVER.md](./NEON-CUTOVER.md).
+
+**Neon** is used for **Auth only** (`cool-bread-17251650` / `gs-news-auth`). Keep article collect off Neon so Auth does not burn Free **egress**.
+
+**Goal (Auth Neon):** Never exceed Neon Free caps — especially **storage (0.5 GB)**, also **egress (5 GB/mo)** and **compute (100 CU-hours/mo)**.
 
 Verified against [Neon plans](https://neon.com/docs/introduction/plans) (Free per project):
 

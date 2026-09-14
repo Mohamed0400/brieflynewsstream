@@ -5,6 +5,9 @@
  * 1. Pause MAIN collect first (MAIN_COLLECT_ENABLED=false)
  * 2. Keep Arabic collect running (highest product priority)
  * 3. Only pause Arabic (ARABIC_COLLECT_ENABLED=false) as last resort
+ *
+ * Translation (Gemini) is separately gated by TRANSLATE_ENABLED — keep off to avoid API cost.
+ * Main English collect can run with translation disabled.
  */
 
 function flagOn(name: string): boolean | null {
@@ -16,7 +19,7 @@ function flagOn(name: string): boolean | null {
 }
 
 /**
- * Main (bilingual / all-country) collect.
+ * Main (all-country English catalog) collect.
  * Default: enabled unless explicitly disabled.
  * GHA can set MAIN_COLLECT_ENABLED=false to pause without disabling Arabic.
  */
@@ -26,6 +29,18 @@ export function isMainCollectEnabled(): boolean {
   if (flag === true) return true;
   // Force flag alone does not override an explicit off — only enables when unset.
   return true;
+}
+
+/**
+ * Gemini bilingual translation drain (collect post-step + translate job).
+ * Default: off unless TRANSLATE_ENABLED=true — translation costs money.
+ * Arabic-native ingest never translates regardless of this flag.
+ */
+export function isTranslateEnabled(): boolean {
+  const flag = flagOn("TRANSLATE_ENABLED");
+  if (flag === false) return false;
+  if (flag === true) return true;
+  return false;
 }
 
 /**

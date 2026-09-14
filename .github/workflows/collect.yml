@@ -1,8 +1,9 @@
 name: Collect news
 
-# Full pipeline: pre-heal → collect → translate → confirm.
-# EGRESS GUARD (Free ~5GB): main collect is throttled hard so Arabic can stay online.
+# Full pipeline: pre-heal → collect (English/main). Translation is OFF by default (cost).
+# EGRESS GUARD: main collect is throttled so Arabic can stay online.
 # Kill switch: MAIN_COLLECT_ENABLED=false (pause main FIRST under quota pressure).
+# Translation: TRANSLATE_ENABLED=true required to run Gemini bilingual drain.
 # Arabic desk: collect-arabic.yml — higher priority, keep enabled.
 
 on:
@@ -20,6 +21,8 @@ env:
   NEXT_PUBLIC_APP_ENV: live
   # Pause main collect without touching Arabic: set secret/env MAIN_COLLECT_ENABLED=false
   MAIN_COLLECT_ENABLED: ${{ vars.MAIN_COLLECT_ENABLED || 'true' }}
+  # Keep Gemini translation off unless explicitly enabled (costs money).
+  TRANSLATE_ENABLED: ${{ vars.TRANSLATE_ENABLED || 'false' }}
   GOOGLE_GROUNDED_SEARCH_ENABLED: "false"
   GOOGLE_EDITORIAL_ENABLED: "false"
   MIN_COUNTRY_ARTICLES: "2"
@@ -198,8 +201,9 @@ jobs:
     needs: [gate, collect]
     runs-on: ubuntu-latest
     timeout-minutes: 90
-    if: always() && needs.gate.outputs.enabled == 'true' && needs.collect.result != 'cancelled'
+    if: always() && needs.gate.outputs.enabled == 'true' && needs.collect.result != 'cancelled' && (vars.TRANSLATE_ENABLED == 'true' || vars.TRANSLATE_ENABLED == '1' || vars.TRANSLATE_ENABLED == 'on')
     env:
+      TRANSLATE_ENABLED: ${{ vars.TRANSLATE_ENABLED || 'false' }}
       TRANSLATE_MAX_PASSES: "25"
       TRANSLATE_BATCH_SIZE: "60"
     steps:
@@ -255,7 +259,9 @@ jobs:
     needs: [gate, collect, translate]
     runs-on: ubuntu-latest
     timeout-minutes: 120
-    if: always() && needs.gate.outputs.enabled == 'true' && needs.collect.result != 'cancelled'
+    if: always() && needs.gate.outputs.enabled == 'true' && needs.collect.result != 'cancelled' && (vars.TRANSLATE_ENABLED == 'true' || vars.TRANSLATE_ENABLED == '1' || vars.TRANSLATE_ENABLED == 'on')
+    env:
+      TRANSLATE_ENABLED: ${{ vars.TRANSLATE_ENABLED || 'false' }}
     steps:
       - uses: actions/checkout@v4
 

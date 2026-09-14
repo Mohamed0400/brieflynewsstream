@@ -23,6 +23,9 @@ ARABIC_COLLECT_FORCE=true      # refetch every source each run (GHA sets this)
 
 # Prefer pausing MAIN collect under egress pressure — keep Arabic online:
 MAIN_COLLECT_ENABLED=false
+
+# Gemini bilingual translation — keep OFF unless you explicitly want to pay for it:
+TRANSLATE_ENABLED=false
 ```
 
 See [EGRESS-GUARD.md](./EGRESS-GUARD.md).
@@ -63,15 +66,14 @@ No manual re-trigger required for stuck locks or missed slots. Kill switches: `A
 
 ## Source catalog
 
-- **975** Arabic-only feeds (31 native RSS + 944 Google News `hl=ar`)
-- Native publishers: `src/lib/sources/arabic-publishers.ts` (incl. Cointelegraph, BeInCrypto, Argaam)
-- Generated matrix: `src/lib/sources/arabic-google-sources.ts`
-- **213** crypto/blockchain feeds (`Category.CRYPTO`)
-- **29** Kuwait-focused feeds
+- Native Arabic RSS + Google News `hl=ar` matrix (see `arabicSourceCatalogStats()`)
+- Native publishers: `src/lib/sources/arabic-publishers.ts` (Kuwait + MENA + pan-Arab business)
+- Generated matrix: `src/lib/sources/arabic-google-sources.ts` (Kuwait-first + denser MENA desks)
+- Kuwait coverage includes major dailies via native RSS and Google News `site:` feeds (Al-Rai, Al-Qabas, Al-Anba, Al-Jarida, Annahar, Al-Watan, Al-Shahed, KUNA)
 - All codes prefixed `AR_` / `AR_GN_`
 - DB field: `Source.collectPipeline = "arabic"`, `sourceLocale = "ar"`
 
-Main bilingual collect **does not** fetch these sources.
+Main English collect **does not** fetch these sources. Translation stays off for Arabic-native rows.
 
 ## API
 

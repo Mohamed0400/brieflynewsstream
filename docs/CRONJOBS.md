@@ -14,7 +14,8 @@ Free plan (Supabase **or** Neon) includes ~**5 GB** unified egress. Collecting ~
 
 1. **Pause main collect first** — set GitHub repo variable / Vercel env `MAIN_COLLECT_ENABLED=false`
 2. **Keep Arabic collect running** — `ARABIC_COLLECT_ENABLED=true` (default in GHA)
-3. Only pause Arabic as a last resort (`ARABIC_COLLECT_ENABLED=false`)
+3. **Keep translation off** — `TRANSLATE_ENABLED=false` (Gemini costs money; main English collect still works)
+4. Only pause Arabic as a last resort (`ARABIC_COLLECT_ENABLED=false`)
 
 Also keep: `COLLECT_GNEWS_LIMIT` ≤ 5, low concurrency, short `ARCHIVE_RAW_RETENTION_DAYS` (default **1**), hot articles **3d**, and `rawJson` stripped after normalize. Full Neon Free targets: [NEON-FREE-LIMITS.md](./NEON-FREE-LIMITS.md).
 
@@ -29,14 +30,14 @@ Migrating to Neon does **not** remove the Free egress ceiling — these guards s
 | **Watchdog Arabic** *(soft-heal)* | Every hour — collect **only if** Arabic ≥5h stale / job failed |
 | **Ops heal** | Every 2 hours — zombie locks + stale raw |
 | **Collect Arabic** *(priority)* | 8:00 AM · 2:00 PM · 8:00 PM |
-| **Collect news** *(main / bilingual)* | 6:00 AM only *(1×/day; kill with `MAIN_COLLECT_ENABLED=false`)* |
-| **Translate news** | 8:00 AM · 12:00 PM · 4:00 PM · 8:00 PM *(skips if collect is live)* |
+| **Collect news** *(main English)* | 6:00 AM only *(1×/day; kill with `MAIN_COLLECT_ENABLED=false`; no Gemini unless `TRANSLATE_ENABLED=true`)* |
+| **Translate news** | 8:00 AM · 12:00 PM · 4:00 PM · 8:00 PM *(gated by `TRANSLATE_ENABLED`; skips if collect is live)* |
 
 Rough day flow:
-- **6:00 AM** — main collect → translate → confirm (optional; pause under egress pressure)  
-- **8:00 AM** — Arabic collect + translate backfill  
+- **6:00 AM** — main English collect (translation optional / off by default)
+- **8:00 AM** — Arabic collect (+ translate backfill only if `TRANSLATE_ENABLED=true`)
 - **2:00 PM** — Arabic collect  
-- **8:00 PM** — Arabic collect + translate backfill  
+- **8:00 PM** — Arabic collect (+ translate backfill only if enabled)  
 - **Watchdog Arabic** — hourly soft-heal if a slot was missed/cancelled  
 - **Ops heal** — every 2 hours clears stuck locks  
 

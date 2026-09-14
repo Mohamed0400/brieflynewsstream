@@ -2,6 +2,7 @@ name: Translate news
 
 # Standalone bilingual backfill between full collects.
 # Skips itself while collect holds a live lock (collect workflow re-runs translate after).
+# Kill switch: TRANSLATE_ENABLED=false (default) — Gemini translation costs money.
 
 on:
   schedule:
@@ -19,6 +20,7 @@ concurrency:
 env:
   APP_TIMEZONE: Asia/Kuwait
   NEXT_PUBLIC_APP_ENV: live
+  TRANSLATE_ENABLED: ${{ vars.TRANSLATE_ENABLED || 'false' }}
   DATABASE_URL: ${{ secrets.DATABASE_URL }}
   DIRECT_URL: ${{ secrets.DIRECT_URL }}
   GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
@@ -33,8 +35,27 @@ env:
   NORMALIZE_BACKLOG_PASSES: "8"
 
 jobs:
+  gate:
+    name: Translation gate (TRANSLATE_ENABLED)
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
+    steps:
+      - id: check
+        run: |
+          flag="${TRANSLATE_ENABLED:-false}"
+          echo "TRANSLATE_ENABLED=$flag"
+          if [ "$flag" = "true" ] || [ "$flag" = "1" ] || [ "$flag" = "on" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Translate paused (TRANSLATE_ENABLED=$flag). Main English collect still runs without Gemini."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
   translate:
     name: Drain pending translations
+    needs: gate
+    if: needs.gate.outputs.enabled == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
@@ -70,7 +91,7 @@ jobs:
           set -o pipefail
           # Heal zombies without force-killing a live collect heartbeat.
           npx tsx src/worker/ops-heal-once.ts --no-translate | tee heal-result.json || true
-          # Skip if collect is mid-run; collect.yml always translates afterward.
+          # Skip if collect is mid-run; collect.yml translates afterward only when enabled.
           npx tsx src/worker/job-once.ts translate --force --skip-if-collect-running \
             | tee translate-result.json
           {

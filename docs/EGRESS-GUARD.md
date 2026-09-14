@@ -7,7 +7,8 @@
 | Priority | Pipeline | Kill switch | Default under pressure |
 |----------|----------|-------------|------------------------|
 | **1 (keep)** | Arabic desk | `ARABIC_COLLECT_ENABLED` | **Leave on** |
-| **2 (pause first)** | Main bilingual collect | `MAIN_COLLECT_ENABLED` | **Set `false` first** |
+| **2 (pause first)** | Main English collect | `MAIN_COLLECT_ENABLED` | **Set `false` first** |
+| **3 (cost)** | Gemini translation | `TRANSLATE_ENABLED` | **Keep `false`** |
 
 Arabic is the product priority. When egress is tight or Auth/DB returns quota errors:
 
@@ -15,7 +16,10 @@ Arabic is the product priority. When egress is tight or Auth/DB returns quota er
 # GitHub → Settings → Variables (or Vercel env)
 MAIN_COLLECT_ENABLED=false    # pause main immediately
 ARABIC_COLLECT_ENABLED=true   # keep Arabic
+TRANSLATE_ENABLED=false       # never spend Gemini under pressure
 ```
+
+Main English collect can run with `MAIN_COLLECT_ENABLED=true` and `TRANSLATE_ENABLED=false` (index English without bilingual drain).
 
 Only disable Arabic as a last resort.
 
@@ -24,7 +28,8 @@ Only disable Arabic as a last resort.
 - **Arabic:** 3×/day (08:00, 14:00, 20:00 Kuwait)
 - **Arabic watchdog (soft-heal):** hourly — re-collects **only** if Arabic feed/job is ≥5h stale or last run failed; never enables MAIN collect
 - **Ops heal:** every 2h — clears zombie `collect` / `collect-arabic` locks + abandons stale raw
-- **Main:** 1×/day (06:00 Kuwait), concurrency 2, `COLLECT_GNEWS_LIMIT=5` — keep `MAIN_COLLECT_ENABLED=false` under Free egress
+- **Main:** 1×/day (06:00 Kuwait), concurrency 2, `COLLECT_GNEWS_LIMIT=5` — enable with `MAIN_COLLECT_ENABLED=true`; keep `TRANSLATE_ENABLED=false` unless you want Gemini cost
+- **Translate:** gated by `TRANSLATE_ENABLED` (default off)
 
 ## Self-healing (no manual re-trigger)
 

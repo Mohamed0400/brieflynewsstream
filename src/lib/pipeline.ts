@@ -39,6 +39,7 @@ import {
   sortSourcesOldestStaleFirst,
 } from "./collect-policy";
 import { newsFreshnessCutoff } from "./news-freshness";
+import { isTranslateEnabled } from "./collect-enabled";
 
 export { newsFreshnessCutoff, isWithinNewsFreshnessWindow } from "./news-freshness";
 
@@ -845,7 +846,9 @@ export async function buildDailyEdition(
 
   if (!options.skipEditorial) {
     await editorializeArticles(selected);
-    await translatePendingArticles();
+    if (isTranslateEnabled()) {
+      await translatePendingArticles();
+    }
   }
 
   const top = selected[0];
@@ -895,7 +898,7 @@ export async function runPipeline(options: {
   const pipeline = options.collectPipeline ?? "main";
   const isArabic = pipeline === "arabic";
   const pipelineOptions = {
-    skipTranslation: isArabic || options.skipTranslation,
+    skipTranslation: isArabic || options.skipTranslation || !isTranslateEnabled(),
     collectPipeline: pipeline,
   };
   const result: PipelineResult = {

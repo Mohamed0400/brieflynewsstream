@@ -2,6 +2,7 @@ import type { BilingualCoverage } from "./article-translation";
 import { logAdminAction } from "./admin-audit";
 import { purgeLowQualityArticles } from "./article-quality";
 import { drainPendingTranslations, getBilingualCoverage } from "./article-translation";
+import { isTranslateEnabled } from "./collect-enabled";
 import { kuwaitDate } from "./market";
 import { limits } from "./limits";
 import { getOpsSettings } from "./ops-settings";
@@ -169,10 +170,11 @@ export function mapOpsJobStatuses(
 
 export function resolveRecoverPlan(options: OpsRecoverOptions) {
   const explicit = options.forceLocks || options.normalize || options.translate || options.collect || options.purgeQuality;
+  const translateRequested = options.translate === true || !explicit;
   return {
     forceLocks: options.forceLocks === true || !explicit,
     normalize: options.normalize === true || !explicit,
-    translate: options.translate === true || !explicit,
+    translate: translateRequested && isTranslateEnabled(),
     collect: options.collect === true,
     purgeQuality: options.purgeQuality === true,
   };
@@ -583,12 +585,15 @@ export async function runOpsAutoHeal(options: {
 
   let translated: number | null = null;
   let translationPending: number | null = null;
-  if (options.translate !== false) {
+  if (options.translate !== false && isTranslateEnabled()) {
     const translation = await drainPendingTranslations(
       Math.min(8, limits.translateMaxPasses),
     );
     translated = translation.translated;
     translationPending = translation.pending;
+  } else if (options.translate !== false && !isTranslateEnabled()) {
+    // Keep heal cheap: never spend Gemini when TRANSLATE_ENABLED is off.
+    translationPending = null;
   }
 
   let collect: OpsAutoHealResult["collect"] = null;

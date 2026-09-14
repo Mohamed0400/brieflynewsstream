@@ -7,7 +7,17 @@ import {
 } from "./ops-recovery";
 import { JOB_COLLECT, JOB_TRANSLATE } from "./scheduler";
 
-test("resolveRecoverPlan defaults to full recover minus collect", () => {
+test("resolveRecoverPlan defaults to full recover minus collect and translation", () => {
+  const prev = process.env.TRANSLATE_ENABLED;
+  delete process.env.TRANSLATE_ENABLED;
+  assert.deepEqual(resolveRecoverPlan({}), {
+    forceLocks: true,
+    normalize: true,
+    translate: false,
+    collect: false,
+    purgeQuality: false,
+  });
+  process.env.TRANSLATE_ENABLED = "true";
   assert.deepEqual(resolveRecoverPlan({}), {
     forceLocks: true,
     normalize: true,
@@ -15,6 +25,8 @@ test("resolveRecoverPlan defaults to full recover minus collect", () => {
     collect: false,
     purgeQuality: false,
   });
+  if (prev === undefined) delete process.env.TRANSLATE_ENABLED;
+  else process.env.TRANSLATE_ENABLED = prev;
 });
 
 test("resolveRecoverPlan honors explicit step flags", () => {

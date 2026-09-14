@@ -75,6 +75,31 @@ const HAND_FEEDS: HandFeed[] = [
   { code: "AR_GN_KW_CBK", name: "Kuwait CBK Arabic", query: "الكويت (\"البنك المركزي الكويتي\" OR CBK OR \"سياسة نقدية\")", country: "KW", category: Category.BANKING, weight: 94 },
   { code: "AR_GN_KW_BTC", name: "Kuwait Bitcoin Arabic", query: "الكويت (\"بيتكوين\" OR bitcoin OR \"عملات رقمية\" OR crypto)", country: "KW", category: Category.CRYPTO, weight: 90 },
   { code: "AR_GN_KW_SOLAR", name: "Kuwait Renewables Arabic", query: "الكويت (\"طاقة شمسية\" OR \"طاقة متجددة\" OR \"الطاقة الشمسية\" OR electricity)", country: "KW", category: Category.ENERGY, weight: 88 },
+  { code: "AR_GN_KW_NBK", name: "Kuwait NBK Arabic", query: "الكويت (\"بنك الكويت الوطني\" OR NBK OR \"الوطني\")", country: "KW", category: Category.BANKING, weight: 92 },
+  { code: "AR_GN_KW_DINAR", name: "Kuwait Dinar FX Arabic", query: "الكويت (\"الدينار الكويتي\" OR \"سعر الصرف\" OR \"سعر الدولار\")", country: "KW", category: Category.FX, weight: 91 },
+  { code: "AR_GN_KW_REALTY", name: "Kuwait Real Estate Arabic", query: "الكويت (عقارات OR \"سوق العقار\" OR \"أسعار الأراضي\" OR إسكان)", country: "KW", category: Category.REAL_ESTATE, weight: 88 },
+  { code: "AR_GN_KW_TRADE", name: "Kuwait Trade Arabic", query: "الكويت (تجارة OR جمارك OR صادرات OR واردات OR \"غرفة التجارة\")", country: "KW", category: Category.TRADE, weight: 88 },
+  { code: "AR_GN_KW_OIL_MIN", name: "Kuwait Oil Ministry Arabic", query: "الكويت (\"وزارة النفط\" OR \"وزير النفط\" OR \"الطاقة\")", country: "KW", category: Category.OIL, weight: 93 },
+  // Kuwait publisher site feeds (native RSS often HTML-blocked; GNews site: stays Arabic)
+  { code: "AR_GN_KW_SITE_ALQABAS", name: "Al Qabas Kuwait Site Arabic", query: "site:alqabas.com", country: "KW", category: Category.ME_ECONOMY, weight: 94 },
+  { code: "AR_GN_KW_SITE_ALANBA", name: "Al Anba Kuwait Site Arabic", query: "site:alanba.com.kw", country: "KW", category: Category.ME_ECONOMY, weight: 93 },
+  { code: "AR_GN_KW_SITE_ALJARIDA", name: "Al Jarida Kuwait Site Arabic", query: "site:aljarida.com", country: "KW", category: Category.ME_ECONOMY, weight: 92 },
+  { code: "AR_GN_KW_SITE_ALRAI", name: "Al Rai Kuwait Site Arabic", query: "site:alraimedia.com", country: "KW", category: Category.ME_ECONOMY, weight: 93 },
+  { code: "AR_GN_KW_SITE_ANNAHAR", name: "Annahar Kuwait Site Arabic", query: "site:annahar.com.kw OR site:annaharkw.com", country: "KW", category: Category.ME_ECONOMY, weight: 91 },
+  { code: "AR_GN_KW_SITE_ALWATAN", name: "Al Watan Kuwait Site Arabic", query: "site:alwatan.com.kw OR site:alwatan.kuwait.tt", country: "KW", category: Category.ME_ECONOMY, weight: 90 },
+  { code: "AR_GN_KW_SITE_ALSHAHED", name: "Al Shahed Kuwait Site Arabic", query: "site:alshahedkw.com", country: "KW", category: Category.ME_ECONOMY, weight: 88 },
+  { code: "AR_GN_KW_SITE_KUNA", name: "KUNA Site Arabic", query: "site:kuna.net.kw", country: "KW", category: Category.ME_ECONOMY, weight: 95 },
+  { code: "AR_GN_KW_SITE_SEYASSAH", name: "Al Seyassah Kuwait Site Arabic", query: "site:seyassah.com OR site:alseyassah.com", country: "KW", category: Category.ME_ECONOMY, weight: 87 },
+  // MENA publisher / desk anchors
+  { code: "AR_GN_EG_CBE", name: "Egypt CBE Arabic", query: "مصر (\"البنك المركزي\" OR CBE OR \"أسعار الفائدة\" OR تضخم)", country: "EG", category: Category.BANKING, weight: 94 },
+  { code: "AR_GN_EG_EGX", name: "Egypt EGX Arabic", query: "مصر (\"البورصة المصرية\" OR EGX OR أسهم OR \"سوق المال\")", country: "EG", category: Category.MARKETS, weight: 93 },
+  { code: "AR_GN_EG_POUND", name: "Egypt Pound Arabic", query: "مصر (\"الجنيه المصري\" OR \"سعر الدولار\" OR تعويم OR فوركس)", country: "EG", category: Category.FX, weight: 92 },
+  { code: "AR_GN_SA_TADAWUL", name: "Saudi Tadawul Arabic", query: "السعودية (تداول OR \"سوق الأسهم\" OR أرامكو OR IPO)", country: "SA", category: Category.MARKETS, weight: 94 },
+  { code: "AR_GN_AE_DFM", name: "UAE Markets Arabic", query: "الإمارات (\"سوق دبي\" OR \"أبوظبي\" OR ADX OR DFM OR أسهم)", country: "AE", category: Category.MARKETS, weight: 93 },
+  { code: "AR_GN_JO_CBJ", name: "Jordan CBJ Arabic", query: "الأردن (\"البنك المركزي\" OR اقتصاد OR دينار OR استثمار)", country: "JO", category: Category.BANKING, weight: 90 },
+  { code: "AR_GN_LB_BANKS", name: "Lebanon Banking Arabic", query: "لبنان (مصارف OR دولار OR اقتصاد OR \"مصرف لبنان\")", country: "LB", category: Category.BANKING, weight: 90 },
+  { code: "AR_GN_IQ_OIL", name: "Iraq Oil Arabic", query: "العراق (نفط OR نفطنا OR سومو OR بترول OR كركوك)", country: "IQ", category: Category.OIL, weight: 92 },
+  { code: "AR_GN_MA_BAM", name: "Morocco BAM Arabic", query: "المغرب (\"بنك المغرب\" OR درهم OR بورصة OR اقتصاد)", country: "MA", category: Category.ECONOMICS, weight: 90 },
   // Global desk
   { code: "AR_GN_GL_OPEC", name: "Global OPEC Arabic", query: "(OPEC OR \"أوبك\" OR \"أوبك+\" OR \"إمدادات النفط\")", country: "GLOBAL", category: Category.OIL, weight: 96 },
   { code: "AR_GN_GL_FED", name: "Global Fed Arabic", query: "(Fed OR \"الفيدرالي\" OR \"الاحتياطي الفيدرالي\" OR \"أسعار الفائدة\" OR FOMC)", country: "GLOBAL", category: Category.ECONOMICS, weight: 95 },
@@ -94,6 +119,8 @@ const HAND_FEEDS: HandFeed[] = [
 
 const CHINA_DESK = ["CN", "TW", "HK"] as const;
 const GCC_DESK = ["SA", "AE", "QA", "BH", "OM"] as const;
+/** Wider MENA beyond GCC — denser topic coverage than the thin core matrix. */
+const MENA_DESK = ["EG", "JO", "LB", "IQ", "SY", "PS", "YE", "MA", "TN", "DZ", "LY"] as const;
 const US_DESK = ["US"] as const;
 const EUROPE_DESK = [
   "EU", "GB", "DE", "FR", "CH", "NL", "IT", "ES", "BE", "AT", "SE", "NO", "DK",
@@ -106,6 +133,7 @@ const PRIORITY_COUNTRIES = new Set([
   ...CHINA_DESK,
   ...EUROPE_DESK,
   ...GCC_DESK,
+  ...MENA_DESK,
   ...US_DESK,
 ]);
 
@@ -200,6 +228,10 @@ export function generatedArabicGoogleSources(): CountrySourceSeed[] {
   }
   for (const code of GCC_DESK) {
     for (const source of generateMatrix(code, TOPICS_GCC, 2)) push(source);
+  }
+  for (const code of MENA_DESK) {
+    const boost = ["EG", "JO", "LB", "IQ", "MA"].includes(code) ? 2 : 1;
+    for (const source of generateMatrix(code, TOPICS_GCC, boost)) push(source);
   }
 
   for (const code of catalogCountryCodes()) {

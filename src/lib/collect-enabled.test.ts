@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { isArabicCollectEnabled, isMainCollectEnabled } from "./collect-enabled";
+import { isArabicCollectEnabled, isMainCollectEnabled, isTranslateEnabled } from "./collect-enabled";
 
 test("isMainCollectEnabled defaults on and respects kill switch", () => {
   const prev = process.env.MAIN_COLLECT_ENABLED;
@@ -12,6 +12,18 @@ test("isMainCollectEnabled defaults on and respects kill switch", () => {
   assert.equal(isMainCollectEnabled(), true);
   if (prev === undefined) delete process.env.MAIN_COLLECT_ENABLED;
   else process.env.MAIN_COLLECT_ENABLED = prev;
+});
+
+test("isTranslateEnabled stays off unless explicitly enabled", () => {
+  const prev = process.env.TRANSLATE_ENABLED;
+  delete process.env.TRANSLATE_ENABLED;
+  assert.equal(isTranslateEnabled(), false);
+  process.env.TRANSLATE_ENABLED = "false";
+  assert.equal(isTranslateEnabled(), false);
+  process.env.TRANSLATE_ENABLED = "true";
+  assert.equal(isTranslateEnabled(), true);
+  if (prev === undefined) delete process.env.TRANSLATE_ENABLED;
+  else process.env.TRANSLATE_ENABLED = prev;
 });
 
 test("isArabicCollectEnabled stays off unless enabled or forced", () => {

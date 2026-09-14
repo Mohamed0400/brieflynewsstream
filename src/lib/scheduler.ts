@@ -3,7 +3,7 @@ import { prisma } from "./prisma";
 import { describeQueryFailure } from "./api";
 import { kuwaitDate } from "./market";
 import { buildDailyEdition, MAX_TRANSLATION_PASSES, runPipeline, runArabicPipeline, type PipelineResult } from "./pipeline";
-import { isArabicCollectEnabled, isMainCollectEnabled } from "./collect-enabled";
+import { isArabicCollectEnabled, isMainCollectEnabled, isTranslateEnabled } from "./collect-enabled";
 import { limits } from "./limits";
 
 export const JOB_COLLECT = "collect";
@@ -327,12 +327,15 @@ async function executeJob(key: string) {
   if (key === JOB_OPS_HEAL) {
     const { runOpsAutoHeal } = await import("./ops-recovery");
     const heal = await runOpsAutoHeal({
-      translate: true,
+      translate: isTranslateEnabled(),
       // Respect OpsSetting.pipelineAutoHealCollect; do not force collect on every heal.
     });
     return heal.messages.join(" ");
   }
   if (key === JOB_TRANSLATE) {
+    if (!isTranslateEnabled()) {
+      return "Translation disabled (set TRANSLATE_ENABLED=true to run Gemini bilingual drain)";
+    }
     // Fast safety net before translate drains: never materialize stale raw again.
     const { runOpsAutoHeal } = await import("./ops-recovery");
     const preHeal = await runOpsAutoHeal({
@@ -361,6 +364,7 @@ async function executeJob(key: string) {
         errors: [],
       }, {
         maxPasses: Math.min(6, limits.normalizeBacklogPasses),
+        skipTranslation: true,
       });
       const abandonedBit = drained.abandoned > 0 ? `${drained.abandoned} stale abandoned, ` : "";
       normalizeSummary = drained.normalized > 0 || drained.pending > 0
@@ -398,7 +402,8 @@ async function executeJob(key: string) {
   return summarizePipeline(await runPipeline({
     forceEdition: true,
     forceCollect: process.env.CRON_FORCE_COLLECT === "true" || process.env.FORCE_COLLECT === "true",
-    skipTranslation: process.env.CRON_COLLECT_ONLY === "true",
+    // Collect English/main without Gemini unless TRANSLATE_ENABLED=true.
+    skipTranslation: !isTranslateEnabled() || process.env.CRON_COLLECT_ONLY === "true",
   }));
 }
 

@@ -19,6 +19,15 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+  if (process.env.VERCEL) {
+    return NextResponse.json(
+      {
+        error: "use_github_actions",
+        message: "This console runs on Vercel Hobby. Start collect or heal from GitHub Actions so it does not use Vercel CPU.",
+      },
+      { status: 409 },
+    );
+  }
   const result = await runScheduledJob(body.key, { force: body.force === true });
   const snapshot = await getScheduleSnapshot();
   return NextResponse.json(

@@ -17,7 +17,6 @@ import {
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { BrandLogo } from "@/components/media/BrandLogo";
 import { AttributionCapture } from "@/components/analytics/AttributionCapture";
-import { PageViewBeacon } from "@/components/analytics/PageViewBeacon";
 import { marketingCopy, type MarketingLang } from "@/lib/marketing-copy";
 import {
   marketingLangHref,
@@ -514,7 +513,6 @@ export function MarketingShell({
   const displayLang = location.displayLang;
   const copy = marketingCopy(displayLang);
   useMarketingWaitCursor(location.pathname, location.search);
-  const tracking = siteSettings?.pageViewTracking ?? true;
   const attribution = siteSettings?.attributionCapture ?? true;
   const maintenanceBanner = siteSettings?.maintenanceBanner?.trim() || "";
 
@@ -526,7 +524,6 @@ export function MarketingShell({
         </div>
       ) : null}
       <AttributionCapture enabled={attribution} />
-      <PageViewBeacon locale={displayLang} enabled={tracking} />
       <MarketingNav {...location} />
       {children}
       <MarketingFooter lang={displayLang} />

@@ -3,7 +3,6 @@ import { limits } from "@/lib/limits";
 import { countPendingRawArticles } from "@/lib/pipeline";
 import { getBilingualCoverage } from "@/lib/article-translation";
 import {
-  clearStaleJobLocks,
   DEFAULT_SCHEDULED_JOBS,
   embeddedSchedulerEnabled,
   getScheduleSnapshot,
@@ -19,7 +18,6 @@ export async function GET(request: Request) {
   const today = kuwaitDate();
 
   try {
-    const clearedLocks = await clearStaleJobLocks();
     const [snapshot, todayCoverage, freshCoverage, pendingRaw] = await Promise.all([
       getScheduleSnapshot(),
       getBilingualCoverage(new Date(`${today}T00:00:00+03:00`)),
@@ -78,7 +76,7 @@ export async function GET(request: Request) {
         todaysArticles: todayCoverage.scanned,
         bilingualComplete: freshCoverage.complete,
         pendingRawArticles: pendingRaw,
-        clearedStaleLocks: clearedLocks.length,
+        clearedStaleLocks: 0,
       },
       backlog: {
         pendingRawArticles: pendingRaw,

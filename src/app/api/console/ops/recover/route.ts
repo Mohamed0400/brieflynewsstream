@@ -14,6 +14,15 @@ export async function POST(request: Request) {
   }
   const auth = await requireSuperAdmin();
   if ("response" in auth) return auth.response;
+  if (process.env.VERCEL) {
+    return NextResponse.json(
+      {
+        error: "use_github_actions",
+        message: "Recovery runs on GitHub Actions so Vercel Hobby does not spend Fluid CPU.",
+      },
+      { status: 409 },
+    );
+  }
   const body = await request.json().catch(() => ({})) as OpsRecoverOptions & {
     autoHeal?: boolean;
   };

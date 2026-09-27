@@ -1,22 +1,5 @@
 {
-  "crons": [
-    {
-      "path": "/api/cron/collect",
-      "schedule": "0 4 * * *"
-    },
-    {
-      "path": "/api/cron/archive",
-      "schedule": "30 0 * * *"
-    },
-    {
-      "path": "/api/cron/translate",
-      "schedule": "0 20 * * *"
-    },
-    {
-      "path": "/api/cron/ops-heal",
-      "schedule": "0 8 * * *"
-    }
-  ],
+  "crons": [],
   "headers": [
     {
       "source": "/favicon.ico",
@@ -40,6 +23,120 @@
       "source": "/apple-icon.png",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=86400" }
+      ]
+    },
+    {
+      "source": "/",
+      "headers": [
+        { "key": "Vercel-CDN-Cache-Control", "value": "public, s-maxage=1800, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/pricing",
+      "headers": [
+        { "key": "Vercel-CDN-Cache-Control", "value": "public, s-maxage=1800, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/developers",
+      "headers": [
+        { "key": "Vercel-CDN-Cache-Control", "value": "public, s-maxage=1800, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/coverage",
+      "headers": [
+        { "key": "Vercel-CDN-Cache-Control", "value": "public, s-maxage=1800, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/terms",
+      "headers": [
+        { "key": "Vercel-CDN-Cache-Control", "value": "public, s-maxage=1800, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/privacy",
+      "headers": [
+        { "key": "Vercel-CDN-Cache-Control", "value": "public, s-maxage=1800, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/guides",
+      "headers": [
+        { "key": "Vercel-CDN-Cache-Control", "value": "public, s-maxage=1800, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/guides/:path*",
+      "headers": [
+        { "key": "Vercel-CDN-Cache-Control", "value": "public, s-maxage=1800, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/news",
+      "headers": [
+        { "key": "Vercel-CDN-Cache-Control", "value": "public, s-maxage=600, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/news/:path*",
+      "headers": [
+        { "key": "Vercel-CDN-Cache-Control", "value": "public, s-maxage=600, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/archive",
+      "headers": [
+        { "key": "Vercel-CDN-Cache-Control", "value": "public, s-maxage=600, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/archive/:path*",
+      "headers": [
+        { "key": "Vercel-CDN-Cache-Control", "value": "public, s-maxage=600, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/markets/:path*",
+      "headers": [
+        { "key": "Vercel-CDN-Cache-Control", "value": "public, s-maxage=600, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/sitemap.xml",
+      "headers": [
+        { "key": "Vercel-CDN-Cache-Control", "value": "public, s-maxage=3600, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/news-sitemap.xml",
+      "headers": [
+        { "key": "Vercel-CDN-Cache-Control", "value": "public, s-maxage=3600, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/robots.txt",
+      "headers": [
+        { "key": "Vercel-CDN-Cache-Control", "value": "public, s-maxage=86400" }
+      ]
+    },
+    {
+      "source": "/api/v1/health",
+      "headers": [
+        { "key": "Vercel-CDN-Cache-Control", "value": "public, s-maxage=60, stale-while-revalidate=120" }
+      ]
+    },
+    {
+      "source": "/api/v1/meta/:path*",
+      "headers": [
+        { "key": "Vercel-CDN-Cache-Control", "value": "public, s-maxage=3600, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/api/v1/openapi.json",
+      "headers": [
+        { "key": "Vercel-CDN-Cache-Control", "value": "public, s-maxage=86400" }
       ]
     }
   ]

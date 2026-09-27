@@ -23,29 +23,29 @@ Migrating to Neon does **not** remove the Free egress ceiling — these guards s
 
 ---
 
-## All-day loop (Kuwait) — egress-throttled
+## Daily loop (Kuwait) — Vercel Hobby + egress
+
+Vercel Cron is **off**. Collect, archive, translate, and heal run only on GitHub Actions. Vercel `/api/cron/*` returns 409 so a fallback HTTP call cannot spend Fluid CPU.
 
 | Workflow | When (Kuwait) |
 |----------|----------------|
-| **Watchdog Arabic** *(soft-heal)* | Every hour — collect **only if** Arabic ≥5h stale / job failed |
-| **Ops heal** | Every 2 hours — zombie locks + stale raw |
-| **Collect Arabic** *(priority)* | 8:00 AM · 2:00 PM · 8:00 PM |
-| **Collect news** *(main English)* | 6:00 AM only *(1×/day; kill with `MAIN_COLLECT_ENABLED=false`; no Gemini unless `TRANSLATE_ENABLED=true`)* |
-| **Translate news** | 8:00 AM · 12:00 PM · 4:00 PM · 8:00 PM *(gated by `TRANSLATE_ENABLED`; skips if collect is live)* |
+| **Collect news** *(main English)* | 6:00 AM only *(1×/day; no Gemini unless `TRANSLATE_ENABLED=true`)* |
+| **Collect Arabic** | 8:00 AM · 8:00 PM *(two short runs)* |
+| **Ops heal** | 9:30 PM — zombie locks + stale raw |
+| **Watchdog Arabic** | Manual only (Actions → Run workflow) |
+| **Translate news** | Manual only, and only if `TRANSLATE_ENABLED=true` |
 
 Rough day flow:
-- **6:00 AM** — main English collect (translation optional / off by default)
-- **8:00 AM** — Arabic collect (+ translate backfill only if `TRANSLATE_ENABLED=true`)
-- **2:00 PM** — Arabic collect  
-- **8:00 PM** — Arabic collect (+ translate backfill only if enabled)  
-- **Watchdog Arabic** — hourly soft-heal if a slot was missed/cancelled  
-- **Ops heal** — every 2 hours clears stuck locks  
+- **6:00 AM** — main English collect
+- **8:00 AM** — Arabic collect
+- **8:00 PM** — Arabic collect
+- **9:30 PM** — ops heal
 
 ---
 
 ## Why force-refetch on Collect
 
-GHA sets `CRON_FORCE_COLLECT=true` / `ARABIC_COLLECT_FORCE=true` on scheduled runs so refresh-hours backoff does not skip every source. With main at **1×/day** and Arabic at **3×/day**, force is still safe if concurrency/GNews caps stay low.
+GHA sets `CRON_FORCE_COLLECT=true` / `ARABIC_COLLECT_FORCE=true` on scheduled runs so refresh-hours backoff does not skip every source. With main at **1×/day** and Arabic at **2×/day**, force is still safe if concurrency/GNews caps stay low.
 
 ## Archive hot retention vs live feed
 
@@ -67,25 +67,25 @@ File: `.github/workflows/collect.yml`
 
 ## Collect Arabic (priority)
 
-File: `.github/workflows/collect-arabic.yml` — 3× daily; independent concurrency group; no translate/confirm; 90m timeout; `if: always()` lock cleanup.
+File: `.github/workflows/collect-arabic.yml` — 8:00 AM and 8:00 PM Kuwait; independent concurrency group; no translate/confirm; 90m timeout; `if: always()` lock cleanup.
 
 ## Watchdog Arabic (self-heal)
 
-File: `.github/workflows/watchdog-arabic.yml` — hourly. Clears stale locks, then runs Arabic collect **only** when newest `language=ar` article `createdAt` (or last job) is older than **5 hours**, or last status is `error`/`interrupted`. Soft-skip when fresh. Does **not** enable MAIN collect.
+File: `.github/workflows/watchdog-arabic.yml` — manual only. Clears stale locks, then runs Arabic collect **only** when newest `language=ar` article `createdAt` (or last job) is older than **5 hours**, or last status is `error`/`interrupted`. Soft-skip when fresh. Does **not** enable MAIN collect.
 
 ## Translate news
 
-File: `.github/workflows/translate.yml` — backfill between collects; skips while collect is live.
+File: `.github/workflows/translate.yml` — manual only. Gemini stays off unless `TRANSLATE_ENABLED=true`.
 
 ## Ops heal
 
-File: `.github/workflows/ops-heal.yml` — zombie locks (incl. `collect-arabic`) + abandon stale raw every 2 hours, then **prune** hot window / row caps (Neon Free backstop).
+File: `.github/workflows/ops-heal.yml` — once daily at 9:30 PM Kuwait. Clears zombie locks (incl. `collect-arabic`) + abandon stale raw, then **prune** hot window / row caps.
 
 ---
 
 ## If the feed looks stuck
 
-Automation should recover within ~1–5 hours via watchdog + ops-heal. Manual fallback:
+Automation heals once each evening. If a morning collect fails, run a workflow by hand:
 
 1. Actions → **Ops heal** → Run workflow  
 2. Actions → **Watchdog Arabic** → Run workflow *(soft-heal; no-ops if fresh)*  

@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 
 export const DEFAULT_OPS_SETTINGS = {
@@ -54,7 +55,7 @@ export async function getOpsSettings(): Promise<OpsSettings> {
   return mergeOpsSettings(rows);
 }
 
-export async function getPublicSiteSettings(): Promise<PublicSiteSettings> {
+async function loadPublicSiteSettings(): Promise<PublicSiteSettings> {
   const settings = await getOpsSettings();
   return {
     pageViewTracking: settings.pageViewTracking,
@@ -62,3 +63,9 @@ export async function getPublicSiteSettings(): Promise<PublicSiteSettings> {
     maintenanceBanner: settings.maintenanceBanner,
   };
 }
+
+export const getPublicSiteSettings = unstable_cache(
+  loadPublicSiteSettings,
+  ["public-site-settings"],
+  { revalidate: 1800 },
+);

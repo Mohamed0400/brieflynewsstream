@@ -39,13 +39,16 @@ const PUBLIC_DISALLOW = [
   "/auth/",
 ] as const;
 
-/** Search engines + answer-engine / AI Overview crawlers. */
-const AI_AND_SEARCH_AGENTS = [
+/** Search engines we still want. High-volume AI scrapers are blocked below. */
+const SEARCH_AGENTS = [
   "Googlebot",
   "Google-Extended",
   "Bingbot",
   "DuckDuckBot",
   "Applebot",
+] as const;
+
+const SCRAPER_AGENTS = [
   "Applebot-Extended",
   "GPTBot",
   "ChatGPT-User",
@@ -67,10 +70,14 @@ export default function robots(): MetadataRoute.Robots {
         allow: [...PUBLIC_ALLOW],
         disallow: [...PUBLIC_DISALLOW],
       },
-      ...AI_AND_SEARCH_AGENTS.map((userAgent) => ({
+      ...SEARCH_AGENTS.map((userAgent) => ({
         userAgent,
         allow: [...PUBLIC_ALLOW],
         disallow: [...PUBLIC_DISALLOW],
+      })),
+      ...SCRAPER_AGENTS.map((userAgent) => ({
+        userAgent,
+        disallow: ["/"],
       })),
     ],
     sitemap: [`${origin}/sitemap.xml`, `${origin}/news-sitemap.xml`],

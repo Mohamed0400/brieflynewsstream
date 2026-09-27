@@ -7,9 +7,8 @@ name: Collect Arabic news
 
 on:
   schedule:
-    # Three times daily Asia/Kuwait (UTC+3): 8 AM, 2 PM, 8 PM (was 5× — Free egress guard)
+    # Two short runs, Asia/Kuwait (UTC+3): 8:00 AM and 8:00 PM
     - cron: "0 5 * * *"
-    - cron: "0 11 * * *"
     - cron: "0 17 * * *"
   workflow_dispatch:
 

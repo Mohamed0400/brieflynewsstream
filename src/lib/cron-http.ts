@@ -17,6 +17,17 @@ export function authorizeCron(request: Request) {
 export async function handleCronJob(request: Request, key: string) {
   const denied = authorizeCron(request);
   if (denied) return denied;
+  if (process.env.VERCEL) {
+    return NextResponse.json(
+      {
+        ok: false,
+        skipped: true,
+        job: key,
+        message: "Vercel does not run collect, translate, archive, or heal. Use GitHub Actions.",
+      },
+      { status: 409 },
+    );
+  }
   const result = await runScheduledJob(key);
   return NextResponse.json(
     { ok: result.ok, skipped: result.skipped, message: result.message, job: key },

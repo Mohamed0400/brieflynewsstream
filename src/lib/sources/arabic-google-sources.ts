@@ -90,6 +90,11 @@ const HAND_FEEDS: HandFeed[] = [
   { code: "AR_GN_KW_SITE_ALSHAHED", name: "Al Shahed Kuwait Site Arabic", query: "site:alshahedkw.com", country: "KW", category: Category.ME_ECONOMY, weight: 88 },
   { code: "AR_GN_KW_SITE_KUNA", name: "KUNA Site Arabic", query: "site:kuna.net.kw", country: "KW", category: Category.ME_ECONOMY, weight: 95 },
   { code: "AR_GN_KW_SITE_SEYASSAH", name: "Al Seyassah Kuwait Site Arabic", query: "site:seyassah.com OR site:alseyassah.com", country: "KW", category: Category.ME_ECONOMY, weight: 87 },
+  { code: "AR_GN_KW_SITE_ALSABAH", name: "Al Sabah Kuwait Site Arabic", query: "site:alsabahpress.com OR site:alsabaah.com OR \"جريدة الصباح\" الكويت", country: "KW", category: Category.ME_ECONOMY, weight: 90 },
+  { code: "AR_GN_KW_SITE_ALKUWAITIA", name: "Al Kuwaitia Site Arabic", query: "site:alkuwaitiah.com OR site:al-kuwaitiah.com OR \"جريدة الكويتية\"", country: "KW", category: Category.ME_ECONOMY, weight: 88 },
+  { code: "AR_GN_KW_SITE_MOCI", name: "Kuwait Commerce Ministry Arabic", query: "site:moci.gov.kw OR \"وزارة التجارة والصناعة\" الكويت", country: "KW", category: Category.TRADE, weight: 94 },
+  { code: "AR_GN_KW_SITE_BOURSA", name: "Boursa Kuwait Site Arabic", query: "site:boursa.com OR \"بورصة الكويت\"", country: "KW", category: Category.MARKETS, weight: 96 },
+  { code: "AR_GN_KW_SITE_CBK", name: "CBK Kuwait Site Arabic", query: "site:cbk.gov.kw OR \"بنك الكويت المركزي\"", country: "KW", category: Category.BANKING, weight: 96 },
   // MENA publisher / desk anchors
   { code: "AR_GN_EG_CBE", name: "Egypt CBE Arabic", query: "مصر (\"البنك المركزي\" OR CBE OR \"أسعار الفائدة\" OR تضخم)", country: "EG", category: Category.BANKING, weight: 94 },
   { code: "AR_GN_EG_EGX", name: "Egypt EGX Arabic", query: "مصر (\"البورصة المصرية\" OR EGX OR أسهم OR \"سوق المال\")", country: "EG", category: Category.MARKETS, weight: 93 },
@@ -108,6 +113,10 @@ const HAND_FEEDS: HandFeed[] = [
   { code: "AR_GN_GL_ETH", name: "Global Ethereum Arabic", query: "(ethereum OR \"إيثريوم\" OR ETH OR \"الإيثيريوم\")", country: "GLOBAL", category: Category.CRYPTO, weight: 91 },
   { code: "AR_GN_GL_DEFI", name: "Global DeFi Arabic", query: "(DeFi OR \"التمويل اللامركزي\" OR \"عملات رقمية\" OR stablecoin)", country: "GLOBAL", category: Category.CRYPTO, weight: 89 },
   { code: "AR_GN_GL_WGC", name: "Global Gold Council Arabic", query: "(\"World Gold Council\" OR \"المجلس العالمي للذهب\" OR \"احتياطي الذهب\")", country: "GLOBAL", category: Category.GOLD, weight: 94 },
+  { code: "AR_GN_GL_LBMA", name: "LBMA Arabic", query: "(LBMA OR \"London Bullion Market Association\" OR \"سوق لندن للسبائك\")", country: "GLOBAL", category: Category.GOLD, weight: 93 },
+  { code: "AR_GN_GL_METALS_FOCUS", name: "Metals Focus Arabic", query: "(\"Metals Focus\" OR \"ميتالز فوكس\" OR \"معروض الذهب\")", country: "GLOBAL", category: Category.GOLD, weight: 90 },
+  { code: "AR_GN_GL_CME", name: "CME Group Arabic", query: "(\"CME Group\" OR \"بورصة شيكاغو\" OR \"عقود الذهب الآجلة\")", country: "GLOBAL", category: Category.GOLD, weight: 91 },
+  { code: "AR_GN_GL_TRADING_ECON", name: "Trading Economics Arabic", query: "(\"Trading Economics\" OR \"مؤشرات اقتصادية\" OR \"بيانات الاقتصاد\")", country: "GLOBAL", category: Category.ECONOMICS, weight: 88 },
   { code: "AR_GN_GL_BRENT", name: "Global Brent Arabic", query: "(Brent OR \"برنت\" OR \"أسعار النفط\" OR WTI OR crude)", country: "GLOBAL", category: Category.OIL, weight: 93 },
   // China / Europe anchors
   { code: "AR_GN_CN_BRI", name: "China Belt Road Arabic", query: "الصين (\"Belt and Road\" OR \"طريق الحرير\" OR \"مبادرة الحزام والطريق\")", country: "CN", category: Category.TRADE, weight: 92 },

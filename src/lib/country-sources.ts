@@ -1171,6 +1171,28 @@ export function generatedCountrySources(): CountrySourceSeed[] {
     Category.GOLD,
   ));
 
+  const deskFeeds: Array<[string, string, string, string, Category, number]> = [
+    ["GNEWS_DESK_ALSABAH", "Al Sabah Kuwait", "site:alsabahpress.com OR site:alsabaah.com OR \"Al Sabah\" Kuwait newspaper", "KW", Category.ME_ECONOMY, 88],
+    ["GNEWS_DESK_ALKUWAITIA", "Al Kuwaitia", "site:alkuwaitiah.com OR \"Al Kuwaitia\" OR \"Al-Kuwaitiah\" newspaper", "KW", Category.ME_ECONOMY, 86],
+    ["GNEWS_DESK_ANNAHAR", "Annahar Kuwait", "site:annahar.com.kw OR site:annaharkw.com Kuwait", "KW", Category.ME_ECONOMY, 88],
+    ["GNEWS_DESK_MOCI", "Kuwait Ministry of Commerce", "site:moci.gov.kw OR \"Ministry of Commerce\" Kuwait", "KW", Category.TRADE, 94],
+    ["GNEWS_DESK_BOURSA", "Boursa Kuwait", "site:boursa.com OR \"Boursa Kuwait\"", "KW", Category.MARKETS, 96],
+    ["GNEWS_DESK_CBK", "Central Bank of Kuwait", "site:cbk.gov.kw OR \"Central Bank of Kuwait\"", "KW", Category.BANKING, 96],
+    ["GNEWS_DESK_WGC", "World Gold Council", "site:gold.org OR \"World Gold Council\"", "GLOBAL", Category.GOLD, 94],
+    ["GNEWS_DESK_LBMA", "LBMA", "site:lbma.org.uk OR LBMA \"London Bullion\"", "GLOBAL", Category.GOLD, 94],
+    ["GNEWS_DESK_METALS_FOCUS", "Metals Focus", "\"Metals Focus\" (gold OR silver OR bullion)", "GLOBAL", Category.GOLD, 90],
+    ["GNEWS_DESK_TRADING_ECONOMICS", "Trading Economics", "site:tradingeconomics.com (Kuwait OR gold OR rates OR inflation)", "GLOBAL", Category.ECONOMICS, 90],
+    ["GNEWS_DESK_CME", "CME Group", "site:cmegroup.com (gold OR metals OR rates OR futures)", "GLOBAL", Category.GOLD, 92],
+    ["GNEWS_DESK_KITCO", "Kitco News", "site:kitco.com (gold OR silver OR metals)", "GLOBAL", Category.GOLD, 93],
+    ["GNEWS_DESK_REUTERS_METALS", "Reuters Metals", "site:reuters.com (gold OR bullion OR \"precious metals\")", "GLOBAL", Category.GOLD, 94],
+    ["GNEWS_DESK_BLOOMBERG_METALS", "Bloomberg Metals", "site:bloomberg.com (gold OR bullion OR \"precious metals\")", "GLOBAL", Category.GOLD, 94],
+  ];
+  for (const [code, name, query, country, category, weight] of deskFeeds) {
+    const source = googleNewsSource(code, name, query, country, "en", category, weight);
+    source.qualityWeight = weight;
+    push(source);
+  }
+
   for (const source of priorityInvestorSources()) {
     push(source);
   }

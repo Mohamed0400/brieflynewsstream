@@ -96,7 +96,7 @@ const en = {
   error503: "The service is temporarily unavailable.",
   limitsTitle: "Usage limits",
   limitsLede:
-    `Free includes ${PLAN_DEFINITIONS.FREE.dailyRequests} requests a day. Pro includes ${formatPlanCount(PLAN_DEFINITIONS.PRO.dailyRequests)}. Enterprise includes ${formatPlanCount(PLAN_DEFINITIONS.ENTERPRISE.dailyRequests)} by default. The daily limit renews automatically every day.`,
+    `Free includes ${PLAN_DEFINITIONS.FREE.dailyRequests} requests a day, ${PLAN_DEFINITIONS.FREE.monthlyRequests} a month, and ${PLAN_DEFINITIONS.FREE.yearlyRequests} a year. Pro includes ${formatPlanCount(PLAN_DEFINITIONS.PRO.dailyRequests)} a day. Enterprise includes ${formatPlanCount(PLAN_DEFINITIONS.ENTERPRISE.dailyRequests)} a day by default.`,
   limitsPage: "Default page size is 50. Maximum is 500.",
   limitsWindow:
     "Without from, to, or date, results use the default 72-hour live window. Indexed stories stay in the archive on every plan. Use from and to to query further back.",
@@ -215,7 +215,7 @@ const ar = {
   error503: "الخدمة غير متاحة مؤقتاً.",
   limitsTitle: "حدود الاستخدام",
   limitsLede:
-    `المجاني يشمل ${PLAN_DEFINITIONS.FREE.dailyRequests} طلبات يومياً. Pro يشمل ${formatPlanCount(PLAN_DEFINITIONS.PRO.dailyRequests)}. Enterprise يشمل ${formatPlanCount(PLAN_DEFINITIONS.ENTERPRISE.dailyRequests)} افتراضياً. يتجدد الحد اليومي تلقائياً كل يوم.`,
+    `المجاني يشمل ${PLAN_DEFINITIONS.FREE.dailyRequests} طلبات يومياً، و${PLAN_DEFINITIONS.FREE.monthlyRequests} شهرياً، و${PLAN_DEFINITIONS.FREE.yearlyRequests} سنوياً. Pro يشمل ${formatPlanCount(PLAN_DEFINITIONS.PRO.dailyRequests)} يومياً. Enterprise يشمل ${formatPlanCount(PLAN_DEFINITIONS.ENTERPRISE.dailyRequests)} يومياً افتراضياً.`,
   limitsPage: "حجم الصفحة الافتراضي 50. الحد الأقصى 500.",
   limitsWindow:
     "من دون from أو to أو date تستخدم النتائج النافذة الحية الافتراضية لمدة 72 ساعة. القصص المفهرسة تبقى في الأرشيف على كل خطة. استخدم from وto للاستعلام أبعد.",

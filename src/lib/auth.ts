@@ -1,8 +1,18 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
-import { isQuotaExceeded, quotaResponseHeaders } from "./api-quota";
+import {
+  freeQuotaExceededBody,
+  isQuotaExceeded,
+  quotaResponseHeaders,
+  type QuotaWindow,
+} from "./api-quota";
 import { getMaintenanceStatus } from "./maintenance";
-import { resolvePlanLimits, utcDayWindow } from "./plans";
+import {
+  resolvePlanLimits,
+  utcDayWindow,
+  utcMonthWindow,
+  utcYearWindow,
+} from "./plans";
 import { prisma } from "./prisma";
 
 export function secureMatches(provided: string | null, expected: string | undefined) {
@@ -64,8 +74,13 @@ export async function requireApiKey(request: Request) {
   let apiKeyId: string | null = null;
   let accountId: string | null = null;
   let plan = "FREE";
-  let dailyLimit = resolvePlanLimits({ plan: "FREE" }).dailyRequests;
+  const freeDefaults = resolvePlanLimits({ plan: "FREE" });
+  let dailyLimit = freeDefaults.dailyRequests;
+  let monthlyLimit: number | null = freeDefaults.monthlyRequests;
+  let yearlyLimit: number | null = freeDefaults.yearlyRequests;
   let usedToday = 0;
+  let usedMonth = 0;
+  let usedYear = 0;
 
   const envKeyOk = secureMatches(provided, process.env.API_KEY);
 
@@ -139,33 +154,79 @@ export async function requireApiKey(request: Request) {
       maxKeysOverride: stored.account.maxKeysOverride,
     });
     dailyLimit = limits.dailyRequests;
+    monthlyLimit = limits.monthlyRequests;
+    yearlyLimit = limits.yearlyRequests;
 
-    const { start, end } = utcDayWindow();
-    usedToday = await prisma.apiRequest.count({
-      where: {
-        apiKey: { accountId: stored.accountId },
-        requestedAt: { gte: start, lt: end },
-      },
-    });
+    const day = utcDayWindow();
+    const month = utcMonthWindow();
+    const year = utcYearWindow();
+    const accountFilter = { apiKey: { accountId: stored.accountId } };
+    const [dayCount, monthCount, yearCount] = await Promise.all([
+      prisma.apiRequest.count({
+        where: { ...accountFilter, requestedAt: { gte: day.start, lt: day.end } },
+      }),
+      monthlyLimit != null
+        ? prisma.apiRequest.count({
+            where: { ...accountFilter, requestedAt: { gte: month.start, lt: month.end } },
+          })
+        : Promise.resolve(0),
+      yearlyLimit != null
+        ? prisma.apiRequest.count({
+            where: { ...accountFilter, requestedAt: { gte: year.start, lt: year.end } },
+          })
+        : Promise.resolve(0),
+    ]);
+    usedToday = dayCount;
+    usedMonth = monthCount;
+    usedYear = yearCount;
 
-    if (isQuotaExceeded(usedToday, dailyLimit)) {
+    let exceeded: QuotaWindow | null = null;
+    if (yearlyLimit != null && isQuotaExceeded(usedYear, yearlyLimit)) exceeded = "year";
+    else if (monthlyLimit != null && isQuotaExceeded(usedMonth, monthlyLimit)) exceeded = "month";
+    else if (isQuotaExceeded(usedToday, dailyLimit)) exceeded = "day";
+
+    if (exceeded) {
+      const headers = quotaResponseHeaders({
+        plan,
+        usedToday,
+        dailyLimit,
+        usedMonth,
+        monthlyLimit,
+        usedYear,
+        yearlyLimit,
+      });
+      if (plan === "FREE" && monthlyLimit != null && yearlyLimit != null) {
+        return NextResponse.json(
+          freeQuotaExceededBody({
+            plan,
+            window: exceeded,
+            usedToday,
+            dailyLimit,
+            usedMonth,
+            monthlyLimit,
+            usedYear,
+            yearlyLimit,
+          }),
+          { status: 429, headers },
+        );
+      }
       return NextResponse.json(
         {
           error: "quota_exceeded",
-          message: "Daily API request quota exceeded for this plan.",
+          message: "API request quota exceeded for this plan.",
           plan,
+          window: exceeded,
           limit: dailyLimit,
           used: usedToday,
         },
-        {
-          status: 429,
-          headers: quotaResponseHeaders(usedToday, dailyLimit, plan),
-        },
+        { status: 429, headers },
       );
     }
   } else {
     plan = "ENV";
     dailyLimit = Number.MAX_SAFE_INTEGER;
+    monthlyLimit = null;
+    yearlyLimit = null;
   }
 
   const endpoint = new URL(request.url).pathname;
@@ -187,14 +248,26 @@ export async function requireApiKey(request: Request) {
           ]
         : []),
     ]);
-    if (accountId) usedToday += 1;
+    if (accountId) {
+      usedToday += 1;
+      usedMonth += 1;
+      usedYear += 1;
+    }
   } catch (error) {
     console.error("Failed to record API usage", error);
   }
 
   // Attach quota headers via a pass-through marker on the request is not possible;
   // callers that need headers should use applyQuotaHeaders on their response.
-  const headers = quotaResponseHeaders(usedToday, dailyLimit, plan);
+  const headers = quotaResponseHeaders({
+    plan,
+    usedToday,
+    dailyLimit,
+    usedMonth,
+    monthlyLimit,
+    usedYear,
+    yearlyLimit,
+  });
   (request as Request & { __quotaHeaders?: Record<string, string> }).__quotaHeaders = headers;
   return null;
 }

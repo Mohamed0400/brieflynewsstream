@@ -28,8 +28,8 @@ export async function generateMetadata({
       ? siteTitle("en", "Pricing")
       : siteTitle("ar", "الأسعار"),
     description: isEn
-      ? `Start free at ${PLAN_DEFINITIONS.FREE.dailyRequests} API requests a day. Pro is $${PLAN_DEFINITIONS.PRO.listPriceMonthlyUsd} per month with ${PLAN_DEFINITIONS.PRO.dailyRequests} requests. Enterprise is $${PLAN_DEFINITIONS.ENTERPRISE.listPriceMonthlyUsd} per month with ${PLAN_DEFINITIONS.ENTERPRISE.dailyRequests} requests a day.`
-      : `ابدأ مجاناً بـ ${PLAN_DEFINITIONS.FREE.dailyRequests} طلبات API يومياً. Pro بسعر ${PLAN_DEFINITIONS.PRO.listPriceMonthlyUsd} دولاراً شهرياً و${PLAN_DEFINITIONS.PRO.dailyRequests} طلب. Enterprise بسعر ${PLAN_DEFINITIONS.ENTERPRISE.listPriceMonthlyUsd} دولاراً شهرياً و${PLAN_DEFINITIONS.ENTERPRISE.dailyRequests} طلب يومياً.`,
+      ? `Start free at ${PLAN_DEFINITIONS.FREE.dailyRequests}/day, ${PLAN_DEFINITIONS.FREE.monthlyRequests}/month, and ${PLAN_DEFINITIONS.FREE.yearlyRequests}/year. Pro is $${PLAN_DEFINITIONS.PRO.listPriceMonthlyUsd}/month with ${PLAN_DEFINITIONS.PRO.dailyRequests} requests a day. Enterprise is $${PLAN_DEFINITIONS.ENTERPRISE.listPriceMonthlyUsd}/month with ${PLAN_DEFINITIONS.ENTERPRISE.dailyRequests} a day.`
+      : `ابدأ مجاناً بـ ${PLAN_DEFINITIONS.FREE.dailyRequests}/يوم، و${PLAN_DEFINITIONS.FREE.monthlyRequests}/شهر، و${PLAN_DEFINITIONS.FREE.yearlyRequests}/سنة. Pro بسعر ${PLAN_DEFINITIONS.PRO.listPriceMonthlyUsd} دولاراً شهرياً و${PLAN_DEFINITIONS.PRO.dailyRequests} طلب يومياً. Enterprise بسعر ${PLAN_DEFINITIONS.ENTERPRISE.listPriceMonthlyUsd} دولاراً شهرياً و${PLAN_DEFINITIONS.ENTERPRISE.dailyRequests} طلب يومياً.`,
     path: "/pricing",
     pathEn: "/pricing?lang=en",
     keywords: [
@@ -74,8 +74,8 @@ export default async function PricingPage({
       </div>
       <p className="mkt-sr">
         {lang === "en"
-          ? `Free includes ${free.dailyRequests} requests a day. Pro is $${pro.listPriceMonthlyUsd} per month. Enterprise is $${PLAN_DEFINITIONS.ENTERPRISE.listPriceMonthlyUsd} per month.`
-          : `المجاني يشمل ${free.dailyRequests} طلباً يومياً. سعر Pro هو ${pro.listPriceMonthlyUsd} دولاراً شهرياً. سعر Enterprise هو ${PLAN_DEFINITIONS.ENTERPRISE.listPriceMonthlyUsd} دولاراً شهرياً.`}
+          ? `Free includes ${free.dailyRequests}/day, ${free.monthlyRequests}/month, and ${free.yearlyRequests}/year. Pro is $${pro.listPriceMonthlyUsd} per month. Enterprise is $${PLAN_DEFINITIONS.ENTERPRISE.listPriceMonthlyUsd} per month.`
+          : `المجاني يشمل ${free.dailyRequests}/يوم، و${free.monthlyRequests}/شهر، و${free.yearlyRequests}/سنة. سعر Pro هو ${pro.listPriceMonthlyUsd} دولاراً شهرياً. سعر Enterprise هو ${PLAN_DEFINITIONS.ENTERPRISE.listPriceMonthlyUsd} دولاراً شهرياً.`}
       </p>
     </div>
   );

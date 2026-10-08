@@ -5,17 +5,23 @@ import { pricingCopy } from "./pricing-copy";
 
 test("published plans match the production quota and key gates", () => {
   assert.equal(PLAN_DEFINITIONS.FREE.dailyRequests, 3);
+  assert.equal(PLAN_DEFINITIONS.FREE.monthlyRequests, 10);
+  assert.equal(PLAN_DEFINITIONS.FREE.yearlyRequests, 100);
   assert.equal(PLAN_DEFINITIONS.FREE.maxKeys, 1);
   assert.equal(PLAN_DEFINITIONS.FREE.commercialUse, false);
   assert.equal(PLAN_DEFINITIONS.FREE.listPriceMonthlyUsd, 0);
   assert.equal(PLAN_DEFINITIONS.FREE.archiveAccess, "full");
 
   assert.equal(PLAN_DEFINITIONS.PRO.dailyRequests, 500);
+  assert.equal(PLAN_DEFINITIONS.PRO.monthlyRequests, null);
+  assert.equal(PLAN_DEFINITIONS.PRO.yearlyRequests, null);
   assert.equal(PLAN_DEFINITIONS.PRO.maxKeys, 10);
   assert.equal(PLAN_DEFINITIONS.PRO.commercialUse, true);
   assert.equal(PLAN_DEFINITIONS.PRO.listPriceMonthlyUsd, 80);
 
   assert.equal(PLAN_DEFINITIONS.ENTERPRISE.dailyRequests, 20_000);
+  assert.equal(PLAN_DEFINITIONS.ENTERPRISE.monthlyRequests, null);
+  assert.equal(PLAN_DEFINITIONS.ENTERPRISE.yearlyRequests, null);
   assert.equal(PLAN_DEFINITIONS.ENTERPRISE.maxKeys, 100);
   assert.equal(PLAN_DEFINITIONS.ENTERPRISE.commercialUse, true);
   assert.equal(PLAN_DEFINITIONS.ENTERPRISE.listPriceMonthlyUsd, 150);

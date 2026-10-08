@@ -5,6 +5,10 @@ export type PlanDefinition = {
   label: string;
   listPriceMonthlyUsd: number | null;
   dailyRequests: number;
+  /** null = no monthly cap (paid plans). */
+  monthlyRequests: number | null;
+  /** null = no yearly cap (paid plans). */
+  yearlyRequests: number | null;
   maxKeys: number;
   commercialUse: boolean;
   communityBriefings: boolean;
@@ -23,6 +27,8 @@ export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
     label: "Free",
     listPriceMonthlyUsd: 0,
     dailyRequests: 3,
+    monthlyRequests: 10,
+    yearlyRequests: 100,
     maxKeys: 1,
     commercialUse: false,
     communityBriefings: true,
@@ -33,6 +39,8 @@ export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
     label: "Pro",
     listPriceMonthlyUsd: 80,
     dailyRequests: 500,
+    monthlyRequests: null,
+    yearlyRequests: null,
     maxKeys: 10,
     commercialUse: true,
     communityBriefings: true,
@@ -43,6 +51,8 @@ export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
     label: "Enterprise",
     listPriceMonthlyUsd: 150,
     dailyRequests: 20_000,
+    monthlyRequests: null,
+    yearlyRequests: null,
     maxKeys: 100,
     commercialUse: true,
     communityBriefings: true,
@@ -71,5 +81,17 @@ export function utcDayWindow(now = new Date()) {
   const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   const end = new Date(start);
   end.setUTCDate(end.getUTCDate() + 1);
+  return { start, end };
+}
+
+export function utcMonthWindow(now = new Date()) {
+  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+  return { start, end };
+}
+
+export function utcYearWindow(now = new Date()) {
+  const start = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
+  const end = new Date(Date.UTC(now.getUTCFullYear() + 1, 0, 1));
   return { start, end };
 }

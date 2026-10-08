@@ -8,7 +8,7 @@ const en = {
   planEnterprise: "Enterprise",
   pageLede:
     "Start free to try the API. Choose Pro for commercial use, or Enterprise at $150 a month.",
-  forFree: "Try the news API, create an API key, and stay within the daily limit.",
+  forFree: "Try the news API, create an API key, and stay within daily, monthly, and yearly Free caps.",
   forPro: "Ship on one API, with production usage limits and commercial use.",
   forEnterprise: "Higher volume, more keys, priority support, and a published SLA.",
   periodMonth: "/ month",
@@ -22,10 +22,10 @@ const en = {
   licenseCommercial: "Commercial",
   slaNone: "None published",
   slaScoped: "Published SLA",
-  meterHint: "The daily limit renews automatically every day.",
+  meterHint: "Free renews daily, monthly, and yearly. Paid plans renew daily.",
   featureFree1: "Console, API keys, and explorer",
   featureFree2: "Arabic and English JSON on every news endpoint",
-  featureFree3: "The same filters as Pro, within the Free limit",
+  featureFree3: `Same filters as Pro, within Free caps (${PLAN_DEFINITIONS.FREE.dailyRequests}/day, ${PLAN_DEFINITIONS.FREE.monthlyRequests}/month, ${PLAN_DEFINITIONS.FREE.yearlyRequests}/year)`,
   featureFree4: "Not licensed for commercial production",
   featureQuotaUnit: "requests a day",
   featureEntQuotaNote: "",
@@ -79,9 +79,10 @@ const en = {
   faqTitle: "Plan questions",
   faqRequestQ: "What counts as an API request?",
   faqRequestA:
-    "Every authenticated API request counts toward your daily limit, including catalog and source endpoints. Health does not.",
-  faqResetQ: "When does the daily limit renew?",
-  faqResetA: "The daily limit renews automatically every day.",
+    "Every authenticated API request counts toward your plan limits, including catalog and source endpoints. Health does not. Free also enforces monthly and yearly caps.",
+  faqResetQ: "When do Free limits renew?",
+  faqResetA:
+    `Daily at UTC midnight, monthly on the 1st (UTC), and yearly on January 1 (UTC). Free allows ${PLAN_DEFINITIONS.FREE.dailyRequests} requests a day, ${PLAN_DEFINITIONS.FREE.monthlyRequests} a month, and ${PLAN_DEFINITIONS.FREE.yearlyRequests} a year.`,
   faqFreeQ: "Can I use the Free plan in a commercial product?",
   faqFreeA:
     "Free is for evaluation. Commercial use starts on Pro. The endpoints are the same. The license and usage limits change.",
@@ -96,7 +97,7 @@ const en = {
   nextTitle: "Start using the news API",
   nextLede: "Create a free account, create an API key, and start testing news and data.",
   nextProof:
-    `Free includes ${PLAN_DEFINITIONS.FREE.dailyRequests} API requests a day. Pro is $${PLAN_DEFINITIONS.PRO.listPriceMonthlyUsd} per month with ${formatPlanCount(PLAN_DEFINITIONS.PRO.dailyRequests)} requests a day. Enterprise is $${PLAN_DEFINITIONS.ENTERPRISE.listPriceMonthlyUsd} per month with ${formatPlanCount(PLAN_DEFINITIONS.ENTERPRISE.dailyRequests)} requests a day.`,
+    `Free includes ${PLAN_DEFINITIONS.FREE.dailyRequests} requests a day, ${PLAN_DEFINITIONS.FREE.monthlyRequests} a month, and ${PLAN_DEFINITIONS.FREE.yearlyRequests} a year. Pro is $${PLAN_DEFINITIONS.PRO.listPriceMonthlyUsd} per month with ${formatPlanCount(PLAN_DEFINITIONS.PRO.dailyRequests)} requests a day. Enterprise is $${PLAN_DEFINITIONS.ENTERPRISE.listPriceMonthlyUsd} per month with ${formatPlanCount(PLAN_DEFINITIONS.ENTERPRISE.dailyRequests)} requests a day.`,
 } as const;
 
 const ar = {
@@ -106,7 +107,7 @@ const ar = {
   planEnterprise: "Enterprise",
   pageLede:
     "ابدأ مجاناً لاختبار الواجهة. اختر Pro للاستخدام التجاري، أو Enterprise بسعر 150 دولاراً شهرياً.",
-  forFree: "اختبر واجهة الأخبار، أنشئ مفتاح API، وابق ضمن الحد اليومي.",
+  forFree: "اختبر واجهة الأخبار، أنشئ مفتاح API، وابق ضمن الحدود اليومية والشهرية والسنوية للمجاني.",
   forPro: "ابنِ منتجك على واجهة برمجة واحدة، مع حدود استخدام للإنتاج واستخدام تجاري.",
   forEnterprise: "حجم أعلى، مفاتيح أكثر، دعم أولوية، واتفاقية مستوى خدمة منشورة.",
   periodMonth: "/ شهر",
@@ -120,10 +121,10 @@ const ar = {
   licenseCommercial: "تجاري",
   slaNone: "غير منشور",
   slaScoped: "SLA منشور",
-  meterHint: "الحد اليومي يتجدد تلقائياً كل يوم.",
+  meterHint: "المجاني يتجدد يومياً وشهرياً وسنوياً. الخطط المدفوعة تتجدد يومياً.",
   featureFree1: "لوحة ومفاتيح API ومستكشف",
   featureFree2: "JSON بالعربية والإنجليزية على كل نقطة أخبار",
-  featureFree3: "نفس فلاتر Pro ضمن الحد اليومي للمجاني",
+  featureFree3: `نفس فلاتر Pro ضمن حدود المجاني (${PLAN_DEFINITIONS.FREE.dailyRequests}/يوم، ${PLAN_DEFINITIONS.FREE.monthlyRequests}/شهر، ${PLAN_DEFINITIONS.FREE.yearlyRequests}/سنة)`,
   featureFree4: "غير مرخّص للإنتاج التجاري",
   featureQuotaUnit: "طلب يومياً",
   featureEntQuotaNote: "",
@@ -177,9 +178,10 @@ const ar = {
   faqTitle: "أسئلة الخطط",
   faqRequestQ: "ما الذي يُحتسب كطلب API؟",
   faqRequestA:
-    "كل طلب API موثّق يُحتسب من حدك اليومي، بما في ذلك مسارات الكتالوج والمصادر. طلب الحالة الصحية لا يُحتسب.",
-  faqResetQ: "متى يتجدد الحد اليومي؟",
-  faqResetA: "يتجدد الحد اليومي تلقائياً كل يوم.",
+    "كل طلب API موثّق يُحتسب ضمن حدود خطتك، بما في ذلك مسارات الكتالوج والمصادر. طلب الحالة الصحية لا يُحتسب. المجاني يفرض أيضاً حداً شهرياً وسنوياً.",
+  faqResetQ: "متى تتجدد حدود المجاني؟",
+  faqResetA:
+    `يومياً عند منتصف الليل UTC، وشهرياً في اليوم الأول (UTC)، وسنوياً في 1 يناير (UTC). المجاني يسمح بـ ${PLAN_DEFINITIONS.FREE.dailyRequests} طلبات يومياً، و${PLAN_DEFINITIONS.FREE.monthlyRequests} شهرياً، و${PLAN_DEFINITIONS.FREE.yearlyRequests} سنوياً.`,
   faqFreeQ: "هل يمكنني استخدام الخطة المجانية في منتج تجاري؟",
   faqFreeA:
     "الخطة المجانية للاختبار. الاستخدام التجاري يبدأ من Pro. نقاط النهاية واحدة. الترخيص وحدود الاستخدام يتغيران.",
@@ -194,7 +196,7 @@ const ar = {
   nextTitle: "ابدأ باستخدام واجهة الأخبار",
   nextLede: "أنشئ حساباً مجانياً، أنشئ مفتاح API، وابدأ باختبار الأخبار والبيانات.",
   nextProof:
-    `تتضمن الخطة المجانية ${PLAN_DEFINITIONS.FREE.dailyRequests} طلبات API يومياً. خطة Pro بسعر ${PLAN_DEFINITIONS.PRO.listPriceMonthlyUsd} دولاراً شهرياً وتشمل ${formatPlanCount(PLAN_DEFINITIONS.PRO.dailyRequests)} طلب API يومياً. خطة Enterprise بسعر ${PLAN_DEFINITIONS.ENTERPRISE.listPriceMonthlyUsd} دولاراً شهرياً وتشمل ${formatPlanCount(PLAN_DEFINITIONS.ENTERPRISE.dailyRequests)} طلب API يومياً.`,
+    `تتضمن الخطة المجانية ${PLAN_DEFINITIONS.FREE.dailyRequests} طلبات يومياً، و${PLAN_DEFINITIONS.FREE.monthlyRequests} شهرياً، و${PLAN_DEFINITIONS.FREE.yearlyRequests} سنوياً. خطة Pro بسعر ${PLAN_DEFINITIONS.PRO.listPriceMonthlyUsd} دولاراً شهرياً وتشمل ${formatPlanCount(PLAN_DEFINITIONS.PRO.dailyRequests)} طلب API يومياً. خطة Enterprise بسعر ${PLAN_DEFINITIONS.ENTERPRISE.listPriceMonthlyUsd} دولاراً شهرياً وتشمل ${formatPlanCount(PLAN_DEFINITIONS.ENTERPRISE.dailyRequests)} طلب API يومياً.`,
 } as const;
 
 export type PricingCopy = { [K in keyof typeof en]: string };

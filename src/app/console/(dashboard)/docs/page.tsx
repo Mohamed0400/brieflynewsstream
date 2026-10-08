@@ -60,7 +60,7 @@ const filterRows = {
     ["Date filters", "`date=YYYY-MM-DD` or `from=YYYY-MM-DD&to=YYYY-MM-DD`."],
     ["Sorting", "`sort=score` for market impact or `sort=date` for newest first."],
     ["Pagination", "`limit=` and `offset=`."],
-    ["Request limits", `Daily limits are account-wide (UTC midnight reset). Free: ${PLAN_DEFINITIONS.FREE.dailyRequests} requests/day, ${PLAN_DEFINITIONS.FREE.maxKeys} key. Pro: ${PLAN_DEFINITIONS.PRO.dailyRequests} requests/day shared across up to ${PLAN_DEFINITIONS.PRO.maxKeys} keys. Responses include X-API-Quota-* headers.`],
+    ["Request limits", `Limits are account-wide. Free: ${PLAN_DEFINITIONS.FREE.dailyRequests}/day, ${PLAN_DEFINITIONS.FREE.monthlyRequests}/month, ${PLAN_DEFINITIONS.FREE.yearlyRequests}/year (UTC windows), ${PLAN_DEFINITIONS.FREE.maxKeys} key. Pro: ${PLAN_DEFINITIONS.PRO.dailyRequests}/day across up to ${PLAN_DEFINITIONS.PRO.maxKeys} keys. Responses include X-API-Quota-* headers.`],
   ],
   ar: [
     ["البحث", "`q=` بالعربية أو الإنجليزية، بما في ذلك عبارات مثل `أسعار النفط` أو `oil prices`."],
@@ -73,7 +73,7 @@ const filterRows = {
     ["فلاتر التاريخ", "`date=YYYY-MM-DD` أو `from=YYYY-MM-DD&to=YYYY-MM-DD`."],
     ["الترتيب", "`sort=score` لأثر السوق أو `sort=date` للأحدث أولا."],
     ["الصفحات", "`limit=` و `offset=`."],
-    ["حدود الطلب", `الحدود على مستوى الحساب (تتجدد عند منتصف الليل UTC). المجاني: ${PLAN_DEFINITIONS.FREE.dailyRequests} طلبات/يوم، ${PLAN_DEFINITIONS.FREE.maxKeys} مفتاح. Pro: ${PLAN_DEFINITIONS.PRO.dailyRequests} طلب/يوم مشتركة على حتى ${PLAN_DEFINITIONS.PRO.maxKeys} مفتاح. الاستجابات تتضمن ترويسات X-API-Quota-*`],
+    ["حدود الطلب", `الحدود على مستوى الحساب. المجاني: ${PLAN_DEFINITIONS.FREE.dailyRequests}/يوم، ${PLAN_DEFINITIONS.FREE.monthlyRequests}/شهر، ${PLAN_DEFINITIONS.FREE.yearlyRequests}/سنة (نوافذ UTC)، ${PLAN_DEFINITIONS.FREE.maxKeys} مفتاح. Pro: ${PLAN_DEFINITIONS.PRO.dailyRequests}/يوم على حتى ${PLAN_DEFINITIONS.PRO.maxKeys} مفتاح. الاستجابات تتضمن ترويسات X-API-Quota-*`],
   ],
 } as const;
 

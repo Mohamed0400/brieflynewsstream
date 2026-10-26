@@ -85,7 +85,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.gate.outputs.enabled == 'true'
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Generate Prisma client
         if: steps.gate.outputs.enabled == 'true'
